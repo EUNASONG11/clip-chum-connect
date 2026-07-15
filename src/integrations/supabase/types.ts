@@ -41,42 +41,51 @@ export type Database = {
           created_by: string
           description: string | null
           duration: number | null
+          external_url: string | null
+          external_video_id: string | null
           id: string
           player_embed_url: string | null
+          source: string
           status: string
           thumbnail_url: string | null
           title: string
           updated_at: string
-          vimeo_uri: string
-          vimeo_video_id: string
+          vimeo_uri: string | null
+          vimeo_video_id: string | null
         }
         Insert: {
           created_at?: string
           created_by: string
           description?: string | null
           duration?: number | null
+          external_url?: string | null
+          external_video_id?: string | null
           id?: string
           player_embed_url?: string | null
+          source?: string
           status?: string
           thumbnail_url?: string | null
           title: string
           updated_at?: string
-          vimeo_uri: string
-          vimeo_video_id: string
+          vimeo_uri?: string | null
+          vimeo_video_id?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string
           description?: string | null
           duration?: number | null
+          external_url?: string | null
+          external_video_id?: string | null
           id?: string
           player_embed_url?: string | null
+          source?: string
           status?: string
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
-          vimeo_uri?: string
-          vimeo_video_id?: string
+          vimeo_uri?: string | null
+          vimeo_video_id?: string | null
         }
         Relationships: []
       }
