@@ -12,7 +12,6 @@ type Video = {
   description: string | null;
   thumbnail_url: string | null;
   duration: number | null;
-  vimeo_video_id: string;
   created_at: string;
 };
 
