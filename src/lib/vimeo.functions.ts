@@ -189,3 +189,55 @@ export const claimAdminIfNone = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { claimed: true };
   });
+
+// 7) YouTube 링크 추가
+function parseYoutubeId(url: string): string | null {
+  try {
+    const u = new URL(url.trim());
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host.endsWith("youtube.com")) {
+      if (u.pathname === "/watch") return u.searchParams.get("v");
+      const parts = u.pathname.split("/").filter(Boolean);
+      if (parts[0] === "embed" || parts[0] === "shorts" || parts[0] === "v") return parts[1] ?? null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export const addYoutubeVideo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        url: z.string().url(),
+        title: z.string().min(1).max(200),
+        description: z.string().max(5000).optional().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const ytId = parseYoutubeId(data.url);
+    if (!ytId) throw new Error("유효한 YouTube 링크가 아닙니다.");
+
+    const { data: row, error } = await context.supabase
+      .from("videos")
+      .insert({
+        title: data.title,
+        description: data.description ?? null,
+        source: "youtube",
+        external_video_id: ytId,
+        external_url: `https://www.youtube.com/watch?v=${ytId}`,
+        player_embed_url: `https://www.youtube.com/embed/${ytId}`,
+        thumbnail_url: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
+        status: "ready",
+        created_by: context.userId,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
