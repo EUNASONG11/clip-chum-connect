@@ -8,7 +8,9 @@ type Video = {
   id: string;
   title: string;
   description: string | null;
-  vimeo_video_id: string;
+  source: string;
+  vimeo_video_id: string | null;
+  external_video_id: string | null;
   player_embed_url: string | null;
   thumbnail_url: string | null;
 };
@@ -33,11 +35,11 @@ function VideoPage() {
   useEffect(() => {
     supabase
       .from("videos")
-      .select("id,title,description,vimeo_video_id,player_embed_url,thumbnail_url")
+      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url")
       .eq("id", id)
       .eq("status", "ready")
       .maybeSingle()
-      .then(({ data }) => setVideo(data ?? null));
+      .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);
 
   if (video === undefined) {
@@ -52,7 +54,10 @@ function VideoPage() {
   }
   if (video === null) throw notFound();
 
-  const src = `https://player.vimeo.com/video/${video.vimeo_video_id}?title=0&byline=0&portrait=0`;
+  const src =
+    video.source === "youtube"
+      ? `https://www.youtube.com/embed/${video.external_video_id}`
+      : `https://player.vimeo.com/video/${video.vimeo_video_id}?title=0&byline=0&portrait=0`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +73,7 @@ function VideoPage() {
           <div className="relative aspect-video">
             <iframe
               src={src}
-              allow="autoplay; fullscreen; picture-in-picture"
+              allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
               allowFullScreen
               className="absolute inset-0 h-full w-full"
               title={video.title}
