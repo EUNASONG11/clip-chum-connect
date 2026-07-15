@@ -41,7 +41,7 @@ function Home() {
   useEffect(() => {
     supabase
       .from("videos")
-      .select("id,title,description,thumbnail_url,duration,vimeo_video_id,created_at")
+      .select("id,title,description,thumbnail_url,duration,created_at")
       .eq("status", "ready")
       .order("created_at", { ascending: false })
       .then(({ data }) => setVideos(data ?? []));
