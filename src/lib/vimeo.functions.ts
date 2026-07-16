@@ -190,6 +190,81 @@ export const claimAdminIfNone = createServerFn({ method: "POST" })
     return { claimed: true };
   });
 
+// 6-1) 로그인 사용자가 학생 역할이 없으면 자동 부여
+export const ensureStudentRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { count } = await supabaseAdmin
+      .from("user_roles")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", context.userId);
+    if ((count ?? 0) === 0) {
+      await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: context.userId, role: "student" });
+    }
+    return { ok: true };
+  });
+
+// 6-2) 사용자 목록 (관리자 전용)
+export const listUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+    if (error) throw new Error(error.message);
+    const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
+    const map = new Map<string, string[]>();
+    (roles ?? []).forEach((r: any) => {
+      const list = map.get(r.user_id) ?? [];
+      list.push(r.role);
+      map.set(r.user_id, list);
+    });
+    return users.users.map((u) => ({
+      id: u.id,
+      email: u.email ?? "",
+      created_at: u.created_at,
+      roles: map.get(u.id) ?? [],
+    }));
+  });
+
+// 6-3) 관리자 권한 부여 (이메일로)
+export const grantAdminByEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ email: z.string().email() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+    if (error) throw new Error(error.message);
+    const target = users.users.find((u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase());
+    if (!target) throw new Error("해당 이메일로 가입된 사용자가 없습니다.");
+    const { error: insErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: target.id, role: "admin" });
+    if (insErr && !insErr.message.includes("duplicate")) throw new Error(insErr.message);
+    return { ok: true, userId: target.id };
+  });
+
+// 6-4) 관리자 권한 회수
+export const revokeAdmin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("자기 자신의 관리자 권한은 회수할 수 없습니다.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", "admin");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // 7) YouTube 링크 추가
 function parseYoutubeId(url: string): string | null {
   try {
