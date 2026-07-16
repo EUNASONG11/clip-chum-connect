@@ -62,12 +62,27 @@ function AdminPage() {
   const [ytDesc, setYtDesc] = useState("");
   const [ytSaving, setYtSaving] = useState(false);
 
+  // 사용자 관리 상태
+  type UserRow = { id: string; email: string; created_at: string; roles: string[] };
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [grantEmail, setGrantEmail] = useState("");
+  const [granting, setGranting] = useState(false);
+
   const load = async () => {
     const { data } = await supabase
       .from("videos")
       .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,created_at")
       .order("created_at", { ascending: false });
     setRows((data as Row[] | null) ?? []);
+  };
+
+  const loadUsers = async () => {
+    try {
+      const u = await listUsers();
+      setUsers(u as UserRow[]);
+    } catch (err: any) {
+      toast.error(err.message ?? "사용자 목록을 불러올 수 없습니다.");
+    }
   };
 
   useEffect(() => {
@@ -78,6 +93,7 @@ function AdminPage() {
         return;
       }
       try {
+        try { await ensureStudentRole(); } catch {}
         const me = await getMyRole();
         if (!me.isAdmin) {
           const c = await claimAdminIfNone();
@@ -93,6 +109,7 @@ function AdminPage() {
       } finally {
         setChecking(false);
         load();
+        loadUsers();
       }
     })();
   }, [navigate]);
