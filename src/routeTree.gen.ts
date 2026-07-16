@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
+import { Route as ApiPublicSeedStudentRouteImport } from './routes/api/public/seed-student'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,18 +35,25 @@ const VideoIdRoute = VideoIdRouteImport.update({
   path: '/video/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicSeedStudentRoute = ApiPublicSeedStudentRouteImport.update({
+  id: '/api/public/seed-student',
+  path: '/api/public/seed-student',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/video/$id': typeof VideoIdRoute
+  '/api/public/seed-student': typeof ApiPublicSeedStudentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/video/$id': typeof VideoIdRoute
+  '/api/public/seed-student': typeof ApiPublicSeedStudentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,25 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/video/$id': typeof VideoIdRoute
+  '/api/public/seed-student': typeof ApiPublicSeedStudentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/auth' | '/video/$id'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/video/$id'
+    | '/api/public/seed-student'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/auth' | '/video/$id'
-  id: '__root__' | '/' | '/admin' | '/auth' | '/video/$id'
+  to: '/' | '/admin' | '/auth' | '/video/$id' | '/api/public/seed-student'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/auth'
+    | '/video/$id'
+    | '/api/public/seed-student'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +87,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   VideoIdRoute: typeof VideoIdRoute
+  ApiPublicSeedStudentRoute: typeof ApiPublicSeedStudentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/seed-student': {
+      id: '/api/public/seed-student'
+      path: '/api/public/seed-student'
+      fullPath: '/api/public/seed-student'
+      preLoaderRoute: typeof ApiPublicSeedStudentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +135,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   VideoIdRoute: VideoIdRoute,
+  ApiPublicSeedStudentRoute: ApiPublicSeedStudentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
