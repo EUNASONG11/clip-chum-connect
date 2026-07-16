@@ -39,11 +39,13 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2">
           {email ? (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/admin">
-                  <Upload className="mr-1 h-4 w-4" /> 관리자
-                </Link>
-              </Button>
+              {isAdmin && (
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/admin">
+                    <Upload className="mr-1 h-4 w-4" /> 관리자
+                  </Link>
+                </Button>
+              )}
               <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
               <Button
                 size="sm"
