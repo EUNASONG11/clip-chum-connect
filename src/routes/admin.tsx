@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, RefreshCw, Upload as UploadIcon, ShieldCheck, Youtube } from "lucide-react";
+import { Trash2, RefreshCw, Upload as UploadIcon, ShieldCheck, Youtube, UserPlus, UserMinus } from "lucide-react";
 import {
   createVimeoUpload,
   finalizeVideo,
@@ -20,6 +20,10 @@ import {
   getMyRole,
   claimAdminIfNone,
   addYoutubeVideo,
+  ensureStudentRole,
+  listUsers,
+  grantAdminByEmail,
+  revokeAdmin,
 } from "@/lib/vimeo.functions";
 
 export const Route = createFileRoute("/admin")({
