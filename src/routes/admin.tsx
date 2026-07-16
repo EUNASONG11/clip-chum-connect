@@ -201,6 +201,33 @@ function AdminPage() {
     }
   };
 
+  const grantAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!grantEmail.trim()) return;
+    setGranting(true);
+    try {
+      await grantAdminByEmail({ data: { email: grantEmail.trim() } });
+      toast.success("관리자 권한을 부여했습니다.");
+      setGrantEmail("");
+      loadUsers();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setGranting(false);
+    }
+  };
+
+  const removeAdmin = async (userId: string, email: string) => {
+    if (!confirm(`${email} 의 관리자 권한을 회수하시겠습니까?`)) return;
+    try {
+      await revokeAdmin({ data: { userId } });
+      toast.success("관리자 권한을 회수했습니다.");
+      loadUsers();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   if (checking) {
     return (
       <div className="min-h-screen">
