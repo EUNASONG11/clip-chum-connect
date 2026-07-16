@@ -1,17 +1,31 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getMyRole } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
 import { Video, LogOut, Upload } from "lucide-react";
 
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setEmail(s?.user?.email ?? null);
-    });
+    const sync = async () => {
+      const { data } = await supabase.auth.getUser();
+      setEmail(data.user?.email ?? null);
+      if (data.user) {
+        try {
+          const r = await getMyRole();
+          setIsAdmin(r.isAdmin);
+        } catch {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+    sync();
+    const { data: sub } = supabase.auth.onAuthStateChange(() => sync());
     return () => sub.subscription.unsubscribe();
   }, []);
 
