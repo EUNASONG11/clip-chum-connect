@@ -44,6 +44,7 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        try { await ensureStudentRole(); } catch {}
         toast.success("로그인 되었습니다.");
         navigate({ to: "/" });
       }
