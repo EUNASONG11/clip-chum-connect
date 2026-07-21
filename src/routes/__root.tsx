@@ -77,12 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "VimStream — 동영상 플랫폼" },
-      { name: "description", content: "Vimeo 로 호스팅되는 큐레이션 동영상 플랫폼." },
-      { property: "og:title", content: "VimStream" },
-      { property: "og:description", content: "Vimeo 로 호스팅되는 큐레이션 동영상 플랫폼." },
+      { title: "이재식국어 — 강의 플랫폼" },
+      { name: "description", content: "이재식국어 학생 전용 강의 시청 플랫폼." },
+      { property: "og:title", content: "이재식국어 — 강의 플랫폼" },
+      { property: "og:description", content: "이재식국어 학생 전용 강의 시청 플랫폼." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "이재식국어 — 강의 플랫폼" },
+      { name: "twitter:description", content: "이재식국어 학생 전용 강의 시청 플랫폼." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/42c5c802-d4a7-45e3-9f77-8bcbd0b9462d/id-preview-b99cca34--0fcc945a-b463-4558-b725-06f4738edd97.lovable.app-1784603211222.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/42c5c802-d4a7-45e3-9f77-8bcbd0b9462d/id-preview-b99cca34--0fcc945a-b463-4558-b725-06f4738edd97.lovable.app-1784603211222.png" },
     ],
     links: [
       {
