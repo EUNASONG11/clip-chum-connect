@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getMyRole } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
-import { Video, LogOut, Upload } from "lucide-react";
+import { Video, LogOut } from "lucide-react";
 
 
 export function SiteHeader() {
@@ -44,13 +44,6 @@ export function SiteHeader() {
         <nav className="flex items-center gap-2">
           {email ? (
             <>
-              {isAdmin && (
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/admin">
-                    <Upload className="mr-1 h-4 w-4" /> 관리자
-                  </Link>
-                </Button>
-              )}
               <span className="hidden text-sm text-muted-foreground sm:inline">{email}</span>
               <Button
                 size="sm"
