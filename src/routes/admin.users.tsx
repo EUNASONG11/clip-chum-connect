@@ -1,14 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { UserPlus, UserMinus, Loader2 } from "lucide-react";
-import { listUsers, grantAdminByEmail, revokeAdmin } from "@/lib/vimeo.functions";
+import {
+  UserPlus,
+  UserMinus,
+  Loader2,
+  Users,
+  ShieldCheck,
+  GraduationCap,
+  Clock,
+  Check,
+  X,
+  Search,
+} from "lucide-react";
+import {
+  listUsers,
+  grantAdminByEmail,
+  revokeAdmin,
+  approveUser,
+  rejectUser,
+} from "@/lib/vimeo.functions";
 
-type UserRow = { id: string; email: string; created_at: string; roles: string[] };
+type UserRow = {
+  id: string;
+  email: string;
+  nickname: string;
+  created_at: string;
+  roles: string[];
+  isAdmin: boolean;
+  isStudent: boolean;
+  isPending: boolean;
+  class_count: number;
+};
 
 const usersQueryOptions = queryOptions({
   queryKey: ["admin", "users"],
@@ -16,22 +44,66 @@ const usersQueryOptions = queryOptions({
   staleTime: 30_000,
 });
 
+type TabKey = "admin" | "student" | "pending";
+
 export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
 });
 
+function Badge({
+  tone,
+  children,
+}: {
+  tone: "admin" | "student" | "pending";
+  children: React.ReactNode;
+}) {
+  const map = {
+    admin: "bg-primary/10 text-primary border-primary/20",
+    student: "bg-accent/60 text-accent-foreground border-accent",
+    pending: "bg-amber-100 text-amber-700 border-amber-200",
+  } as const;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${map[tone]}`}
+    >
+      {children}
+    </span>
+  );
+}
+
 function UsersPage() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
+  const [tab, setTab] = useState<TabKey>("student");
+  const [search, setSearch] = useState("");
   const [grantEmail, setGrantEmail] = useState("");
   const [granting, setGranting] = useState(false);
-  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
-  const patchRoles = (userId: string, updater: (roles: string[]) => string[]) => {
-    queryClient.setQueryData<UserRow[]>(["admin", "users"], (prev) =>
-      prev?.map((u) => (u.id === userId ? { ...u, roles: updater(u.roles) } : u)) ?? prev,
+  const buckets = useMemo(() => {
+    const admin: UserRow[] = [];
+    const student: UserRow[] = [];
+    const pending: UserRow[] = [];
+    for (const u of users) {
+      if (u.isAdmin) admin.push(u);
+      else if (u.isStudent) student.push(u);
+      else pending.push(u);
+    }
+    return { admin, student, pending };
+  }, [users]);
+
+  const filtered = useMemo(() => {
+    const rows = buckets[tab];
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter(
+      (u) =>
+        u.email.toLowerCase().includes(q) ||
+        u.nickname.toLowerCase().includes(q),
     );
-  };
+  }, [buckets, tab, search]);
+
+  const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
 
   const grantAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +111,10 @@ function UsersPage() {
     if (!email) return;
     setGranting(true);
     try {
-      const res = await grantAdminByEmail({ data: { email } });
-      patchRoles(res.userId, (roles) => (roles.includes("admin") ? roles : [...roles, "admin"]));
+      await grantAdminByEmail({ data: { email } });
       toast.success("관리자 권한을 부여했습니다.");
       setGrantEmail("");
+      refetch();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -50,99 +122,221 @@ function UsersPage() {
     }
   };
 
-  const grantForRow = async (u: UserRow) => {
-    setPendingId(u.id);
+  const doApprove = async (u: UserRow, role: "student" | "admin") => {
+    setBusyId(u.id);
+    try {
+      await approveUser({ data: { userId: u.id, role } });
+      toast.success(`${role === "admin" ? "관리자" : "학생"}으로 승인되었습니다.`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doReject = async (u: UserRow) => {
+    if (!confirm(`${u.email} 계정을 삭제(거절)하시겠습니까?`)) return;
+    setBusyId(u.id);
+    try {
+      await rejectUser({ data: { userId: u.id } });
+      toast.success("삭제되었습니다.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doRevokeAdmin = async (u: UserRow) => {
+    if (!confirm(`${u.email} 의 관리자 권한을 회수하시겠습니까?`)) return;
+    setBusyId(u.id);
+    try {
+      await revokeAdmin({ data: { userId: u.id } });
+      toast.success("관리자 권한을 회수했습니다.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doGrantAdminRow = async (u: UserRow) => {
+    setBusyId(u.id);
     try {
       await grantAdminByEmail({ data: { email: u.email } });
-      patchRoles(u.id, (roles) => (roles.includes("admin") ? roles : [...roles, "admin"]));
-      toast.success("관리자 권한을 부여했습니다.");
+      toast.success("관리자로 지정했습니다.");
+      refetch();
     } catch (err: any) {
       toast.error(err.message);
     } finally {
-      setPendingId(null);
+      setBusyId(null);
     }
   };
 
-  const removeAdmin = async (userId: string, email: string) => {
-    if (!confirm(`${email} 의 관리자 권한을 회수하시겠습니까?`)) return;
-    setPendingId(userId);
-    try {
-      await revokeAdmin({ data: { userId } });
-      patchRoles(userId, (roles) => roles.filter((r) => r !== "admin"));
-      toast.success("관리자 권한을 회수했습니다.");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setPendingId(null);
-    }
-  };
+  const roleLabel = (u: UserRow) =>
+    u.isAdmin ? "관리자" : u.isStudent ? "학생" : "승인 대기";
+  const roleTone = (u: UserRow): "admin" | "student" | "pending" =>
+    u.isAdmin ? "admin" : u.isStudent ? "student" : "pending";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          사용자 관리 ({users.length})
+    <Card className="border-border/60">
+      <CardHeader className="pb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+            <Users className="h-4 w-4" />
+          </span>
+          <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-        </CardTitle>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          새로 가입한 회원을 승인하거나 관리자 권한을 부여할 수 있습니다.
+        </p>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <form onSubmit={grantAdmin} className="flex flex-col gap-2 sm:flex-row">
-          <Input
-            type="email"
-            placeholder="관리자로 지정할 이메일"
-            value={grantEmail}
-            onChange={(e) => setGrantEmail(e.target.value)}
-            required
-          />
-          <Button type="submit" disabled={granting} className="gap-1">
-            <UserPlus className="h-4 w-4" />
-            {granting ? "처리 중..." : "관리자 부여"}
-          </Button>
-        </form>
-        {users.length === 0 ? (
-          <p className="text-sm text-muted-foreground">사용자가 없습니다.</p>
-        ) : (
-          <ul className="divide-y">
-            {users.map((u) => {
-              const admin = u.roles.includes("admin");
-              const busy = pendingId === u.id;
-              return (
-                <li key={u.id} className="flex items-center gap-3 py-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{u.email || "(이메일 없음)"}</p>
-                    <p className="text-xs text-muted-foreground">
-                      역할:{" "}
-                      <span className={admin ? "text-primary font-medium" : ""}>
-                        {admin ? "관리자" : "학생"}
-                      </span>
-                    </p>
-                  </div>
-                  {admin ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1"
-                      disabled={busy}
-                      onClick={() => removeAdmin(u.id, u.email)}
-                    >
-                      <UserMinus className="h-4 w-4" /> {busy ? "처리 중..." : "관리자 회수"}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1"
-                      disabled={busy}
-                      onClick={() => grantForRow(u)}
-                    >
-                      <UserPlus className="h-4 w-4" /> {busy ? "처리 중..." : "관리자 지정"}
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <CardContent className="space-y-5">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="admin" className="gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5" /> 관리자
+              <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                {buckets.admin.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="student" className="gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5" /> 학생
+              <span className="ml-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-accent-foreground">
+                {buckets.student.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="pending" className="gap-1.5">
+              <Clock className="h-3.5 w-3.5" /> 승인 대기
+              <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
+                {buckets.pending.length}
+              </span>
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative w-full max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="닉네임, 이메일 검색"
+              className="pl-9"
+            />
+          </div>
+          <form onSubmit={grantAdmin} className="flex flex-1 gap-2 sm:max-w-md">
+            <Input
+              type="email"
+              placeholder="이메일로 관리자 지정"
+              value={grantEmail}
+              onChange={(e) => setGrantEmail(e.target.value)}
+              required
+            />
+            <Button type="submit" disabled={granting} className="gap-1 whitespace-nowrap">
+              <UserPlus className="h-4 w-4" /> {granting ? "처리 중..." : "관리자 부여"}
+            </Button>
+          </form>
+        </div>
+
+        <div className="overflow-x-auto rounded-xl border border-border/60">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">닉네임</th>
+                <th className="px-4 py-3">이메일</th>
+                <th className="px-4 py-3">역할</th>
+                <th className="px-4 py-3">수강 중인 반</th>
+                <th className="px-4 py-3">가입일</th>
+                <th className="px-4 py-3 text-right">작업</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                    표시할 사용자가 없습니다.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((u) => {
+                  const busy = busyId === u.id;
+                  return (
+                    <tr key={u.id} className="border-t transition hover:bg-muted/30">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
+                            {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
+                          </span>
+                          <span className="font-medium">{u.nickname || "-"}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground">{u.email || "-"}</td>
+                      <td className="px-4 py-3">
+                        <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
+                      </td>
+                      <td className="px-4 py-3">{u.class_count}개</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1.5">
+                          {u.isPending && (
+                            <>
+                              <Button
+                                size="sm"
+                                disabled={busy}
+                                onClick={() => doApprove(u, "student")}
+                                className="gap-1"
+                              >
+                                <Check className="h-3.5 w-3.5" /> 승인
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={busy}
+                                onClick={() => doReject(u)}
+                                className="gap-1"
+                              >
+                                <X className="h-3.5 w-3.5" /> 거절
+                              </Button>
+                            </>
+                          )}
+                          {u.isStudent && !u.isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doGrantAdminRow(u)}
+                              className="gap-1"
+                            >
+                              <UserPlus className="h-3.5 w-3.5" /> 관리자로
+                            </Button>
+                          )}
+                          {u.isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doRevokeAdmin(u)}
+                              className="gap-1"
+                            >
+                              <UserMinus className="h-3.5 w-3.5" /> 관리자 해제
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
   );
