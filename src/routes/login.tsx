@@ -46,7 +46,12 @@ function AuthPage() {
         if (error) throw error;
         try { await ensureStudentRole(); } catch {}
         toast.success("로그인 되었습니다.");
-        navigate({ to: "/" });
+        try {
+          const { isAdmin } = await getMyRole();
+          navigate({ to: isAdmin ? "/admin" : "/" });
+        } catch {
+          navigate({ to: "/" });
+        }
       }
     } catch (err: any) {
       toast.error(err.message ?? "오류가 발생했습니다.");
