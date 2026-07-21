@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureStudentRole, getMyRole } from "@/lib/vimeo.functions";
+import { ensureStudentRole, getMyStatus } from "@/lib/vimeo.functions";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,20 @@ export const Route = createFileRoute("/login")({
   component: AuthPage,
 });
 
+async function routeByStatus(navigate: ReturnType<typeof useNavigate>) {
+  try {
+    const s = await getMyStatus();
+    if (s.isPending) {
+      toast.error("관리자 승인 대기 중입니다. 승인 후 이용 가능합니다.");
+      await supabase.auth.signOut();
+      return;
+    }
+    navigate({ to: s.isAdmin ? "/admin" : "/" });
+  } catch {
+    navigate({ to: "/" });
+  }
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
@@ -25,12 +39,7 @@ function AuthPage() {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
-      try {
-        const { isAdmin } = await getMyRole();
-        navigate({ to: isAdmin ? "/admin" : "/" });
-      } catch {
-        navigate({ to: "/" });
-      }
+      await routeByStatus(navigate);
     });
   }, [navigate]);
 
@@ -45,19 +54,13 @@ function AuthPage() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("가입 완료! 로그인해주세요.");
+        toast.success("가입 완료! 관리자 승인 후 이용 가능합니다.");
         setMode("signin");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         try { await ensureStudentRole(); } catch {}
-        toast.success("로그인 되었습니다.");
-        try {
-          const { isAdmin } = await getMyRole();
-          navigate({ to: isAdmin ? "/admin" : "/" });
-        } catch {
-          navigate({ to: "/" });
-        }
+        await routeByStatus(navigate);
       }
     } catch (err: any) {
       toast.error(err.message ?? "오류가 발생했습니다.");
@@ -65,6 +68,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
