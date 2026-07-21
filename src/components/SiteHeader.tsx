@@ -10,6 +10,9 @@ import { Video, LogOut, Upload } from "lucide-react";
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
 
   useEffect(() => {
     const sync = async () => {
