@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ensureStudentRole } from "@/lib/vimeo.functions";
+import { ensureStudentRole, getMyRole } from "@/lib/vimeo.functions";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,14 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      try {
+        const { isAdmin } = await getMyRole();
+        navigate({ to: isAdmin ? "/admin" : "/" });
+      } catch {
+        navigate({ to: "/" });
+      }
     });
   }, [navigate]);
 
@@ -46,7 +52,12 @@ function AuthPage() {
         if (error) throw error;
         try { await ensureStudentRole(); } catch {}
         toast.success("로그인 되었습니다.");
-        navigate({ to: "/" });
+        try {
+          const { isAdmin } = await getMyRole();
+          navigate({ to: isAdmin ? "/admin" : "/" });
+        } catch {
+          navigate({ to: "/" });
+        }
       }
     } catch (err: any) {
       toast.error(err.message ?? "오류가 발생했습니다.");
