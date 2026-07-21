@@ -153,6 +153,46 @@ function ClassDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" /> 학생별 학습 현황
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {studentStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">배정된 학생이 없습니다.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="py-2">학생</th>
+                    <th className="py-2">완료</th>
+                    <th className="py-2">평균 시청률</th>
+                    <th className="py-2">최근 학습</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentStats.map((s: any) => (
+                    <tr key={s.user_id} className="border-t">
+                      <td className="py-2 truncate">{s.email}</td>
+                      <td className="py-2">
+                        {s.completed} / {s.video_total}
+                      </td>
+                      <td className="py-2">{Math.round(s.avg_watched_ratio * 100)}%</td>
+                      <td className="py-2 text-xs text-muted-foreground">
+                        {s.last_activity ? new Date(s.last_activity).toLocaleString("ko-KR") : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
