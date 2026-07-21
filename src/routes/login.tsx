@@ -23,8 +23,14 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/" });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      try {
+        const { isAdmin } = await getMyRole();
+        navigate({ to: isAdmin ? "/admin" : "/" });
+      } catch {
+        navigate({ to: "/" });
+      }
     });
   }, [navigate]);
 
