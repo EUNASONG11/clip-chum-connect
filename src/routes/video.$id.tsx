@@ -60,6 +60,12 @@ function formatDuration(sec: number | null) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function getVimeoEmbedUrl(video: Video) {
+  if (!video.player_embed_url) return null;
+  const separator = video.player_embed_url.includes("?") ? "&" : "?";
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&responsive=1`;
+}
+
 function VideoPage() {
   const { id } = Route.useParams();
   const [video, setVideo] = useState<Video | null | undefined>(undefined);
@@ -131,16 +137,25 @@ function VideoPage() {
       // Vimeo Player SDK
       const el = containerRef.current;
       el.innerHTML = "";
-      const holder = document.createElement("div");
-      holder.className = "absolute inset-0 h-full w-full";
-      el.appendChild(holder);
-      const player = new VimeoPlayer(holder, {
-        id: Number(video.vimeo_video_id),
-        responsive: true,
-        title: false,
-        byline: false,
-        portrait: false,
-      });
+      const embedUrl = getVimeoEmbedUrl(video);
+      const player = embedUrl
+        ? (() => {
+            const iframe = document.createElement("iframe");
+            iframe.src = embedUrl;
+            iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
+            iframe.allowFullscreen = true;
+            iframe.title = video.title;
+            iframe.className = "absolute inset-0 h-full w-full";
+            el.appendChild(iframe);
+            return new VimeoPlayer(iframe);
+          })()
+        : new VimeoPlayer(el, {
+            id: Number(video.vimeo_video_id),
+            responsive: true,
+            title: false,
+            byline: false,
+            portrait: false,
+          });
       let durationCached: number | null = video.duration ?? null;
       player.ready().then(async () => {
         try {
