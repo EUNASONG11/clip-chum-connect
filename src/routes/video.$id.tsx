@@ -342,7 +342,7 @@ function VideoPage() {
                 type="button"
                 onClick={() => {
                   if (isPlayerExpanded) setIsPlayerExpanded(false);
-                  else fullscreenRef.current?.();
+                  else setIsPlayerExpanded(true);
                 }}
                 className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
                 aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
