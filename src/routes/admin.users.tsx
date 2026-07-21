@@ -17,7 +17,6 @@ const usersQueryOptions = queryOptions({
 });
 
 export const Route = createFileRoute("/admin/users")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(usersQueryOptions),
   component: UsersPage,
 });
 
