@@ -365,7 +365,7 @@ function AdminPage() {
                         <span className="uppercase">{r.source}</span>
                         {" · "}상태:{" "}
                         <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
-                          {r.status}
+                          {statusLabel(r.status)}
                         </span>
                         {r.source === "vimeo" && r.vimeo_video_id ? ` · Vimeo ID: ${r.vimeo_video_id}` : ""}
                         {r.source === "youtube" && r.external_video_id ? ` · YT ID: ${r.external_video_id}` : ""}
