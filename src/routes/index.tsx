@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -36,16 +36,36 @@ function formatDuration(sec: number | null) {
 }
 
 function Home() {
+  const navigate = useNavigate();
   const [videos, setVideos] = useState<Video[] | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    supabase
-      .from("videos")
-      .select("id,title,description,thumbnail_url,duration,created_at")
-      .eq("status", "ready")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setVideos(data ?? []));
-  }, []);
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        navigate({ to: "/login", replace: true });
+        return;
+      }
+      setCheckingSession(false);
+      const { data: rows } = await supabase
+        .from("videos")
+        .select("id,title,description,thumbnail_url,duration,created_at")
+        .eq("status", "ready")
+        .order("created_at", { ascending: false });
+      setVideos(rows ?? []);
+    })();
+  }, [navigate]);
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <p className="p-10 text-muted-foreground">불러오는 중...</p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-background">
