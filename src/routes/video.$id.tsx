@@ -76,11 +76,20 @@ function VideoPage() {
   const seekRef = useRef<(sec: number) => void>(() => {});
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setIsAuthed(!!s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const { data: recents = [] } = useQuery({
     queryKey: ["recent", "watched"],
     queryFn: () => listRecentlyWatched({ data: { limit: 5 } }),
+    enabled: isAuthed,
   });
+
 
   // 영상 정보 로드
   useEffect(() => {
@@ -94,13 +103,15 @@ function VideoPage() {
 
   // 저장된 진도 상태 초기화
   useEffect(() => {
+    if (!isAuthed) return;
     getMyProgress({ data: { videoId: id } }).then((p) => {
       if (p) {
         setRatio(Number(p.watched_ratio));
         setCompleted(p.is_completed);
       }
     }).catch(() => {});
-  }, [id]);
+  }, [id, isAuthed]);
+
 
   // 플레이어 초기화 + 이벤트 바인딩
   useEffect(() => {
@@ -108,6 +119,7 @@ function VideoPage() {
     let cleanup = () => {};
 
     const send = async (currentSeconds: number, duration: number | null, ended = false) => {
+      if (!isAuthed) return;
       const now = Date.now();
       if (!ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
@@ -127,11 +139,14 @@ function VideoPage() {
 
     // 최초 이어보기 위치
     const resumeAtRef = { current: 0 as number };
-    getMyProgress({ data: { videoId: id } })
-      .then((p) => {
-        if (p) resumeAtRef.current = p.current_seconds ?? 0;
-      })
-      .catch(() => {});
+    if (isAuthed) {
+      getMyProgress({ data: { videoId: id } })
+        .then((p) => {
+          if (p) resumeAtRef.current = p.current_seconds ?? 0;
+        })
+        .catch(() => {});
+    }
+
 
     if (video.source === "vimeo") {
       // Vimeo Player SDK
