@@ -150,9 +150,10 @@ function VideoPage() {
           }
         } catch {}
       });
-      player.on("timeupdate", (d: any) => send(d.seconds, durationCached));
-      player.on("pause", (d: any) => send(d.seconds, durationCached));
+      player.on("timeupdate", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
+      player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
+      seekRef.current = (sec: number) => { player.setCurrentTime(sec).catch(() => {}); player.play().catch(() => {}); };
       cleanup = () => {
         player.destroy().catch(() => {});
       };
