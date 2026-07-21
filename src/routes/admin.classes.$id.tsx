@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3 } from "lucide-react";
 import {
   getClass,
   listClassStudents,
@@ -14,6 +14,7 @@ import {
   unassignStudent,
   listClassVideos,
 } from "@/lib/classes.functions";
+import { getClassStudentStats } from "@/lib/stats.functions";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
