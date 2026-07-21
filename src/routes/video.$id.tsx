@@ -119,6 +119,7 @@ function VideoPage() {
     let cleanup = () => {};
 
     const send = async (currentSeconds: number, duration: number | null, ended = false) => {
+      if (!isAuthed) return;
       const now = Date.now();
       if (!ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
@@ -138,11 +139,14 @@ function VideoPage() {
 
     // 최초 이어보기 위치
     const resumeAtRef = { current: 0 as number };
-    getMyProgress({ data: { videoId: id } })
-      .then((p) => {
-        if (p) resumeAtRef.current = p.current_seconds ?? 0;
-      })
-      .catch(() => {});
+    if (isAuthed) {
+      getMyProgress({ data: { videoId: id } })
+        .then((p) => {
+          if (p) resumeAtRef.current = p.current_seconds ?? 0;
+        })
+        .catch(() => {});
+    }
+
 
     if (video.source === "vimeo") {
       // Vimeo Player SDK
