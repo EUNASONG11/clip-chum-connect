@@ -88,6 +88,50 @@ export type Database = {
         }
         Relationships: []
       }
+      video_progress: {
+        Row: {
+          completed_at: string | null
+          current_seconds: number
+          duration: number | null
+          is_completed: boolean
+          max_seconds: number
+          updated_at: string
+          user_id: string
+          video_id: string
+          watched_ratio: number
+        }
+        Insert: {
+          completed_at?: string | null
+          current_seconds?: number
+          duration?: number | null
+          is_completed?: boolean
+          max_seconds?: number
+          updated_at?: string
+          user_id: string
+          video_id: string
+          watched_ratio?: number
+        }
+        Update: {
+          completed_at?: string | null
+          current_seconds?: number
+          duration?: number | null
+          is_completed?: boolean
+          max_seconds?: number
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+          watched_ratio?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           class_id: string | null
