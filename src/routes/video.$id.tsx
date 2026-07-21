@@ -66,6 +66,8 @@ function VideoPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentRef = useRef(0);
+  const currentTimeRef = useRef(0);
+  const seekRef = useRef<(sec: number) => void>(() => {});
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
 
