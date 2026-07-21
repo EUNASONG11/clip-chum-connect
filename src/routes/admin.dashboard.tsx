@@ -9,11 +9,14 @@ export const Route = createFileRoute("/admin/dashboard")({
 
 function Stat({ label, value, icon: Icon }: { label: string; value: string | number; icon: any }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className="h-4 w-4" /> {label}
+    <div className="rounded-2xl border border-border/60 bg-card p-5 transition hover:border-primary/40 hover:shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="text-xs font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="text-2xl font-bold tracking-tight">{value}</p>
     </div>
   );
 }
