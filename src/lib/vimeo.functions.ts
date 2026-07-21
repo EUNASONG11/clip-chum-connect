@@ -197,7 +197,7 @@ export const claimAdminIfNone = createServerFn({ method: "POST" })
     return { claimed: true };
   });
 
-// 6-1) 로그인 사용자가 학생 역할이 없으면 자동 부여
+// 6-1) 로그인 사용자가 아무 역할도 없으면 '승인 대기(pending)' 부여
 export const ensureStudentRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -209,32 +209,70 @@ export const ensureStudentRole = createServerFn({ method: "POST" })
     if ((count ?? 0) === 0) {
       await supabaseAdmin
         .from("user_roles")
-        .insert({ user_id: context.userId, role: "student" });
+        .insert({ user_id: context.userId, role: "pending" });
     }
     return { ok: true };
   });
 
-// 6-2) 사용자 목록 (관리자 전용)
+// 6-1b) 내 상태 확인
+export const getMyStatus = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId);
+    const roles = (data ?? []).map((r: any) => r.role as string);
+    return {
+      isAdmin: roles.includes("admin"),
+      isStudent: roles.includes("student"),
+      isPending: !roles.includes("admin") && !roles.includes("student"),
+    };
+  });
+
+// 6-2) 사용자 목록 (관리자 전용) — 수강반 수 포함
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+    const [{ data: users, error }, rolesRes, csRes] = await Promise.all([
+      supabaseAdmin.auth.admin.listUsers({ perPage: 200 }),
+      supabaseAdmin.from("user_roles").select("user_id, role"),
+      supabaseAdmin.from("class_students").select("user_id"),
+    ]);
     if (error) throw new Error(error.message);
-    const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
-    const map = new Map<string, string[]>();
-    (roles ?? []).forEach((r: any) => {
-      const list = map.get(r.user_id) ?? [];
+    const roleMap = new Map<string, string[]>();
+    (rolesRes.data ?? []).forEach((r: any) => {
+      const list = roleMap.get(r.user_id) ?? [];
       list.push(r.role);
-      map.set(r.user_id, list);
+      roleMap.set(r.user_id, list);
     });
-    return users.users.map((u) => ({
-      id: u.id,
-      email: u.email ?? "",
-      created_at: u.created_at,
-      roles: map.get(u.id) ?? [],
-    }));
+    const classCount = new Map<string, number>();
+    (csRes.data ?? []).forEach((r: any) => {
+      classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
+    });
+    return users.users.map((u) => {
+      const roles = roleMap.get(u.id) ?? [];
+      const isAdmin = roles.includes("admin");
+      const isStudent = roles.includes("student");
+      const isPending = !isAdmin && !isStudent;
+      return {
+        id: u.id,
+        email: u.email ?? "",
+        nickname:
+          (u.user_metadata as any)?.nickname ??
+          (u.email ?? "").split("@")[0] ??
+          "",
+        created_at: u.created_at,
+        roles,
+        isAdmin,
+        isStudent,
+        isPending,
+        class_count: classCount.get(u.id) ?? 0,
+      };
+    });
   });
 
 // 6-3) 관리자 권한 부여 (이메일로)
@@ -252,6 +290,7 @@ export const grantAdminByEmail = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: target.id, role: "admin" });
     if (insErr && !insErr.message.includes("duplicate")) throw new Error(insErr.message);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", target.id).eq("role", "pending");
     return { ok: true, userId: target.id };
   });
 
@@ -268,6 +307,46 @@ export const revokeAdmin = createServerFn({ method: "POST" })
       .delete()
       .eq("user_id", data.userId)
       .eq("role", "admin");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 6-5) 승인 대기 사용자를 학생/관리자로 승인
+export const approveUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        role: z.enum(["student", "admin"]).default("student"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", "pending");
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: data.userId, role: data.role });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 6-6) 사용자 삭제(가입 거절)
+export const rejectUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("자기 자신은 삭제할 수 없습니다.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
