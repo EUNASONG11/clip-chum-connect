@@ -196,7 +196,7 @@ export const updateVideo = createServerFn({ method: "POST" })
       if (data[k] !== undefined) patch[k] = data[k];
     }
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase.from("videos").update(patch).eq("id", data.id);
+    const { error } = await context.supabase.from("videos").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
