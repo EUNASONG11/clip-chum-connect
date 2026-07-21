@@ -42,6 +42,22 @@ type Row = {
   created_at: string;
 };
 
+const statusMap: Record<string, string> = {
+  ready: "재생 가능",
+  transcode_starting: "변환 시작",
+  transcoding: "변환 중",
+  transcode_error: "변환 오류",
+  uploading: "업로드 중",
+  uploading_error: "업로드 오류",
+  quota_exceeded: "할당량 초과",
+  pending: "대기 중",
+  available: "재생 가능",
+};
+
+function statusLabel(status: string) {
+  return statusMap[status] ?? status;
+}
+
 function AdminPage() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
@@ -365,7 +381,7 @@ function AdminPage() {
                         <span className="uppercase">{r.source}</span>
                         {" · "}상태:{" "}
                         <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
-                          {r.status}
+                          {statusLabel(r.status)}
                         </span>
                         {r.source === "vimeo" && r.vimeo_video_id ? ` · Vimeo ID: ${r.vimeo_video_id}` : ""}
                         {r.source === "youtube" && r.external_video_id ? ` · YT ID: ${r.external_video_id}` : ""}
