@@ -14,6 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          seconds: number
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          seconds?: number
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          seconds?: number
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookmarks_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_students: {
+        Row: {
+          class_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -35,8 +158,54 @@ export type Database = {
         }
         Relationships: []
       }
+      video_progress: {
+        Row: {
+          completed_at: string | null
+          current_seconds: number
+          duration: number | null
+          is_completed: boolean
+          max_seconds: number
+          updated_at: string
+          user_id: string
+          video_id: string
+          watched_ratio: number
+        }
+        Insert: {
+          completed_at?: string | null
+          current_seconds?: number
+          duration?: number | null
+          is_completed?: boolean
+          max_seconds?: number
+          updated_at?: string
+          user_id: string
+          video_id: string
+          watched_ratio?: number
+        }
+        Update: {
+          completed_at?: string | null
+          current_seconds?: number
+          duration?: number | null
+          is_completed?: boolean
+          max_seconds?: number
+          updated_at?: string
+          user_id?: string
+          video_id?: string
+          watched_ratio?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
+          class_id: string | null
+          completion_ratio: number
           created_at: string
           created_by: string
           description: string | null
@@ -44,7 +213,9 @@ export type Database = {
           external_url: string | null
           external_video_id: string | null
           id: string
+          is_published: boolean
           player_embed_url: string | null
+          sort_order: number
           source: string
           status: string
           thumbnail_url: string | null
@@ -54,6 +225,8 @@ export type Database = {
           vimeo_video_id: string | null
         }
         Insert: {
+          class_id?: string | null
+          completion_ratio?: number
           created_at?: string
           created_by: string
           description?: string | null
@@ -61,7 +234,9 @@ export type Database = {
           external_url?: string | null
           external_video_id?: string | null
           id?: string
+          is_published?: boolean
           player_embed_url?: string | null
+          sort_order?: number
           source?: string
           status?: string
           thumbnail_url?: string | null
@@ -71,6 +246,8 @@ export type Database = {
           vimeo_video_id?: string | null
         }
         Update: {
+          class_id?: string | null
+          completion_ratio?: number
           created_at?: string
           created_by?: string
           description?: string | null
@@ -78,7 +255,9 @@ export type Database = {
           external_url?: string | null
           external_video_id?: string | null
           id?: string
+          is_published?: boolean
           player_embed_url?: string | null
+          sort_order?: number
           source?: string
           status?: string
           thumbnail_url?: string | null
@@ -87,13 +266,25 @@ export type Database = {
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "videos_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_access_video: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

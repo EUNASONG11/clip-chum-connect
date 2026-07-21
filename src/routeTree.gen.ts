@@ -14,9 +14,13 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
+import { Route as ClassIdRouteImport } from './routes/class.$id'
 import { Route as AdminVideosRouteImport } from './routes/admin.videos'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUploadRouteImport } from './routes/admin.upload'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
+import { Route as AdminClassesRouteImport } from './routes/admin.classes'
+import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -43,6 +47,11 @@ const VideoIdRoute = VideoIdRouteImport.update({
   path: '/video/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ClassIdRoute = ClassIdRouteImport.update({
+  id: '/class/$id',
+  path: '/class/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminVideosRoute = AdminVideosRouteImport.update({
   id: '/videos',
   path: '/videos',
@@ -58,36 +67,63 @@ const AdminUploadRoute = AdminUploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClassesRoute = AdminClassesRouteImport.update({
+  id: '/classes',
+  path: '/classes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClassesIdRoute = AdminClassesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminClassesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/classes': typeof AdminClassesRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
+  '/class/$id': typeof ClassIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/classes/$id': typeof AdminClassesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/admin/classes': typeof AdminClassesRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
+  '/class/$id': typeof ClassIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/classes/$id': typeof AdminClassesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/admin/classes': typeof AdminClassesRouteWithChildren
+  '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
+  '/class/$id': typeof ClassIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/admin/classes/$id': typeof AdminClassesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,36 +131,49 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/admin/classes'
+    | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
+    | '/class/$id'
     | '/video/$id'
     | '/admin/'
+    | '/admin/classes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
+    | '/admin/classes'
+    | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
+    | '/class/$id'
     | '/video/$id'
     | '/admin'
+    | '/admin/classes/$id'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/login'
+    | '/admin/classes'
+    | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
+    | '/class/$id'
     | '/video/$id'
     | '/admin/'
+    | '/admin/classes/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
 }
 
@@ -165,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/class/$id': {
+      id: '/class/$id'
+      path: '/class/$id'
+      fullPath: '/class/$id'
+      preLoaderRoute: typeof ClassIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/videos': {
       id: '/admin/videos'
       path: '/videos'
@@ -186,10 +242,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUploadRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/classes': {
+      id: '/admin/classes'
+      path: '/classes'
+      fullPath: '/admin/classes'
+      preLoaderRoute: typeof AdminClassesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/classes/$id': {
+      id: '/admin/classes/$id'
+      path: '/$id'
+      fullPath: '/admin/classes/$id'
+      preLoaderRoute: typeof AdminClassesIdRouteImport
+      parentRoute: typeof AdminClassesRoute
+    }
   }
 }
 
+interface AdminClassesRouteChildren {
+  AdminClassesIdRoute: typeof AdminClassesIdRoute
+}
+
+const AdminClassesRouteChildren: AdminClassesRouteChildren = {
+  AdminClassesIdRoute: AdminClassesIdRoute,
+}
+
+const AdminClassesRouteWithChildren = AdminClassesRoute._addFileChildren(
+  AdminClassesRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminClassesRoute: typeof AdminClassesRouteWithChildren
+  AdminDashboardRoute: typeof AdminDashboardRoute
   AdminUploadRoute: typeof AdminUploadRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminVideosRoute: typeof AdminVideosRoute
@@ -197,6 +288,8 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminClassesRoute: AdminClassesRouteWithChildren,
+  AdminDashboardRoute: AdminDashboardRoute,
   AdminUploadRoute: AdminUploadRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminVideosRoute: AdminVideosRoute,
@@ -209,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
 }
 export const routeTree = rootRouteImport
