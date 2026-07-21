@@ -284,19 +284,7 @@ function VideoPage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  const el = containerRef.current;
-                  if (!el) return;
-                  const iframe = el.querySelector("iframe") as any;
-                  const target: any = iframe ?? el;
-                  const req =
-                    target.requestFullscreen ||
-                    target.webkitRequestFullscreen ||
-                    target.webkitEnterFullscreen ||
-                    target.mozRequestFullScreen ||
-                    target.msRequestFullscreen;
-                  try { req?.call(target); } catch {}
-                }}
+                onClick={() => fullscreenRef.current?.()}
                 className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur hover:bg-black/80 md:hidden"
                 aria-label="전체화면"
               >
