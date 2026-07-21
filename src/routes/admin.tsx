@@ -321,9 +321,11 @@ function AdminPage() {
                       <p className="mt-1 text-xs text-muted-foreground">{progress}%</p>
                     </div>
                   )}
-                  <Button type="submit" disabled={uploading}>
-                    {uploading ? "업로드 중..." : "업로드"}
-                  </Button>
+                  {file && (
+                    <Button type="submit" disabled={uploading}>
+                      {uploading ? "업로드 중..." : "업로드"}
+                    </Button>
+                  )}
                 </form>
               </TabsContent>
 
