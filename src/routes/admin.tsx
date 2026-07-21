@@ -66,7 +66,7 @@ function AdminLayout() {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
-        navigate({ to: "/auth" });
+        navigate({ to: "/login" });
         return;
       }
       try {
