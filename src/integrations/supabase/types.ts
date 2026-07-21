@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      class_students: {
+        Row: {
+          class_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -37,6 +90,8 @@ export type Database = {
       }
       videos: {
         Row: {
+          class_id: string | null
+          completion_ratio: number
           created_at: string
           created_by: string
           description: string | null
@@ -44,7 +99,9 @@ export type Database = {
           external_url: string | null
           external_video_id: string | null
           id: string
+          is_published: boolean
           player_embed_url: string | null
+          sort_order: number
           source: string
           status: string
           thumbnail_url: string | null
@@ -54,6 +111,8 @@ export type Database = {
           vimeo_video_id: string | null
         }
         Insert: {
+          class_id?: string | null
+          completion_ratio?: number
           created_at?: string
           created_by: string
           description?: string | null
@@ -61,7 +120,9 @@ export type Database = {
           external_url?: string | null
           external_video_id?: string | null
           id?: string
+          is_published?: boolean
           player_embed_url?: string | null
+          sort_order?: number
           source?: string
           status?: string
           thumbnail_url?: string | null
@@ -71,6 +132,8 @@ export type Database = {
           vimeo_video_id?: string | null
         }
         Update: {
+          class_id?: string | null
+          completion_ratio?: number
           created_at?: string
           created_by?: string
           description?: string | null
@@ -78,7 +141,9 @@ export type Database = {
           external_url?: string | null
           external_video_id?: string | null
           id?: string
+          is_published?: boolean
           player_embed_url?: string | null
+          sort_order?: number
           source?: string
           status?: string
           thumbnail_url?: string | null
@@ -87,7 +152,15 @@ export type Database = {
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "videos_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
