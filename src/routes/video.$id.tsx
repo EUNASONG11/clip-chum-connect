@@ -285,7 +285,7 @@ function VideoPage() {
               <button
                 type="button"
                 onClick={() => fullscreenRef.current?.()}
-                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur hover:bg-black/80 md:hidden"
+                className="absolute bottom-2 right-2 z-10 inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
                 aria-label="전체화면"
               >
                 <Maximize2 className="h-3.5 w-3.5" /> 전체화면
