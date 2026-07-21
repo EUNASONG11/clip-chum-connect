@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ShieldCheck, Upload as UploadIcon, Film, Users, GraduationCap } from "lucide-react";
+import { ShieldCheck, Upload as UploadIcon, Film, Users, GraduationCap, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
