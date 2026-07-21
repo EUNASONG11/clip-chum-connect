@@ -1,44 +1,29 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Play, Film } from "lucide-react";
+import { GraduationCap, Film } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
-
-type Video = {
-  id: string;
-  title: string;
-  description: string | null;
-  thumbnail_url: string | null;
-  duration: number | null;
-  created_at: string;
-};
+import { listClasses } from "@/lib/classes.functions";
+import { getMyRole } from "@/lib/vimeo.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "VimStream — 동영상 플랫폼" },
-      { name: "description", content: "Vimeo로 안전하게 호스팅되는 큐레이션 동영상 플랫폼." },
-      { property: "og:title", content: "VimStream — 동영상 플랫폼" },
-      { property: "og:description", content: "Vimeo로 안전하게 호스팅되는 큐레이션 동영상 플랫폼." },
+      { title: "이재식국어 — 강의 플랫폼" },
+      { name: "description", content: "이재식국어 학생 전용 강의 시청 플랫폼." },
+      { property: "og:title", content: "이재식국어 — 강의 플랫폼" },
+      { property: "og:description", content: "이재식국어 학생 전용 강의 시청 플랫폼." },
       { property: "og:type", content: "website" },
     ],
   }),
   component: Home,
 });
 
-function formatDuration(sec: number | null) {
-  if (!sec) return "";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 function Home() {
   const navigate = useNavigate();
-  const [videos, setVideos] = useState<Video[] | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -47,17 +32,24 @@ function Home() {
         navigate({ to: "/login", replace: true });
         return;
       }
-      setCheckingSession(false);
-      const { data: rows } = await supabase
-        .from("videos")
-        .select("id,title,description,thumbnail_url,duration,created_at")
-        .eq("status", "ready")
-        .order("created_at", { ascending: false });
-      setVideos(rows ?? []);
+      try {
+        const me = await getMyRole();
+        if (me.isAdmin) {
+          navigate({ to: "/admin", replace: true });
+          return;
+        }
+      } catch {}
+      setReady(true);
     })();
   }, [navigate]);
 
-  if (checkingSession) {
+  const { data: classes = [], isLoading } = useQuery({
+    queryKey: ["my", "classes"],
+    queryFn: () => listClasses(),
+    enabled: ready,
+  });
+
+  if (!ready) {
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
@@ -66,71 +58,52 @@ function Home() {
     );
   }
 
-
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="mx-auto max-w-6xl px-4 py-10">
         <section className="mb-10">
-          <h1 className="text-4xl font-bold tracking-tight">최신 영상</h1>
+          <h1 className="text-4xl font-bold tracking-tight">내 수강반</h1>
           <p className="mt-2 text-muted-foreground">
-            엄선된 콘텐츠를 Vimeo 플레이어로 감상하세요.
+            수강 중인 반을 선택하여 강의를 시청하세요.
           </p>
         </section>
 
-        {videos === null && <p className="text-muted-foreground">불러오는 중...</p>}
-        {videos && videos.length === 0 && (
+        {isLoading && <p className="text-muted-foreground">불러오는 중...</p>}
+        {!isLoading && classes.length === 0 && (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-              <Film className="h-10 w-10 text-muted-foreground" />
-              <p className="text-lg font-medium">아직 등록된 영상이 없습니다.</p>
+              <GraduationCap className="h-10 w-10 text-muted-foreground" />
+              <p className="text-lg font-medium">아직 배정된 수강반이 없습니다.</p>
               <p className="text-sm text-muted-foreground">
-                관리자로 로그인 후 <code>/admin</code> 에서 영상을 업로드하세요.
+                관리자에게 수강반 배정을 요청하세요.
               </p>
-              <Button asChild variant="outline">
-                <Link to="/admin">관리자 페이지로</Link>
-              </Button>
             </CardContent>
           </Card>
         )}
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {videos?.map((v) => (
+          {classes.map((c: any) => (
             <Link
-              key={v.id}
-              to="/video/$id"
-              params={{ id: v.id }}
-              className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg"
+              key={c.id}
+              to="/class/$id"
+              params={{ id: c.id }}
+              className="group overflow-hidden rounded-xl border bg-card p-6 transition hover:shadow-lg"
             >
-              <div className="relative aspect-video overflow-hidden bg-muted">
-                {v.thumbnail_url ? (
-                  <img
-                    src={v.thumbnail_url}
-                    alt={v.title}
-                    className="h-full w-full object-cover transition group-hover:scale-105"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Film className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/30">
-                  <Play className="h-12 w-12 text-white opacity-0 transition group-hover:opacity-100" />
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-3">
+                  <Film className="h-6 w-6 text-primary" />
                 </div>
-                {v.duration ? (
-                  <span className="absolute bottom-2 right-2 rounded bg-black/70 px-2 py-0.5 text-xs text-white">
-                    {formatDuration(v.duration)}
-                  </span>
-                ) : null}
-              </div>
-              <div className="p-4">
-                <h3 className="line-clamp-2 font-semibold">{v.title}</h3>
-                {v.description && (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {v.description}
-                  </p>
-                )}
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold group-hover:text-primary">
+                    {c.name}
+                  </h3>
+                  {c.description && (
+                    <p className="line-clamp-1 text-sm text-muted-foreground">
+                      {c.description}
+                    </p>
+                  )}
+                </div>
               </div>
             </Link>
           ))}
