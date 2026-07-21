@@ -74,6 +74,7 @@ function VideoPage() {
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
   const seekRef = useRef<(sec: number) => void>(() => {});
+  const fullscreenRef = useRef<() => void>(() => {});
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -184,6 +185,13 @@ function VideoPage() {
       player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => { player.setCurrentTime(sec).catch(() => {}); player.play().catch(() => {}); };
+      fullscreenRef.current = () => {
+        (player as any).requestFullscreen?.().catch(() => {
+          const iframe = containerRef.current?.querySelector("iframe") as any;
+          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
+          try { req?.call(iframe); } catch {}
+        });
+      };
       cleanup = () => {
         player.destroy().catch(() => {});
       };
@@ -210,6 +218,11 @@ function VideoPage() {
           },
         });
         seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
+        fullscreenRef.current = () => {
+          const iframe = iframeRef.current as any;
+          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
+          try { req?.call(iframe); } catch {}
+        };
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
@@ -271,19 +284,7 @@ function VideoPage() {
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  const el = containerRef.current;
-                  if (!el) return;
-                  const iframe = el.querySelector("iframe") as any;
-                  const target: any = iframe ?? el;
-                  const req =
-                    target.requestFullscreen ||
-                    target.webkitRequestFullscreen ||
-                    target.webkitEnterFullscreen ||
-                    target.mozRequestFullScreen ||
-                    target.msRequestFullscreen;
-                  try { req?.call(target); } catch {}
-                }}
+                onClick={() => fullscreenRef.current?.()}
                 className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur hover:bg-black/80 md:hidden"
                 aria-label="전체화면"
               >
