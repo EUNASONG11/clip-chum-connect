@@ -54,10 +54,13 @@ function VideoPage() {
   }
   if (video === null) throw notFound();
 
+  const vimeoSrc = video.player_embed_url
+    ? `${video.player_embed_url}${video.player_embed_url.includes("?") ? "&" : "?"}title=0&byline=0&portrait=0`
+    : `https://player.vimeo.com/video/${video.vimeo_video_id}?title=0&byline=0&portrait=0`;
   const src =
     video.source === "youtube"
       ? `https://www.youtube.com/embed/${video.external_video_id}`
-      : `https://player.vimeo.com/video/${video.vimeo_video_id}?title=0&byline=0&portrait=0`;
+      : vimeoSrc;
 
   return (
     <div className="min-h-screen bg-background">
