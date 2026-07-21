@@ -74,6 +74,7 @@ function VideoPage() {
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
   const seekRef = useRef<(sec: number) => void>(() => {});
+  const fullscreenRef = useRef<() => void>(() => {});
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
