@@ -103,13 +103,15 @@ function VideoPage() {
 
   // 저장된 진도 상태 초기화
   useEffect(() => {
+    if (!isAuthed) return;
     getMyProgress({ data: { videoId: id } }).then((p) => {
       if (p) {
         setRatio(Number(p.watched_ratio));
         setCompleted(p.is_completed);
       }
     }).catch(() => {});
-  }, [id]);
+  }, [id, isAuthed]);
+
 
   // 플레이어 초기화 + 이벤트 바인딩
   useEffect(() => {
