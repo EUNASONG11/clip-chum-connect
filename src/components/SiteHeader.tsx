@@ -56,8 +56,12 @@ export function SiteHeader() {
                 size="sm"
                 variant="outline"
                 onClick={async () => {
+                  await queryClient.cancelQueries();
+                  queryClient.clear();
                   await supabase.auth.signOut();
+                  navigate({ to: "/login", replace: true });
                 }}
+
               >
                 <LogOut className="mr-1 h-4 w-4" /> 로그아웃
               </Button>
