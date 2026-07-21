@@ -66,6 +66,29 @@ function getVimeoEmbedUrl(video: Video) {
   return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&responsive=1`;
 }
 
+async function requestElementFullscreen(element: Element | null) {
+  if (!element) return false;
+  const target = element as Element & {
+    webkitRequestFullscreen?: () => Promise<void> | void;
+    mozRequestFullScreen?: () => Promise<void> | void;
+    msRequestFullscreen?: () => Promise<void> | void;
+  };
+  const request =
+    target.requestFullscreen ??
+    target.webkitRequestFullscreen ??
+    target.mozRequestFullScreen ??
+    target.msRequestFullscreen;
+
+  if (!request) return false;
+
+  try {
+    await request.call(target);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function VideoPage() {
   const { id } = Route.useParams();
   const [video, setVideo] = useState<Video | null | undefined>(undefined);
@@ -78,6 +101,21 @@ function VideoPage() {
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!isPlayerExpanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsPlayerExpanded(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isPlayerExpanded]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
@@ -186,11 +224,20 @@ function VideoPage() {
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => { player.setCurrentTime(sec).catch(() => {}); player.play().catch(() => {}); };
       fullscreenRef.current = () => {
-        (player as any).requestFullscreen?.().catch(() => {
-          const iframe = containerRef.current?.querySelector("iframe") as any;
-          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
-          try { req?.call(iframe); } catch {}
-        });
+        void (async () => {
+          try {
+            if ((player as any).requestFullscreen) {
+              await (player as any).requestFullscreen();
+              return;
+            }
+          } catch {}
+
+          const iframe = containerRef.current?.querySelector("iframe") ?? null;
+          const opened =
+            (await requestElementFullscreen(iframe)) ||
+            (await requestElementFullscreen(containerRef.current));
+          if (!opened) setIsPlayerExpanded(true);
+        })();
       };
       cleanup = () => {
         player.destroy().catch(() => {});
@@ -219,9 +266,12 @@ function VideoPage() {
         });
         seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
         fullscreenRef.current = () => {
-          const iframe = iframeRef.current as any;
-          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
-          try { req?.call(iframe); } catch {}
+          void (async () => {
+            const opened =
+              (await requestElementFullscreen(iframeRef.current)) ||
+              (await requestElementFullscreen(containerRef.current));
+            if (!opened) setIsPlayerExpanded(true);
+          })();
         };
         const iv = setInterval(() => {
           try {
@@ -269,8 +319,14 @@ function VideoPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
-            <div className="relative overflow-hidden rounded-xl border bg-black">
-              <div ref={containerRef} className="relative aspect-video">
+            <div
+              className={
+                isPlayerExpanded
+                  ? "fixed inset-0 z-[100] flex items-center justify-center bg-black"
+                  : "relative overflow-hidden rounded-xl border bg-black"
+              }
+            >
+              <div ref={containerRef} className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}>
                 {video.source === "youtube" && (
                   <iframe
                     ref={iframeRef}
@@ -284,11 +340,14 @@ function VideoPage() {
               </div>
               <button
                 type="button"
-                onClick={() => fullscreenRef.current?.()}
-                className="absolute bottom-2 right-2 z-10 inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
-                aria-label="전체화면"
+                onClick={() => {
+                  if (isPlayerExpanded) setIsPlayerExpanded(false);
+                  else setIsPlayerExpanded(true);
+                }}
+                className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
+                aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
               >
-                <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                <Maximize2 className="h-3.5 w-3.5" /> {isPlayerExpanded ? "닫기" : "전체화면"}
               </button>
             </div>
 
