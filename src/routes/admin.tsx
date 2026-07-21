@@ -25,6 +25,7 @@ export const Route = createFileRoute("/admin")({
 });
 
 const navItems = [
+  { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
   { title: "영상 업로드", url: "/admin/upload", icon: UploadIcon },
   { title: "등록된 영상", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
