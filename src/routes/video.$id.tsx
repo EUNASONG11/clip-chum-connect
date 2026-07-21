@@ -257,40 +257,50 @@ function VideoPage() {
             {video.description && (
               <p className="mt-3 whitespace-pre-wrap text-muted-foreground">{video.description}</p>
             )}
+
+            <CommentsSection videoId={id} />
           </div>
 
-          <aside className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">최근 본 영상</h2>
-            {recents.length === 0 && (
-              <p className="text-xs text-muted-foreground">아직 시청 기록이 없습니다.</p>
-            )}
-            <ul className="space-y-3">
-              {recents.map((r: any) => (
-                <li key={r.video_id}>
-                  <Link
-                    to="/video/$id"
-                    params={{ id: r.video_id }}
-                    className="group flex gap-3 rounded-lg border p-2 transition hover:bg-muted"
-                  >
-                    <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
-                      {r.thumbnail_url && (
-                        <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2 text-sm font-medium group-hover:text-primary">
-                        {r.title}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {Math.round(r.watched_ratio * 100)}%
-                        {r.duration ? ` · ${formatDuration(r.duration)}` : ""}
-                        {r.is_completed ? " · 완료" : ""}
-                      </p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          <aside className="space-y-4">
+            <BookmarksPanel
+              videoId={id}
+              getCurrentTime={() => currentTimeRef.current}
+              onSeek={(sec) => seekRef.current?.(sec)}
+            />
+
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground">최근 본 영상</h2>
+              {recents.length === 0 && (
+                <p className="text-xs text-muted-foreground">아직 시청 기록이 없습니다.</p>
+              )}
+              <ul className="space-y-3">
+                {recents.map((r: any) => (
+                  <li key={r.video_id}>
+                    <Link
+                      to="/video/$id"
+                      params={{ id: r.video_id }}
+                      className="group flex gap-3 rounded-lg border p-2 transition hover:bg-muted"
+                    >
+                      <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
+                        {r.thumbnail_url && (
+                          <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-sm font-medium group-hover:text-primary">
+                          {r.title}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {Math.round(r.watched_ratio * 100)}%
+                          {r.duration ? ` · ${formatDuration(r.duration)}` : ""}
+                          {r.is_completed ? " · 완료" : ""}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </aside>
         </div>
       </main>
