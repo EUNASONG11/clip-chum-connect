@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { getMyRole } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
-import { Video, LogOut, Upload } from "lucide-react";
+import { Video, LogOut } from "lucide-react";
 
 
 export function SiteHeader() {
