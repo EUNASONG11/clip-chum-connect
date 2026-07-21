@@ -35,6 +35,10 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
+  const { data: studentStats = [] } = useQuery({
+    queryKey: ["admin", "class", id, "student-stats"],
+    queryFn: () => getClassStudentStats({ data: { classId: id } }),
+  });
 
   const [email, setEmail] = useState("");
   const [assigning, setAssigning] = useState(false);
