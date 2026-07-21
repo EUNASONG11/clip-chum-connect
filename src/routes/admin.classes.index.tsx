@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { Trash2, Users, Plus } from "lucide-react";
 import { listClasses, createClass, deleteClass } from "@/lib/classes.functions";
 
-export const Route = createFileRoute("/admin/classes")({
+export const Route = createFileRoute("/admin/classes/")({
   component: ClassesPage,
 });
 
