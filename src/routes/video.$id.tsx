@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -256,12 +256,12 @@ function VideoPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
-            <div className="overflow-hidden rounded-xl border bg-black">
+            <div className="relative overflow-hidden rounded-xl border bg-black">
               <div ref={containerRef} className="relative aspect-video">
                 {video.source === "youtube" && (
                   <iframe
                     ref={iframeRef}
-                    src={`https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
+                    src={`https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
                     allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                     allowFullScreen
                     className="absolute inset-0 h-full w-full"
@@ -269,6 +269,26 @@ function VideoPage() {
                   />
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const el = containerRef.current;
+                  if (!el) return;
+                  const iframe = el.querySelector("iframe") as any;
+                  const target: any = iframe ?? el;
+                  const req =
+                    target.requestFullscreen ||
+                    target.webkitRequestFullscreen ||
+                    target.webkitEnterFullscreen ||
+                    target.mozRequestFullScreen ||
+                    target.msRequestFullscreen;
+                  try { req?.call(target); } catch {}
+                }}
+                className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-md bg-black/60 px-2 py-1 text-xs text-white backdrop-blur hover:bg-black/80 md:hidden"
+                aria-label="전체화면"
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+              </button>
             </div>
 
             <div className="mt-4 space-y-2">
