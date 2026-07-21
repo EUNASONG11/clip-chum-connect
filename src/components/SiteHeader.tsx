@@ -1,13 +1,18 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { getMyRole } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
 import { Video, LogOut, Upload } from "lucide-react";
 
+
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
 
   useEffect(() => {
     const sync = async () => {
@@ -51,8 +56,12 @@ export function SiteHeader() {
                 size="sm"
                 variant="outline"
                 onClick={async () => {
+                  await queryClient.cancelQueries();
+                  queryClient.clear();
                   await supabase.auth.signOut();
+                  navigate({ to: "/login", replace: true });
                 }}
+
               >
                 <LogOut className="mr-1 h-4 w-4" /> 로그아웃
               </Button>
