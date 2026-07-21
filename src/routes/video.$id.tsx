@@ -232,7 +232,7 @@ function VideoPage() {
             }
           } catch {}
 
-          const iframe = containerRef.current?.querySelector("iframe");
+          const iframe = containerRef.current?.querySelector("iframe") ?? null;
           const opened =
             (await requestElementFullscreen(iframe)) ||
             (await requestElementFullscreen(containerRef.current));
