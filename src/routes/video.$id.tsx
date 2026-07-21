@@ -76,11 +76,20 @@ function VideoPage() {
   const seekRef = useRef<(sec: number) => void>(() => {});
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setIsAuthed(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setIsAuthed(!!s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const { data: recents = [] } = useQuery({
     queryKey: ["recent", "watched"],
     queryFn: () => listRecentlyWatched({ data: { limit: 5 } }),
+    enabled: isAuthed,
   });
+
 
   // 영상 정보 로드
   useEffect(() => {
