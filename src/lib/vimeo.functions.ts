@@ -77,6 +77,9 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         uri: z.string(),
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional().nullable(),
+        class_id: z.string().uuid().nullable().optional(),
+        is_published: z.boolean().optional(),
+        sort_order: z.number().int().optional(),
       })
       .parse(input),
   )
@@ -101,12 +104,16 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         duration: v?.duration ?? null,
         status,
         created_by: context.userId,
+        class_id: data.class_id ?? null,
+        is_published: data.is_published ?? false,
+        sort_order: data.sort_order ?? 0,
       })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
     return row;
   });
+
 
 // 3) Vimeo 상태 재조회 & 갱신
 export const refreshVideoStatus = createServerFn({ method: "POST" })
@@ -290,6 +297,9 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         url: z.string().url(),
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional().nullable(),
+        class_id: z.string().uuid().nullable().optional(),
+        is_published: z.boolean().optional(),
+        sort_order: z.number().int().optional(),
       })
       .parse(input),
   )
@@ -310,9 +320,13 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         thumbnail_url: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`,
         status: "ready",
         created_by: context.userId,
+        class_id: data.class_id ?? null,
+        is_published: data.is_published ?? false,
+        sort_order: data.sort_order ?? 0,
       })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
     return row;
   });
+
