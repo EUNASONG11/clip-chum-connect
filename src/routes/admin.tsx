@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ShieldCheck, Upload as UploadIcon, Film, Users } from "lucide-react";
+import { ShieldCheck, Upload as UploadIcon, Film, Users, GraduationCap } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/admin")({
 const navItems = [
   { title: "영상 업로드", url: "/admin/upload", icon: UploadIcon },
   { title: "등록된 영상", url: "/admin/videos", icon: Film },
+  { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
   { title: "사용자 관리", url: "/admin/users", icon: Users },
 ];
 
