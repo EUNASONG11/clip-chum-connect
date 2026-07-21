@@ -171,21 +171,22 @@ function VideoPage() {
               } catch {}
             },
             onStateChange: (e: any) => {
-              // 0=ended,1=playing,2=paused
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
+              currentTimeRef.current = t;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
             },
           },
         });
-        // playing 중 5초 간격 polling (YT는 timeupdate 이벤트가 없음)
+        seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
             if (state === 1) {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
+              currentTimeRef.current = t;
               send(t, d);
             }
           } catch {}
