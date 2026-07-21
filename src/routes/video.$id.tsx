@@ -185,6 +185,13 @@ function VideoPage() {
       player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => { player.setCurrentTime(sec).catch(() => {}); player.play().catch(() => {}); };
+      fullscreenRef.current = () => {
+        (player as any).requestFullscreen?.().catch(() => {
+          const iframe = containerRef.current?.querySelector("iframe") as any;
+          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
+          try { req?.call(iframe); } catch {}
+        });
+      };
       cleanup = () => {
         player.destroy().catch(() => {});
       };
@@ -211,6 +218,11 @@ function VideoPage() {
           },
         });
         seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
+        fullscreenRef.current = () => {
+          const iframe = iframeRef.current as any;
+          const req = iframe?.requestFullscreen || iframe?.webkitRequestFullscreen || iframe?.webkitEnterFullscreen;
+          try { req?.call(iframe); } catch {}
+        };
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
