@@ -59,7 +59,7 @@ export function SiteHeader() {
             </>
           ) : (
             <Button asChild size="sm">
-              <Link to="/auth">로그인</Link>
+              <Link to="/login">로그인</Link>
             </Button>
           )}
         </nav>
