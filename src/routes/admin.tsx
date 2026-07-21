@@ -117,23 +117,21 @@ function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
-      <SidebarProvider>
-        <div className="flex w-full">
-          <AdminSidebar />
-          <div className="flex-1 flex flex-col">
-            <div className="h-10 flex items-center border-b px-2">
-              <SidebarTrigger />
-            </div>
-            <main className="flex-1 p-6">
-              <div className="mx-auto max-w-4xl">
-                <Outlet />
-              </div>
-            </main>
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full bg-background">
+        <AdminSidebar />
+        <div className="flex flex-1 flex-col min-w-0">
+          <SiteHeader />
+          <div className="h-10 flex items-center border-b px-2">
+            <SidebarTrigger />
           </div>
+          <main className="flex-1 p-6">
+            <div className="mx-auto max-w-4xl">
+              <Outlet />
+            </div>
+          </main>
         </div>
-      </SidebarProvider>
-    </div>
+      </div>
+    </SidebarProvider>
   );
 }
