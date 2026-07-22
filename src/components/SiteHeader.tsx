@@ -9,6 +9,7 @@ import { Video, LogOut } from "lucide-react";
 
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -20,13 +21,16 @@ export function SiteHeader() {
       setEmail(data.user?.email ?? null);
       if (data.user) {
         try {
-          const r = await getMyRole();
+          const [r, n] = await Promise.all([getMyRole(), getMyDisplayName()]);
           setIsAdmin(r.isAdmin);
+          setDisplayName(n.name);
         } catch {
           setIsAdmin(false);
+          setDisplayName(null);
         }
       } else {
         setIsAdmin(false);
+        setDisplayName(null);
       }
     };
     sync();
