@@ -204,7 +204,13 @@ function UsersPage() {
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            setTab(v as TabKey);
+            setSelectedIds(new Set());
+          }}
+        >
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="admin" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" /> 관리자
