@@ -257,10 +257,6 @@ function UsersPage() {
           </form>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-border/60">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
-              <tr>
         {tab === "pending" && filtered.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm">
             <span className="text-amber-900">
