@@ -354,13 +354,13 @@ export const listUsers = createServerFn({ method: "GET" })
           isStudent,
           isPending,
           class_count: classCount.get(u.id) ?? 0,
-          enrollment_status: ext?.enrollment_status ?? null,
         };
       })
       .filter((u: any) => {
+        const status = extMap.get(u.id)?.enrollment_status ?? null;
         // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
-        if (!u.enrollment_status) return !u.isStudent && !u.isPending;
-        if (u.enrollment_status === "휴원") return !u.isStudent && !u.isPending;
+        if (!status) return !u.isStudent && !u.isPending;
+        if (status === "휴원") return !u.isStudent && !u.isPending;
         return true;
       });
   });
