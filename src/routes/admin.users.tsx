@@ -128,7 +128,7 @@ function UsersPage() {
   const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
-  const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
+  const refetch = () => qc.refetchQueries({ queryKey: ["admin", "users"] });
 
   const grantAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
