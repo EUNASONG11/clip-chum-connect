@@ -24,7 +24,9 @@ import {
   revokeAdmin,
   approveUser,
   rejectUser,
+  bulkApproveUsers,
 } from "@/lib/vimeo.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type UserRow = {
   id: string;
