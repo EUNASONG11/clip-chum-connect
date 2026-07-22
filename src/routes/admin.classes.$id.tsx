@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3 } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3, Search } from "lucide-react";
 import {
   getClass,
   listClassStudents,
-  assignStudentByEmail,
+  searchStudentsByNameOrPhone,
+  assignStudent,
   unassignStudent,
   listClassVideos,
 } from "@/lib/classes.functions";
@@ -40,22 +41,35 @@ function ClassDetailPage() {
     queryFn: () => getClassStudentStats({ data: { classId: id } }),
   });
 
-  const [email, setEmail] = useState("");
-  const [assigning, setAssigning] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<
+    { user_id: string; name: string; phone: string; school: string; grade: string }[]
+  >([]);
+  const [searching, setSearching] = useState(false);
 
-  const assign = async (e: React.FormEvent) => {
+  const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setAssigning(true);
+    if (!query.trim()) return;
+    setSearching(true);
     try {
-      await assignStudentByEmail({ data: { classId: id, email: email.trim() } });
-      setEmail("");
-      qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
-      toast.success("배정되었습니다.");
+      const rows = await searchStudentsByNameOrPhone({ data: { query: query.trim() } });
+      setResults(rows);
+      if (rows.length === 0) toast.info("일치하는 학생이 없습니다.");
     } catch (err: any) {
       toast.error(err.message);
     } finally {
-      setAssigning(false);
+      setSearching(false);
+    }
+  };
+
+  const assign = async (userId: string) => {
+    try {
+      await assignStudent({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      setResults((r) => r.filter((s) => s.user_id !== userId));
+      toast.success("배정되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -67,6 +81,7 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+
 
   return (
     <div className="space-y-6">
