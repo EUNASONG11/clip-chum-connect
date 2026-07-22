@@ -467,7 +467,9 @@ function UsersPage() {
                             >
                               <UserMinus className="h-3.5 w-3.5" /> 관리자 해제
                             </Button>
+                          )}
                           {!u.isPending && (
+
                             <Button
                               size="sm"
                               variant="outline"
