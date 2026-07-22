@@ -287,7 +287,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
-    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null }[] = [];
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null }[] = [];
     {
       const size = 500;
       let from = 0;
@@ -297,7 +297,7 @@ export const listUsers = createServerFn({ method: "GET" })
           async () =>
             await supabaseAdmin
               .from("external_students")
-              .select("auth_user_id, name, phone")
+              .select("auth_user_id, name, phone, enrollment_status")
               .not("auth_user_id", "is", null)
               .range(from, from + size - 1),
           `external_students range ${from}`,
@@ -320,9 +320,9 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
-    const extMap = new Map<string, { name: string | null; phone: string | null }>();
+    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null }>();
     extRows.forEach((r) => {
-      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
     });
 
     const formatPhone = (p: string | null | undefined) => {
@@ -332,29 +332,37 @@ export const listUsers = createServerFn({ method: "GET" })
       if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
       return p;
     };
-    return allAuthUsers.map((u: any) => {
-      const roles = roleMap.get(u.id) ?? [];
-      const isAdmin = roles.includes("admin");
-      const isStudent = roles.includes("student");
-      const isPending = !isAdmin && !isStudent;
-      const ext = extMap.get(u.id);
-      return {
-        id: u.id,
-        email: u.email ?? "",
-        nickname:
-          ext?.name ??
-          (u.user_metadata as any)?.nickname ??
-          (u.email ?? "").split("@")[0] ??
-          "",
-        phone: formatPhone(ext?.phone),
-        created_at: u.created_at,
-        roles,
-        isAdmin,
-        isStudent,
-        isPending,
-        class_count: classCount.get(u.id) ?? 0,
-      };
-    });
+    return allAuthUsers
+      .map((u: any) => {
+        const roles = roleMap.get(u.id) ?? [];
+        const isAdmin = roles.includes("admin");
+        const isStudent = roles.includes("student");
+        const isPending = !isAdmin && !isStudent;
+        const ext = extMap.get(u.id);
+        return {
+          id: u.id,
+          email: u.email ?? "",
+          nickname:
+            ext?.name ??
+            (u.user_metadata as any)?.nickname ??
+            (u.email ?? "").split("@")[0] ??
+            "",
+          phone: formatPhone(ext?.phone),
+          created_at: u.created_at,
+          roles,
+          isAdmin,
+          isStudent,
+          isPending,
+          class_count: classCount.get(u.id) ?? 0,
+        };
+      })
+      .filter((u: any) => {
+        const status = extMap.get(u.id)?.enrollment_status ?? null;
+        // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
+        if (!status) return !u.isStudent && !u.isPending;
+        if (status === "휴원") return !u.isStudent && !u.isPending;
+        return true;
+      });
   });
 
 
