@@ -320,9 +320,9 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
-    const extMap = new Map<string, { name: string | null; phone: string | null }>();
+    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null }>();
     extRows.forEach((r) => {
-      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
     });
 
     const formatPhone = (p: string | null | undefined) => {
@@ -332,29 +332,37 @@ export const listUsers = createServerFn({ method: "GET" })
       if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
       return p;
     };
-    return allAuthUsers.map((u: any) => {
-      const roles = roleMap.get(u.id) ?? [];
-      const isAdmin = roles.includes("admin");
-      const isStudent = roles.includes("student");
-      const isPending = !isAdmin && !isStudent;
-      const ext = extMap.get(u.id);
-      return {
-        id: u.id,
-        email: u.email ?? "",
-        nickname:
-          ext?.name ??
-          (u.user_metadata as any)?.nickname ??
-          (u.email ?? "").split("@")[0] ??
-          "",
-        phone: formatPhone(ext?.phone),
-        created_at: u.created_at,
-        roles,
-        isAdmin,
-        isStudent,
-        isPending,
-        class_count: classCount.get(u.id) ?? 0,
-      };
-    });
+    return allAuthUsers
+      .map((u: any) => {
+        const roles = roleMap.get(u.id) ?? [];
+        const isAdmin = roles.includes("admin");
+        const isStudent = roles.includes("student");
+        const isPending = !isAdmin && !isStudent;
+        const ext = extMap.get(u.id);
+        return {
+          id: u.id,
+          email: u.email ?? "",
+          nickname:
+            ext?.name ??
+            (u.user_metadata as any)?.nickname ??
+            (u.email ?? "").split("@")[0] ??
+            "",
+          phone: formatPhone(ext?.phone),
+          created_at: u.created_at,
+          roles,
+          isAdmin,
+          isStudent,
+          isPending,
+          class_count: classCount.get(u.id) ?? 0,
+          enrollment_status: ext?.enrollment_status ?? null,
+        };
+      })
+      .filter((u: any) => {
+        // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
+        if (!u.enrollment_status) return !u.isStudent && !u.isPending;
+        if (u.enrollment_status === "휴원") return !u.isStudent && !u.isPending;
+        return true;
+      });
   });
 
 
