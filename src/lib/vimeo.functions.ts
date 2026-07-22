@@ -250,10 +250,14 @@ export const listUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: users, error }, rolesRes, csRes] = await Promise.all([
+    const [{ data: users, error }, rolesRes, csRes, extRes] = await Promise.all([
       supabaseAdmin.auth.admin.listUsers({ perPage: 200 }),
       supabaseAdmin.from("user_roles").select("user_id, role"),
       supabaseAdmin.from("class_students").select("user_id"),
+      supabaseAdmin
+        .from("external_students")
+        .select("auth_user_id, name, phone")
+        .not("auth_user_id", "is", null),
     ]);
     if (error) throw new Error(error.message);
     const roleMap = new Map<string, string[]>();
@@ -266,18 +270,32 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
+    const extMap = new Map<string, { name: string | null; phone: string | null }>();
+    (extRes.data ?? []).forEach((r: any) => {
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+    });
+    const formatPhone = (p: string | null | undefined) => {
+      if (!p) return "";
+      const d = p.replace(/[^0-9]/g, "");
+      if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+      if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+      return p;
+    };
     return users.users.map((u) => {
       const roles = roleMap.get(u.id) ?? [];
       const isAdmin = roles.includes("admin");
       const isStudent = roles.includes("student");
       const isPending = !isAdmin && !isStudent;
+      const ext = extMap.get(u.id);
       return {
         id: u.id,
         email: u.email ?? "",
         nickname:
+          ext?.name ??
           (u.user_metadata as any)?.nickname ??
           (u.email ?? "").split("@")[0] ??
           "",
+        phone: formatPhone(ext?.phone),
         created_at: u.created_at,
         roles,
         isAdmin,
@@ -287,6 +305,7 @@ export const listUsers = createServerFn({ method: "GET" })
       };
     });
   });
+
 
 // 6-3) 관리자 권한 부여 (이메일로)
 export const grantAdminByEmail = createServerFn({ method: "POST" })

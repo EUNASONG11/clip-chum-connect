@@ -30,6 +30,7 @@ type UserRow = {
   id: string;
   email: string;
   nickname: string;
+  phone: string;
   created_at: string;
   roles: string[];
   isAdmin: boolean;
@@ -37,6 +38,7 @@ type UserRow = {
   isPending: boolean;
   class_count: number;
 };
+
 
 const usersQueryOptions = queryOptions({
   queryKey: ["admin", "users"],
@@ -99,9 +101,11 @@ function UsersPage() {
     return rows.filter(
       (u) =>
         u.email.toLowerCase().includes(q) ||
-        u.nickname.toLowerCase().includes(q),
+        u.nickname.toLowerCase().includes(q) ||
+        (u.phone ?? "").toLowerCase().includes(q),
     );
   }, [buckets, tab, search]);
+
 
   const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
 
@@ -225,7 +229,7 @@ function UsersPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="닉네임, 이메일 검색"
+              placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
             />
           </div>
@@ -247,9 +251,10 @@ function UsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
-                <th className="px-4 py-3">닉네임</th>
-                <th className="px-4 py-3">이메일</th>
+                <th className="px-4 py-3">이름</th>
+                <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
+
                 <th className="px-4 py-3">수강 중인 반</th>
                 <th className="px-4 py-3">가입일</th>
                 <th className="px-4 py-3 text-right">작업</th>
@@ -275,7 +280,7 @@ function UsersPage() {
                           <span className="font-medium">{u.nickname || "-"}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{u.email || "-"}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{u.phone || u.email || "-"}</td>
                       <td className="px-4 py-3">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
