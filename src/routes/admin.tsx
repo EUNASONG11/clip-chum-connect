@@ -40,7 +40,7 @@ function AdminSidebar() {
   const isExpanded = state === "expanded";
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className={`flex h-12 items-center border-b border-sidebar-border ${isExpanded ? "justify-end pr-3" : "justify-center"}`}>
+      <SidebarHeader className={`flex h-12 !flex-row items-center border-b border-sidebar-border ${isExpanded ? "justify-end pr-3" : "justify-center"}`}>
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
