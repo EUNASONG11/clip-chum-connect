@@ -229,7 +229,7 @@ function UsersPage() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="닉네임, 이메일 검색"
+              placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
             />
           </div>
