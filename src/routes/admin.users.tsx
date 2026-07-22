@@ -25,7 +25,9 @@ import {
   approveUser,
   rejectUser,
   bulkApproveUsers,
+  revertToPending,
 } from "@/lib/vimeo.functions";
+
 import { Checkbox } from "@/components/ui/checkbox";
 
 type UserRow = {
