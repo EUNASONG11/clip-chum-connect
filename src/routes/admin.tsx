@@ -11,6 +11,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -36,6 +37,9 @@ function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   return (
     <Sidebar collapsible="icon">
+      <SidebarHeader className="flex h-12 items-center justify-center border-b border-sidebar-border">
+        <SidebarTrigger />
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>관리자</SidebarGroupLabel>
@@ -124,9 +128,6 @@ function AdminLayout() {
         <AdminSidebar />
         <div className="flex flex-1 flex-col min-w-0">
           <SiteHeader />
-          <div className="h-10 flex items-center border-b px-2">
-            <SidebarTrigger />
-          </div>
           <main className="flex-1 p-6">
             <div className="mx-auto max-w-5xl">
               <Outlet />
