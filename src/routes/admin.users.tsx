@@ -30,6 +30,7 @@ type UserRow = {
   id: string;
   email: string;
   nickname: string;
+  phone: string;
   created_at: string;
   roles: string[];
   isAdmin: boolean;
@@ -37,6 +38,7 @@ type UserRow = {
   isPending: boolean;
   class_count: number;
 };
+
 
 const usersQueryOptions = queryOptions({
   queryKey: ["admin", "users"],
