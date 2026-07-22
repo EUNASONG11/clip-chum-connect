@@ -58,7 +58,23 @@ function AuthPage() {
         setMode("signin");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (error) {
+          const msg = (error.message ?? "").toLowerCase();
+          if (msg.includes("invalid") || msg.includes("credentials")) {
+            try {
+              const { exists } = await checkEmailExists({ data: { email } });
+              if (!exists) {
+                toast.error("등록되지 않은 이메일입니다.");
+              } else {
+                toast.error("비밀번호가 올바르지 않습니다.");
+              }
+            } catch {
+              toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
+            }
+            return;
+          }
+          throw error;
+        }
         try { await ensureStudentRole(); } catch {}
         await routeByStatus(navigate);
       }
