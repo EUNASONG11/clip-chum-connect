@@ -24,7 +24,9 @@ import {
   revokeAdmin,
   approveUser,
   rejectUser,
+  bulkApproveUsers,
 } from "@/lib/vimeo.functions";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type UserRow = {
   id: string;
@@ -81,6 +83,8 @@ function UsersPage() {
   const [grantEmail, setGrantEmail] = useState("");
   const [granting, setGranting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
@@ -180,6 +184,23 @@ function UsersPage() {
     }
   };
 
+  const doBulkApprove = async (role: "student" | "admin") => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length}명을 ${role === "admin" ? "관리자" : "학생"}으로 승인하시겠습니까?`)) return;
+    setBulkBusy(true);
+    try {
+      const res: any = await bulkApproveUsers({ data: { userIds: ids, role } });
+      toast.success(`${res?.count ?? ids.length}명이 승인되었습니다.`);
+      setSelectedIds(new Set());
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const roleLabel = (u: UserRow) =>
     u.isAdmin ? "관리자" : u.isStudent ? "학생" : "승인 대기";
   const roleTone = (u: UserRow): "admin" | "student" | "pending" =>
@@ -200,7 +221,13 @@ function UsersPage() {
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)}>
+        <Tabs
+          value={tab}
+          onValueChange={(v) => {
+            setTab(v as TabKey);
+            setSelectedIds(new Set());
+          }}
+        >
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="admin" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" /> 관리자
@@ -247,10 +274,55 @@ function UsersPage() {
           </form>
         </div>
 
+        {tab === "pending" && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm">
+            <span className="text-amber-900">
+              선택됨 <b>{selectedIds.size}</b>명 / 표시 {filtered.length}명
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={() => {
+                  const all = filtered.map((u) => u.id);
+                  const allSelected = all.every((id) => selectedIds.has(id));
+                  setSelectedIds(allSelected ? new Set() : new Set(all));
+                }}
+              >
+                {filtered.every((u) => selectedIds.has(u.id)) ? "전체 해제" : "전체 선택"}
+              </Button>
+              <Button
+                size="sm"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => doBulkApprove("student")}
+                className="gap-1"
+              >
+                <Check className="h-3.5 w-3.5" />
+                {bulkBusy ? "처리 중..." : `학생으로 일괄 승인 (${selectedIds.size})`}
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="overflow-x-auto rounded-xl border border-border/60">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
+                {tab === "pending" && (
+                  <th className="w-10 px-4 py-3">
+                    <Checkbox
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((u) => selectedIds.has(u.id))
+                      }
+                      onCheckedChange={(v) => {
+                        if (v) setSelectedIds(new Set(filtered.map((u) => u.id)));
+                        else setSelectedIds(new Set());
+                      }}
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3">이름</th>
                 <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
@@ -263,7 +335,7 @@ function UsersPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
@@ -272,6 +344,21 @@ function UsersPage() {
                   const busy = busyId === u.id;
                   return (
                     <tr key={u.id} className="border-t transition hover:bg-muted/30">
+                      {tab === "pending" && (
+                        <td className="w-10 px-4 py-3">
+                          <Checkbox
+                            checked={selectedIds.has(u.id)}
+                            onCheckedChange={(v) => {
+                              setSelectedIds((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(u.id);
+                                else next.delete(u.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
