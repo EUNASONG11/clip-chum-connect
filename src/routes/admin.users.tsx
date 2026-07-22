@@ -270,10 +270,14 @@ function UsersPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPages({ admin: 1, student: 1, pending: 1 });
+              }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
             />
+
           </div>
           <form onSubmit={grantAdmin} className="flex flex-1 gap-2 sm:max-w-md">
             <Input
