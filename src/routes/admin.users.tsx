@@ -184,6 +184,23 @@ function UsersPage() {
     }
   };
 
+  const doBulkApprove = async (role: "student" | "admin") => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (!confirm(`${ids.length}명을 ${role === "admin" ? "관리자" : "학생"}으로 승인하시겠습니까?`)) return;
+    setBulkBusy(true);
+    try {
+      const res: any = await bulkApproveUsers({ data: { userIds: ids, role } });
+      toast.success(`${res?.count ?? ids.length}명이 승인되었습니다.`);
+      setSelectedIds(new Set());
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const roleLabel = (u: UserRow) =>
     u.isAdmin ? "관리자" : u.isStudent ? "학생" : "승인 대기";
   const roleTone = (u: UserRow): "admin" | "student" | "pending" =>
