@@ -261,6 +261,55 @@ function UsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
+        {tab === "pending" && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2 text-sm">
+            <span className="text-amber-900">
+              선택됨 <b>{selectedIds.size}</b>명 / 표시 {filtered.length}명
+            </span>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy}
+                onClick={() => {
+                  const all = filtered.map((u) => u.id);
+                  const allSelected = all.every((id) => selectedIds.has(id));
+                  setSelectedIds(allSelected ? new Set() : new Set(all));
+                }}
+              >
+                {filtered.every((u) => selectedIds.has(u.id)) ? "전체 해제" : "전체 선택"}
+              </Button>
+              <Button
+                size="sm"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => doBulkApprove("student")}
+                className="gap-1"
+              >
+                <Check className="h-3.5 w-3.5" />
+                {bulkBusy ? "처리 중..." : `학생으로 일괄 승인 (${selectedIds.size})`}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="overflow-x-auto rounded-xl border border-border/60">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+              <tr>
+                {tab === "pending" && (
+                  <th className="w-10 px-4 py-3">
+                    <Checkbox
+                      checked={
+                        filtered.length > 0 &&
+                        filtered.every((u) => selectedIds.has(u.id))
+                      }
+                      onCheckedChange={(v) => {
+                        if (v) setSelectedIds(new Set(filtered.map((u) => u.id)));
+                        else setSelectedIds(new Set());
+                      }}
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-3">이름</th>
                 <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
@@ -273,7 +322,7 @@ function UsersPage() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
