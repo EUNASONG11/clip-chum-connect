@@ -250,12 +250,29 @@ export const listUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // auth.users 전체 페이징 조회 (perPage 1000)
+
+    const retry = async <T,>(fn: () => Promise<T>, label: string, tries = 4): Promise<T> => {
+      let lastErr: unknown;
+      for (let i = 0; i < tries; i++) {
+        try {
+          return await fn();
+        } catch (e) {
+          lastErr = e;
+          await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+        }
+      }
+      throw new Error(`${label} 실패: ${(lastErr as any)?.message ?? lastErr}`);
+    };
+
+    // auth.users 전체 페이징 조회 (perPage 200 로 낮춰 응답 안정화)
     const allAuthUsers: any[] = [];
     {
-      const perPage = 1000;
-      for (let page = 1; page < 50; page++) {
-        const { data, error: e } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+      const perPage = 200;
+      for (let page = 1; page < 200; page++) {
+        const { data, error: e } = await retry(
+          () => supabaseAdmin.auth.admin.listUsers({ page, perPage }),
+          `auth.listUsers page ${page}`,
+        );
         if (e) throw new Error(e.message);
         const chunk = data?.users ?? [];
         allAuthUsers.push(...chunk);
@@ -264,23 +281,27 @@ export const listUsers = createServerFn({ method: "GET" })
     }
 
     const [rolesRes, csRes] = await Promise.all([
-      supabaseAdmin.from("user_roles").select("user_id, role"),
-      supabaseAdmin.from("class_students").select("user_id"),
+      retry(() => supabaseAdmin.from("user_roles").select("user_id, role"), "user_roles"),
+      retry(() => supabaseAdmin.from("class_students").select("user_id"), "class_students"),
     ]);
     const userIds = allAuthUsers.map((u) => u.id);
 
-    // external_students 전체 페이징 조회 후 로컬 매칭 (대량 in() 필터로 인한 fetch 타임아웃 회피)
+    // external_students 전체 페이징 조회 후 로컬 매칭
     const extRows: { auth_user_id: string | null; name: string | null; phone: string | null }[] = [];
     {
-      const size = 1000;
+      const size = 500;
       let from = 0;
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const { data, error: e } = await supabaseAdmin
-          .from("external_students")
-          .select("auth_user_id, name, phone")
-          .not("auth_user_id", "is", null)
-          .range(from, from + size - 1);
+        const { data, error: e } = await retry(
+          () =>
+            supabaseAdmin
+              .from("external_students")
+              .select("auth_user_id, name, phone")
+              .not("auth_user_id", "is", null)
+              .range(from, from + size - 1),
+          `external_students range ${from}`,
+        );
         if (e) throw new Error(e.message);
         const chunk = data ?? [];
         extRows.push(...chunk);
