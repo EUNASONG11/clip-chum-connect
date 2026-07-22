@@ -360,6 +360,7 @@ function UsersPage() {
                         </td>
                       )}
                       <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
