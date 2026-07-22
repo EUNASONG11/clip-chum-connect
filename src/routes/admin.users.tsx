@@ -251,9 +251,10 @@ function UsersPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
-                <th className="px-4 py-3">닉네임</th>
-                <th className="px-4 py-3">이메일</th>
+                <th className="px-4 py-3">이름</th>
+                <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
+
                 <th className="px-4 py-3">수강 중인 반</th>
                 <th className="px-4 py-3">가입일</th>
                 <th className="px-4 py-3 text-right">작업</th>
