@@ -109,14 +109,26 @@ export const listClassStudents = createServerFn({ method: "GET" })
       .eq("class_id", data.classId);
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) return [];
+    const userIds = rows.map((r: any) => r.user_id);
     const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
-    const map = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
-    return rows.map((r: any) => ({
-      user_id: r.user_id as string,
-      email: map.get(r.user_id) ?? "",
-      created_at: r.created_at as string,
-    }));
+    const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
+    const { data: ext } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone")
+      .in("auth_user_id", userIds);
+    const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
+    return rows.map((r: any) => {
+      const e: any = extMap.get(r.user_id);
+      return {
+        user_id: r.user_id as string,
+        email: emailMap.get(r.user_id) ?? "",
+        name: e?.name ?? "",
+        phone: e?.phone ?? "",
+        created_at: r.created_at as string,
+      };
+    });
   });
+
 
 // 이름 또는 전화번호로 학생 검색 (미러링된 external_students에서 조회)
 export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
