@@ -75,6 +75,8 @@ function Badge({
   );
 }
 
+const PAGE_SIZE = 20;
+
 function UsersPage() {
   const qc = useQueryClient();
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
@@ -85,6 +87,14 @@ function UsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [pages, setPages] = useState<Record<TabKey, number>>({
+    admin: 1,
+    student: 1,
+    pending: 1,
+  });
+  const page = pages[tab];
+  const setPage = (p: number) =>
+    setPages((prev) => ({ ...prev, [tab]: Math.max(1, p) }));
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
@@ -109,6 +119,11 @@ function UsersPage() {
         (u.phone ?? "").toLowerCase().includes(q),
     );
   }, [buckets, tab, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
   const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
