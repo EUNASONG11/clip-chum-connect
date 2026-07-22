@@ -294,8 +294,8 @@ export const listUsers = createServerFn({ method: "GET" })
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { data, error: e } = await retry(
-          () =>
-            supabaseAdmin
+          async () =>
+            await supabaseAdmin
               .from("external_students")
               .select("auth_user_id, name, phone")
               .not("auth_user_id", "is", null)
