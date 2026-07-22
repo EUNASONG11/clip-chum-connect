@@ -344,8 +344,22 @@ function UsersPage() {
                   const busy = busyId === u.id;
                   return (
                     <tr key={u.id} className="border-t transition hover:bg-muted/30">
+                      {tab === "pending" && (
+                        <td className="w-10 px-4 py-3">
+                          <Checkbox
+                            checked={selectedIds.has(u.id)}
+                            onCheckedChange={(v) => {
+                              setSelectedIds((prev) => {
+                                const next = new Set(prev);
+                                if (v) next.add(u.id);
+                                else next.delete(u.id);
+                                return next;
+                              });
+                            }}
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
