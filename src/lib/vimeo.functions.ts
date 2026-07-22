@@ -287,7 +287,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
-    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null }[] = [];
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null }[] = [];
     {
       const size = 500;
       let from = 0;
@@ -297,7 +297,7 @@ export const listUsers = createServerFn({ method: "GET" })
           async () =>
             await supabaseAdmin
               .from("external_students")
-              .select("auth_user_id, name, phone")
+              .select("auth_user_id, name, phone, enrollment_status")
               .not("auth_user_id", "is", null)
               .range(from, from + size - 1),
           `external_students range ${from}`,
