@@ -201,6 +201,20 @@ function UsersPage() {
     }
   };
 
+  const doRevertToPending = async (u: UserRow) => {
+    if (!confirm(`${u.nickname || u.email} 을(를) 승인 대기 상태로 되돌리시겠습니까?`)) return;
+    setBusyId(u.id);
+    try {
+      await revertToPending({ data: { userId: u.id } });
+      toast.success("승인 대기로 되돌렸습니다.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const doBulkApprove = async (role: "student" | "admin") => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
