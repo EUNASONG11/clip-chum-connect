@@ -425,3 +425,53 @@ export const checkEmailExists = createServerFn({ method: "POST" })
     );
     return { exists };
   });
+
+// 학생 로그인: 이름+전화번호로 미러링된 계정의 이메일/초기 비밀번호를 조회
+export const resolveStudentLogin = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        phone: z.string().trim().min(4).max(30),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const phoneDigits = data.phone.replace(/[^0-9]/g, "");
+    if (phoneDigits.length < 8) {
+      throw new Error("전화번호는 숫자 8자리 이상이어야 합니다.");
+    }
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("external_students")
+      .select("name, phone, auth_user_id, is_deleted")
+      .eq("name", data.name.trim())
+      .eq("phone", phoneDigits)
+      .limit(2);
+    if (error) throw new Error(error.message);
+
+    const active = (rows ?? []).filter((r) => !r.is_deleted);
+    if (active.length === 0) {
+      throw new Error("이름 또는 전화번호가 일치하는 학생을 찾을 수 없습니다.");
+    }
+    if (active.length > 1) {
+      throw new Error("동일한 이름/전화번호의 계정이 여러 개 존재합니다. 관리자에게 문의하세요.");
+    }
+
+    const row = active[0];
+    if (!row.auth_user_id) {
+      throw new Error("계정이 아직 준비되지 않았습니다. 잠시 후 다시 시도해 주세요.");
+    }
+
+    const { data: userRes, error: userErr } =
+      await supabaseAdmin.auth.admin.getUserById(row.auth_user_id);
+    if (userErr || !userRes?.user?.email) {
+      throw new Error("계정 정보를 불러올 수 없습니다.");
+    }
+
+    return {
+      email: userRes.user.email,
+      initialPassword: phoneDigits.slice(-8),
+    };
+  });
