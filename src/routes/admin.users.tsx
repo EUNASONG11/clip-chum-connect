@@ -75,6 +75,8 @@ function Badge({
   );
 }
 
+const PAGE_SIZE = 20;
+
 function UsersPage() {
   const qc = useQueryClient();
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
@@ -85,6 +87,14 @@ function UsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [pages, setPages] = useState<Record<TabKey, number>>({
+    admin: 1,
+    student: 1,
+    pending: 1,
+  });
+  const page = pages[tab];
+  const setPage = (p: number) =>
+    setPages((prev) => ({ ...prev, [tab]: Math.max(1, p) }));
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
@@ -109,6 +119,11 @@ function UsersPage() {
         (u.phone ?? "").toLowerCase().includes(q),
     );
   }, [buckets, tab, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * PAGE_SIZE;
+  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
   const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
@@ -255,10 +270,14 @@ function UsersPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPages({ admin: 1, student: 1, pending: 1 });
+              }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
             />
+
           </div>
           <form onSubmit={grantAdmin} className="flex flex-1 gap-2 sm:max-w-md">
             <Input
@@ -285,13 +304,19 @@ function UsersPage() {
                 variant="outline"
                 disabled={bulkBusy}
                 onClick={() => {
-                  const all = filtered.map((u) => u.id);
-                  const allSelected = all.every((id) => selectedIds.has(id));
-                  setSelectedIds(allSelected ? new Set() : new Set(all));
+                  const all = paged.map((u) => u.id);
+                  const allSelected = all.length > 0 && all.every((id) => selectedIds.has(id));
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (allSelected) all.forEach((id) => next.delete(id));
+                    else all.forEach((id) => next.add(id));
+                    return next;
+                  });
                 }}
               >
-                {filtered.every((u) => selectedIds.has(u.id)) ? "전체 해제" : "전체 선택"}
+                {paged.length > 0 && paged.every((u) => selectedIds.has(u.id)) ? "현재 페이지 해제" : "현재 페이지 선택"}
               </Button>
+
               <Button
                 size="sm"
                 disabled={bulkBusy || selectedIds.size === 0}
@@ -313,16 +338,21 @@ function UsersPage() {
                   <th className="w-10 px-4 py-3">
                     <Checkbox
                       checked={
-                        filtered.length > 0 &&
-                        filtered.every((u) => selectedIds.has(u.id))
+                        paged.length > 0 &&
+                        paged.every((u) => selectedIds.has(u.id))
                       }
                       onCheckedChange={(v) => {
-                        if (v) setSelectedIds(new Set(filtered.map((u) => u.id)));
-                        else setSelectedIds(new Set());
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (v) paged.forEach((u) => next.add(u.id));
+                          else paged.forEach((u) => next.delete(u.id));
+                          return next;
+                        });
                       }}
                     />
                   </th>
                 )}
+
                 <th className="px-4 py-3">이름</th>
                 <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
@@ -333,14 +363,16 @@ function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {paged.length === 0 ? (
                 <tr>
                   <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
+
               ) : (
-                filtered.map((u) => {
+                paged.map((u) => {
+
                   const busy = busyId === u.id;
                   return (
                     <tr key={u.id} className="border-t transition hover:bg-muted/30">
@@ -429,6 +461,53 @@ function UsersPage() {
             </tbody>
           </table>
         </div>
+
+        {filtered.length > 0 && (
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-xs text-muted-foreground">
+              총 <b>{filtered.length}</b>명 · {pageStart + 1}–
+              {Math.min(pageStart + PAGE_SIZE, filtered.length)} 표시
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setPage(1)}
+              >
+                처음
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setPage(safePage - 1)}
+              >
+                이전
+              </Button>
+              <span className="px-2 text-sm">
+                {safePage} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(safePage + 1)}
+              >
+                다음
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(totalPages)}
+              >
+                마지막
+              </Button>
+            </div>
+          </div>
+        )}
+
       </CardContent>
     </Card>
   );
