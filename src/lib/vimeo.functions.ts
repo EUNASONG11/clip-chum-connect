@@ -281,8 +281,8 @@ export const listUsers = createServerFn({ method: "GET" })
     }
 
     const [rolesRes, csRes] = await Promise.all([
-      retry(() => supabaseAdmin.from("user_roles").select("user_id, role"), "user_roles"),
-      retry(() => supabaseAdmin.from("class_students").select("user_id"), "class_students"),
+      retry(async () => await supabaseAdmin.from("user_roles").select("user_id, role"), "user_roles"),
+      retry(async () => await supabaseAdmin.from("class_students").select("user_id"), "class_students"),
     ]);
     const userIds = allAuthUsers.map((u) => u.id);
 
