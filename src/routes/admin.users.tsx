@@ -25,7 +25,9 @@ import {
   approveUser,
   rejectUser,
   bulkApproveUsers,
+  revertToPending,
 } from "@/lib/vimeo.functions";
+
 import { Checkbox } from "@/components/ui/checkbox";
 
 type UserRow = {
@@ -191,6 +193,20 @@ function UsersPage() {
     try {
       await grantAdminByEmail({ data: { email: u.email } });
       toast.success("관리자로 지정했습니다.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doRevertToPending = async (u: UserRow) => {
+    if (!confirm(`${u.nickname || u.email} 을(를) 승인 대기 상태로 되돌리시겠습니까?`)) return;
+    setBusyId(u.id);
+    try {
+      await revertToPending({ data: { userId: u.id } });
+      toast.success("승인 대기로 되돌렸습니다.");
       refetch();
     } catch (err: any) {
       toast.error(err.message);
@@ -452,6 +468,19 @@ function UsersPage() {
                               <UserMinus className="h-3.5 w-3.5" /> 관리자 해제
                             </Button>
                           )}
+                          {!u.isPending && (
+
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doRevertToPending(u)}
+                              className="gap-1"
+                            >
+                              <Clock className="h-3.5 w-3.5" /> 승인 대기로
+                            </Button>
+                          )}
+
                         </div>
                       </td>
                     </tr>

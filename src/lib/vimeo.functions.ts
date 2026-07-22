@@ -449,6 +449,28 @@ export const bulkApproveUsers = createServerFn({ method: "POST" })
     return { ok: true, count: data.userIds.length };
   });
 
+// 6-5c) 승인된 사용자를 승인 대기로 되돌리기
+export const revertToPending = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("자기 자신은 되돌릴 수 없습니다.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 기존 역할(student, admin) 제거
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .in("role", ["student", "admin"]);
+    // pending 역할 부여
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: data.userId, role: "pending" }, { onConflict: "user_id,role", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // 6-6) 사용자 삭제(가입 거절)
 export const rejectUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
