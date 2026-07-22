@@ -104,21 +104,51 @@ function ClassDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={assign} className="flex gap-2">
+          <form onSubmit={search} className="flex gap-2">
             <div className="flex-1">
-              <Label htmlFor="email" className="sr-only">이메일</Label>
+              <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="학생 이메일"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="query"
+                type="text"
+                placeholder="이름 또는 전화번호로 검색"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={assigning}>
-              {assigning ? "배정 중..." : "배정"}
+            <Button type="submit" disabled={searching}>
+              <Search className="mr-1 h-4 w-4" />
+              {searching ? "검색 중..." : "검색"}
             </Button>
           </form>
+
+          {results.length > 0 && (
+            <div className="rounded-md border">
+              <ul className="divide-y">
+                {results.map((r) => {
+                  const already = students.some((s: any) => s.user_id === r.user_id);
+                  return (
+                    <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{r.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {r.phone}
+                          {r.school ? ` · ${r.school}` : ""}
+                          {r.grade ? ` ${r.grade}` : ""}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => assign(r.user_id)}
+                        disabled={already}
+                      >
+                        {already ? "배정됨" : "배정"}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
@@ -127,7 +157,8 @@ function ClassDetailPage() {
               {students.map((s: any) => (
                 <li key={s.user_id} className="flex items-center gap-2 py-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{s.email}</p>
+                    <p className="truncate text-sm">{s.name || s.email}</p>
+                    {s.phone && <p className="truncate text-xs text-muted-foreground">{s.phone}</p>}
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => remove(s.user_id)}>
                     <X className="h-4 w-4" />
@@ -136,6 +167,7 @@ function ClassDetailPage() {
               ))}
             </ul>
           )}
+
         </CardContent>
       </Card>
 
