@@ -409,3 +409,19 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
     return row;
   });
 
+
+// 이메일 존재 여부 확인 (로그인 오류 시 원인 판별용)
+export const checkEmailExists = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ email: z.string().email() }).parse(input))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: res, error } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    if (error) throw new Error(error.message);
+    const exists = res.users.some(
+      (u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase(),
+    );
+    return { exists };
+  });
