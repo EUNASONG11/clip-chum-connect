@@ -101,9 +101,11 @@ function UsersPage() {
     return rows.filter(
       (u) =>
         u.email.toLowerCase().includes(q) ||
-        u.nickname.toLowerCase().includes(q),
+        u.nickname.toLowerCase().includes(q) ||
+        (u.phone ?? "").toLowerCase().includes(q),
     );
   }, [buckets, tab, search]);
+
 
   const refetch = () => qc.invalidateQueries({ queryKey: ["admin", "users"] });
 
