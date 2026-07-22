@@ -304,13 +304,19 @@ function UsersPage() {
                 variant="outline"
                 disabled={bulkBusy}
                 onClick={() => {
-                  const all = filtered.map((u) => u.id);
-                  const allSelected = all.every((id) => selectedIds.has(id));
-                  setSelectedIds(allSelected ? new Set() : new Set(all));
+                  const all = paged.map((u) => u.id);
+                  const allSelected = all.length > 0 && all.every((id) => selectedIds.has(id));
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (allSelected) all.forEach((id) => next.delete(id));
+                    else all.forEach((id) => next.add(id));
+                    return next;
+                  });
                 }}
               >
-                {filtered.every((u) => selectedIds.has(u.id)) ? "전체 해제" : "전체 선택"}
+                {paged.length > 0 && paged.every((u) => selectedIds.has(u.id)) ? "현재 페이지 해제" : "현재 페이지 선택"}
               </Button>
+
               <Button
                 size="sm"
                 disabled={bulkBusy || selectedIds.size === 0}
