@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { getMyRole } from "@/lib/vimeo.functions";
+import { getMyRole, getMyDisplayName } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
 import { Video, LogOut } from "lucide-react";
 
