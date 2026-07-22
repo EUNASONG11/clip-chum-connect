@@ -360,7 +360,8 @@ function UsersPage() {
                 </tr>
 
               ) : (
-                filtered.map((u) => {
+                paged.map((u) => {
+
                   const busy = busyId === u.id;
                   return (
                     <tr key={u.id} className="border-t transition hover:bg-muted/30">
