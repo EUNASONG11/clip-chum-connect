@@ -461,6 +461,53 @@ function UsersPage() {
             </tbody>
           </table>
         </div>
+
+        {filtered.length > 0 && (
+          <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+            <p className="text-xs text-muted-foreground">
+              총 <b>{filtered.length}</b>명 · {pageStart + 1}–
+              {Math.min(pageStart + PAGE_SIZE, filtered.length)} 표시
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setPage(1)}
+              >
+                처음
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage <= 1}
+                onClick={() => setPage(safePage - 1)}
+              >
+                이전
+              </Button>
+              <span className="px-2 text-sm">
+                {safePage} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(safePage + 1)}
+              >
+                다음
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={safePage >= totalPages}
+                onClick={() => setPage(totalPages)}
+              >
+                마지막
+              </Button>
+            </div>
+          </div>
+        )}
+
       </CardContent>
     </Card>
   );
