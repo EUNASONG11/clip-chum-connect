@@ -338,16 +338,21 @@ function UsersPage() {
                   <th className="w-10 px-4 py-3">
                     <Checkbox
                       checked={
-                        filtered.length > 0 &&
-                        filtered.every((u) => selectedIds.has(u.id))
+                        paged.length > 0 &&
+                        paged.every((u) => selectedIds.has(u.id))
                       }
                       onCheckedChange={(v) => {
-                        if (v) setSelectedIds(new Set(filtered.map((u) => u.id)));
-                        else setSelectedIds(new Set());
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (v) paged.forEach((u) => next.add(u.id));
+                          else paged.forEach((u) => next.delete(u.id));
+                          return next;
+                        });
                       }}
                     />
                   </th>
                 )}
+
                 <th className="px-4 py-3">이름</th>
                 <th className="px-4 py-3">전화번호</th>
                 <th className="px-4 py-3">역할</th>
