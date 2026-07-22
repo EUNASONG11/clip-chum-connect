@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { getMyRole, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
 
