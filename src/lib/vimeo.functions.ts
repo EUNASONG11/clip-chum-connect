@@ -250,17 +250,46 @@ export const listUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: users, error }, rolesRes, csRes] = await Promise.all([
-      supabaseAdmin.auth.admin.listUsers({ perPage: 200 }),
+    // auth.users 전체 페이징 조회 (perPage 1000)
+    const allAuthUsers: any[] = [];
+    {
+      const perPage = 1000;
+      for (let page = 1; page < 50; page++) {
+        const { data, error: e } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        if (e) throw new Error(e.message);
+        const chunk = data?.users ?? [];
+        allAuthUsers.push(...chunk);
+        if (chunk.length < perPage) break;
+      }
+    }
+
+    const [rolesRes, csRes] = await Promise.all([
       supabaseAdmin.from("user_roles").select("user_id, role"),
       supabaseAdmin.from("class_students").select("user_id"),
     ]);
-    if (error) throw new Error(error.message);
-    const userIds = users.users.map((u) => u.id);
-    const extRes = await supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, phone")
-      .in("auth_user_id", userIds);
+    const userIds = allAuthUsers.map((u) => u.id);
+
+    // external_students 를 auth_user_id IN (...) 로 청크 페이징 조회 (1000행 제한 우회)
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null }[] = [];
+    for (let i = 0; i < userIds.length; i += 500) {
+      const slice = userIds.slice(i, i + 500);
+      let from = 0;
+      const size = 1000;
+      // range 로 청크당 여러 페이지도 처리 (드문 케이스지만 안전)
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error: e } = await supabaseAdmin
+          .from("external_students")
+          .select("auth_user_id, name, phone")
+          .in("auth_user_id", slice)
+          .range(from, from + size - 1);
+        if (e) throw new Error(e.message);
+        const chunk = data ?? [];
+        extRows.push(...chunk);
+        if (chunk.length < size) break;
+        from += size;
+      }
+    }
 
     const roleMap = new Map<string, string[]>();
     (rolesRes.data ?? []).forEach((r: any) => {
@@ -273,9 +302,10 @@ export const listUsers = createServerFn({ method: "GET" })
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
     const extMap = new Map<string, { name: string | null; phone: string | null }>();
-    (extRes.data ?? []).forEach((r: any) => {
+    extRows.forEach((r) => {
       if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
     });
+
     const formatPhone = (p: string | null | undefined) => {
       if (!p) return "";
       const d = p.replace(/[^0-9]/g, "");
