@@ -420,6 +420,35 @@ export const approveUser = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// 6-5b) 승인 대기 사용자 일괄 승인
+export const bulkApproveUsers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        userIds: z.array(z.string().uuid()).min(1).max(2000),
+        role: z.enum(["student", "admin"]).default("student"),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // pending 역할 제거
+    await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .in("user_id", data.userIds)
+      .eq("role", "pending");
+    // 대상 역할 부여 (중복은 무시)
+    const rows = data.userIds.map((user_id) => ({ user_id, role: data.role }));
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .upsert(rows, { onConflict: "user_id,role", ignoreDuplicates: true });
+    if (error) throw new Error(error.message);
+    return { ok: true, count: data.userIds.length };
+  });
+
 // 6-6) 사용자 삭제(가입 거절)
 export const rejectUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
