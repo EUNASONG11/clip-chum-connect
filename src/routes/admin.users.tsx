@@ -467,7 +467,18 @@ function UsersPage() {
                             >
                               <UserMinus className="h-3.5 w-3.5" /> 관리자 해제
                             </Button>
+                          {!u.isPending && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doRevertToPending(u)}
+                              className="gap-1"
+                            >
+                              <Clock className="h-3.5 w-3.5" /> 승인 대기로
+                            </Button>
                           )}
+
                         </div>
                       </td>
                     </tr>
