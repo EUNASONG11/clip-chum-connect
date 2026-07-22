@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3 } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3, Search } from "lucide-react";
 import {
   getClass,
   listClassStudents,
-  assignStudentByEmail,
+  searchStudentsByNameOrPhone,
+  assignStudent,
   unassignStudent,
   listClassVideos,
 } from "@/lib/classes.functions";
@@ -40,22 +41,35 @@ function ClassDetailPage() {
     queryFn: () => getClassStudentStats({ data: { classId: id } }),
   });
 
-  const [email, setEmail] = useState("");
-  const [assigning, setAssigning] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<
+    { user_id: string; name: string; phone: string; school: string; grade: string }[]
+  >([]);
+  const [searching, setSearching] = useState(false);
 
-  const assign = async (e: React.FormEvent) => {
+  const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setAssigning(true);
+    if (!query.trim()) return;
+    setSearching(true);
     try {
-      await assignStudentByEmail({ data: { classId: id, email: email.trim() } });
-      setEmail("");
-      qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
-      toast.success("배정되었습니다.");
+      const rows = await searchStudentsByNameOrPhone({ data: { query: query.trim() } });
+      setResults(rows);
+      if (rows.length === 0) toast.info("일치하는 학생이 없습니다.");
     } catch (err: any) {
       toast.error(err.message);
     } finally {
-      setAssigning(false);
+      setSearching(false);
+    }
+  };
+
+  const assign = async (userId: string) => {
+    try {
+      await assignStudent({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      setResults((r) => r.filter((s) => s.user_id !== userId));
+      toast.success("배정되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
     }
   };
 
@@ -67,6 +81,7 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+
 
   return (
     <div className="space-y-6">
@@ -89,21 +104,51 @@ function ClassDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={assign} className="flex gap-2">
+          <form onSubmit={search} className="flex gap-2">
             <div className="flex-1">
-              <Label htmlFor="email" className="sr-only">이메일</Label>
+              <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="학생 이메일"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="query"
+                type="text"
+                placeholder="이름 또는 전화번호로 검색"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={assigning}>
-              {assigning ? "배정 중..." : "배정"}
+            <Button type="submit" disabled={searching}>
+              <Search className="mr-1 h-4 w-4" />
+              {searching ? "검색 중..." : "검색"}
             </Button>
           </form>
+
+          {results.length > 0 && (
+            <div className="rounded-md border">
+              <ul className="divide-y">
+                {results.map((r) => {
+                  const already = students.some((s: any) => s.user_id === r.user_id);
+                  return (
+                    <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{r.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {r.phone}
+                          {r.school ? ` · ${r.school}` : ""}
+                          {r.grade ? ` ${r.grade}` : ""}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => assign(r.user_id)}
+                        disabled={already}
+                      >
+                        {already ? "배정됨" : "배정"}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
@@ -112,7 +157,8 @@ function ClassDetailPage() {
               {students.map((s: any) => (
                 <li key={s.user_id} className="flex items-center gap-2 py-2">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{s.email}</p>
+                    <p className="truncate text-sm">{s.name || s.email}</p>
+                    {s.phone && <p className="truncate text-xs text-muted-foreground">{s.phone}</p>}
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => remove(s.user_id)}>
                     <X className="h-4 w-4" />
@@ -121,6 +167,7 @@ function ClassDetailPage() {
               ))}
             </ul>
           )}
+
         </CardContent>
       </Card>
 
