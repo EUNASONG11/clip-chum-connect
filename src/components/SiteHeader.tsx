@@ -51,7 +51,7 @@ export function SiteHeader() {
           {email ? (
             <>
               <span className="hidden rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground sm:inline">
-                {email}
+                {displayName ?? email}
               </span>
               <Button
                 size="sm"
