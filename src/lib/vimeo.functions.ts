@@ -313,7 +313,7 @@ export const listUsers = createServerFn({ method: "GET" })
       if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
       return p;
     };
-    return users.users.map((u) => {
+    return allAuthUsers.map((u: any) => {
       const roles = roleMap.get(u.id) ?? [];
       const isAdmin = roles.includes("admin");
       const isStudent = roles.includes("student");
