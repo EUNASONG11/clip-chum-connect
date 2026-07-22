@@ -269,19 +269,17 @@ export const listUsers = createServerFn({ method: "GET" })
     ]);
     const userIds = allAuthUsers.map((u) => u.id);
 
-    // external_students 를 auth_user_id IN (...) 로 청크 페이징 조회 (1000행 제한 우회)
+    // external_students 전체 페이징 조회 후 로컬 매칭 (대량 in() 필터로 인한 fetch 타임아웃 회피)
     const extRows: { auth_user_id: string | null; name: string | null; phone: string | null }[] = [];
-    for (let i = 0; i < userIds.length; i += 500) {
-      const slice = userIds.slice(i, i + 500);
-      let from = 0;
+    {
       const size = 1000;
-      // range 로 청크당 여러 페이지도 처리 (드문 케이스지만 안전)
+      let from = 0;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { data, error: e } = await supabaseAdmin
           .from("external_students")
           .select("auth_user_id, name, phone")
-          .in("auth_user_id", slice)
+          .not("auth_user_id", "is", null)
           .range(from, from + size - 1);
         if (e) throw new Error(e.message);
         const chunk = data ?? [];
