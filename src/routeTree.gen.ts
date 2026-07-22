@@ -21,6 +21,7 @@ import { Route as AdminUploadRouteImport } from './routes/admin.upload'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.index'
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
+import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -82,6 +83,12 @@ const AdminClassesIdRoute = AdminClassesIdRouteImport.update({
   path: '/classes/$id',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicWebhooksStudentsSyncRoute =
+  ApiPublicWebhooksStudentsSyncRouteImport.update({
+    id: '/api/public/webhooks/students-sync',
+    path: '/api/public/webhooks/students-sync',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
+  '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -109,6 +117,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/classes': typeof AdminClassesIndexRoute
+  '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -124,6 +133,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
+  '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/classes/$id'
     | '/admin/classes/'
+    | '/api/public/webhooks/students-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/classes/$id'
     | '/admin/classes'
+    | '/api/public/webhooks/students-sync'
   id:
     | '__root__'
     | '/'
@@ -167,6 +179,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/classes/$id'
     | '/admin/classes/'
+    | '/api/public/webhooks/students-sync'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +188,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
+  ApiPublicWebhooksStudentsSyncRoute: typeof ApiPublicWebhooksStudentsSyncRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -263,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClassesIdRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/webhooks/students-sync': {
+      id: '/api/public/webhooks/students-sync'
+      path: '/api/public/webhooks/students-sync'
+      fullPath: '/api/public/webhooks/students-sync'
+      preLoaderRoute: typeof ApiPublicWebhooksStudentsSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -294,17 +315,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
+  ApiPublicWebhooksStudentsSyncRoute: ApiPublicWebhooksStudentsSyncRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
