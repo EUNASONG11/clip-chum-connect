@@ -1,42 +1,43 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getMyRole, getMyDisplayName } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
 import { Video, LogOut } from "lucide-react";
 
-
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
 
   useEffect(() => {
     const sync = async () => {
       const { data } = await supabase.auth.getUser();
       setEmail(data.user?.email ?? null);
-      if (data.user) {
-        try {
-          const [r, n] = await Promise.all([getMyRole(), getMyDisplayName()]);
-          setIsAdmin(r.isAdmin);
-          setDisplayName(n.name);
-        } catch {
-          setIsAdmin(false);
-          setDisplayName(null);
-        }
-      } else {
-        setIsAdmin(false);
-        setDisplayName(null);
-      }
+      setUserId(data.user?.id ?? null);
     };
     sync();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => sync());
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        sync();
+      }
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
+
+  const { data: me } = useQuery({
+    queryKey: ["me", userId],
+    queryFn: async () => {
+      const [r, n] = await Promise.all([getMyRole(), getMyDisplayName()]);
+      return { isAdmin: r.isAdmin, name: n.name };
+    },
+    enabled: !!userId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const displayName = me?.name ?? null;
 
   return (
     <header className="border-b border-border/60 bg-card">
