@@ -118,27 +118,53 @@ export const listClassStudents = createServerFn({ method: "GET" })
     }));
   });
 
-// 이메일로 학생 배정
-export const assignStudentByEmail = createServerFn({ method: "POST" })
+// 이름 또는 전화번호로 학생 검색 (미러링된 external_students에서 조회)
+export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const q = data.query.trim();
+    const digits = q.replace(/[^0-9]/g, "");
+    let builder = supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone, school, grade")
+      .not("auth_user_id", "is", null)
+      .eq("is_deleted", false)
+      .limit(20);
+    if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
+      builder = builder.ilike("phone", `%${digits}%`);
+    } else {
+      builder = builder.ilike("name", `%${q}%`);
+    }
+    const { data: rows, error } = await builder;
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r: any) => ({
+      user_id: r.auth_user_id as string,
+      name: r.name as string,
+      phone: (r.phone as string) ?? "",
+      school: (r.school as string) ?? "",
+      grade: (r.grade as string) ?? "",
+    }));
+  });
+
+// 학생 배정 (user_id 기반)
+export const assignStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
-    z.object({ classId: z.string().uuid(), email: z.string().email() }).parse(i),
+    z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: users, error } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
-    if (error) throw new Error(error.message);
-    const target = users.users.find(
-      (u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase(),
-    );
-    if (!target) throw new Error("해당 이메일로 가입된 사용자가 없습니다.");
-    const { error: insErr } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from("class_students")
-      .insert({ class_id: data.classId, user_id: target.id });
-    if (insErr && !insErr.message.includes("duplicate")) throw new Error(insErr.message);
-    return { ok: true, userId: target.id, email: target.email ?? "" };
+      .insert({ class_id: data.classId, user_id: data.userId });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
   });
+
 
 // 학생 배정 해제
 export const unassignStudent = createServerFn({ method: "POST" })
