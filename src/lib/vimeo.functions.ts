@@ -179,6 +179,19 @@ export const getMyRole = createServerFn({ method: "GET" })
     return { isAdmin: Boolean(data), userId: context.userId };
   });
 
+// 5-1) 내 표시 이름 (학생이면 external_students.name, 그 외 이메일)
+export const getMyDisplayName = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("external_students")
+      .select("name")
+      .eq("auth_user_id", context.userId)
+      .maybeSingle();
+    return { name: (data as any)?.name ?? null };
+  });
+
 // 6) 관리자 승격 (부트스트랩): 관리자 아무도 없으면 자기 자신을 admin 으로
 export const claimAdminIfNone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

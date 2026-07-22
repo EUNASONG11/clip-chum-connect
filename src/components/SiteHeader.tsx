@@ -2,13 +2,14 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { getMyRole } from "@/lib/vimeo.functions";
+import { getMyRole, getMyDisplayName } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
 import { Video, LogOut } from "lucide-react";
 
 
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -20,13 +21,16 @@ export function SiteHeader() {
       setEmail(data.user?.email ?? null);
       if (data.user) {
         try {
-          const r = await getMyRole();
+          const [r, n] = await Promise.all([getMyRole(), getMyDisplayName()]);
           setIsAdmin(r.isAdmin);
+          setDisplayName(n.name);
         } catch {
           setIsAdmin(false);
+          setDisplayName(null);
         }
       } else {
         setIsAdmin(false);
+        setDisplayName(null);
       }
     };
     sync();
@@ -47,7 +51,7 @@ export function SiteHeader() {
           {email ? (
             <>
               <span className="hidden rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground sm:inline">
-                {email}
+                {displayName ?? email}
               </span>
               <Button
                 size="sm"
