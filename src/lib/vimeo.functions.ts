@@ -250,16 +250,18 @@ export const listUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: users, error }, rolesRes, csRes, extRes] = await Promise.all([
+    const [{ data: users, error }, rolesRes, csRes] = await Promise.all([
       supabaseAdmin.auth.admin.listUsers({ perPage: 200 }),
       supabaseAdmin.from("user_roles").select("user_id, role"),
       supabaseAdmin.from("class_students").select("user_id"),
-      supabaseAdmin
-        .from("external_students")
-        .select("auth_user_id, name, phone")
-        .not("auth_user_id", "is", null),
     ]);
     if (error) throw new Error(error.message);
+    const userIds = users.users.map((u) => u.id);
+    const extRes = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone")
+      .in("auth_user_id", userIds);
+
     const roleMap = new Map<string, string[]>();
     (rolesRes.data ?? []).forEach((r: any) => {
       const list = roleMap.get(r.user_id) ?? [];
