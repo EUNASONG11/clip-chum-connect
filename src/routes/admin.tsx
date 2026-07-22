@@ -36,9 +36,11 @@ const navItems = [
 
 function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
+  const { state } = useSidebar();
+  const isExpanded = state === "expanded";
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="flex h-12 items-center justify-center border-b border-sidebar-border">
+      <SidebarHeader className={`flex h-12 items-center border-b border-sidebar-border ${isExpanded ? "justify-end pr-3" : "justify-center"}`}>
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
