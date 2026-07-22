@@ -137,6 +137,54 @@ export type Database = {
           },
         ]
       }
+      external_students: {
+        Row: {
+          auth_user_id: string | null
+          class_time: string | null
+          created_at: string
+          enrollment_status: string | null
+          external_id: string
+          grade: string | null
+          id: string
+          is_deleted: boolean
+          name: string
+          phone: string | null
+          school: string | null
+          synced_at: string
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          class_time?: string | null
+          created_at?: string
+          enrollment_status?: string | null
+          external_id: string
+          grade?: string | null
+          id?: string
+          is_deleted?: boolean
+          name: string
+          phone?: string | null
+          school?: string | null
+          synced_at?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          class_time?: string | null
+          created_at?: string
+          enrollment_status?: string | null
+          external_id?: string
+          grade?: string | null
+          id?: string
+          is_deleted?: boolean
+          name?: string
+          phone?: string | null
+          school?: string | null
+          synced_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
