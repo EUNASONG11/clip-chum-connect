@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getMyRole, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
+import { getMyRole, getMyStatus, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — VimStream" }] }),
@@ -80,8 +80,10 @@ function AdminLayout() {
       }
       try {
         try { await ensureStudentRole(); } catch {}
-        const me = await getMyRole();
-        if (!me.isAdmin) {
+        const s = await getMyStatus();
+        if (s.isAdmin || s.isInstructor) {
+          setIsAdmin(true);
+        } else {
           const c = await claimAdminIfNone();
           if (c.claimed) {
             toast.success("첫 관리자로 등록되었습니다.");
@@ -89,8 +91,6 @@ function AdminLayout() {
           } else {
             setIsAdmin(false);
           }
-        } else {
-          setIsAdmin(true);
         }
       } finally {
         setChecking(false);
