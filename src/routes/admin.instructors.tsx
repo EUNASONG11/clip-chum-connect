@@ -93,102 +93,104 @@ function InstructorsPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
-          <CardTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5" />
-            강사 명부 ({rows.length}) · 이메일 입력 {withEmail} · 계정 생성됨 {withAccount}
-          </CardTitle>
-          <Button size="sm" onClick={bulkCreate} disabled={busy} className="gap-1">
-            <KeyRound className="h-4 w-4" />
-            {busy ? "처리 중..." : "이메일 입력된 강사 계정 일괄 생성"}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="이름·이메일·전화번호 검색"
-              className="pl-8"
-            />
-          </div>
+    <AdminOnly>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" />
+              강사 명부 ({rows.length}) · 이메일 입력 {withEmail} · 계정 생성됨 {withAccount}
+            </CardTitle>
+            <Button size="sm" onClick={bulkCreate} disabled={busy} className="gap-1">
+              <KeyRound className="h-4 w-4" />
+              {busy ? "처리 중..." : "이메일 입력된 강사 계정 일괄 생성"}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="relative max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="이름·이메일·전화번호 검색"
+                className="pl-8"
+              />
+            </div>
 
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">불러오는 중...</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="py-2 pr-2">이름</th>
-                    <th className="py-2 pr-2">전화번호</th>
-                    <th className="py-2 pr-2">지점</th>
-                    <th className="py-2 pr-2">이메일 (로그인 ID)</th>
-                    <th className="py-2 pr-2">계정 상태</th>
-                    <th className="py-2 pr-2 text-right">작업</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((r) => {
-                    const draft = drafts[r.id];
-                    const value = draft !== undefined ? draft : r.email ?? "";
-                    const dirty = draft !== undefined && draft !== (r.email ?? "");
-                    return (
-                      <tr key={r.id} className="border-t">
-                        <td className="py-2 pr-2 font-medium">{r.name}</td>
-                        <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
-                        <td className="py-2 pr-2 text-muted-foreground">{r.branch || "-"}</td>
-                        <td className="py-2 pr-2">
-                          <Input
-                            type="email"
-                            value={value}
-                            onChange={(e) =>
-                              setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
-                            }
-                            placeholder="teacher@example.com"
-                            className="h-8"
-                          />
-                        </td>
-                        <td className="py-2 pr-2 text-xs">
-                          {r.auth_user_id ? (
-                            <span className="text-green-600">
-                              계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">미생성</span>
-                          )}
-                        </td>
-                        <td className="py-2 pr-2 text-right">
-                          <Button
-                            size="sm"
-                            variant={dirty ? "default" : "outline"}
-                            disabled={!dirty || savingId === r.id}
-                            onClick={() => save(r)}
-                            className="gap-1"
-                          >
-                            <Save className="h-3.5 w-3.5" />
-                            {savingId === r.id ? "저장 중..." : "저장"}
-                          </Button>
+            {isLoading ? (
+              <p className="text-sm text-muted-foreground">불러오는 중...</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs text-muted-foreground">
+                    <tr>
+                      <th className="py-2 pr-2">이름</th>
+                      <th className="py-2 pr-2">전화번호</th>
+                      <th className="py-2 pr-2">지점</th>
+                      <th className="py-2 pr-2">이메일 (로그인 ID)</th>
+                      <th className="py-2 pr-2">계정 상태</th>
+                      <th className="py-2 pr-2 text-right">작업</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((r) => {
+                      const draft = drafts[r.id];
+                      const value = draft !== undefined ? draft : r.email ?? "";
+                      const dirty = draft !== undefined && draft !== (r.email ?? "");
+                      return (
+                        <tr key={r.id} className="border-t">
+                          <td className="py-2 pr-2 font-medium">{r.name}</td>
+                          <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
+                          <td className="py-2 pr-2 text-muted-foreground">{r.branch || "-"}</td>
+                          <td className="py-2 pr-2">
+                            <Input
+                              type="email"
+                              value={value}
+                              onChange={(e) =>
+                                setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                              }
+                              placeholder="teacher@example.com"
+                              className="h-8"
+                            />
+                          </td>
+                          <td className="py-2 pr-2 text-xs">
+                            {r.auth_user_id ? (
+                              <span className="text-green-600">
+                                계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">미생성</span>
+                            )}
+                          </td>
+                          <td className="py-2 pr-2 text-right">
+                            <Button
+                              size="sm"
+                              variant={dirty ? "default" : "outline"}
+                              disabled={!dirty || savingId === r.id}
+                              onClick={() => save(r)}
+                              className="gap-1"
+                            >
+                              <Save className="h-3.5 w-3.5" />
+                              {savingId === r.id ? "저장 중..." : "저장"}
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filtered.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                          표시할 강사가 없습니다.
                         </td>
                       </tr>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                        표시할 강사가 없습니다.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </AdminOnly>
   );
 }
