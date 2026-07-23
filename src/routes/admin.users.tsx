@@ -272,11 +272,17 @@ function UsersPage() {
             setSelectedIds(new Set());
           }}
         >
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="admin" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" /> 관리자
               <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                 {buckets.admin.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="instructor" className="gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5" /> 강사
+              <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-[10px] font-semibold text-sky-700">
+                {buckets.instructor.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="student" className="gap-1.5">
@@ -292,6 +298,7 @@ function UsersPage() {
               </span>
             </TabsTrigger>
           </TabsList>
+
         </Tabs>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
