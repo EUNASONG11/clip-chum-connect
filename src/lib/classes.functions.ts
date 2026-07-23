@@ -38,7 +38,16 @@ async function assertOwnClassOrAdmin(
     .eq("id", classId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.created_by !== context.userId) {
+  if (!data) throw new Error("수강반을 찾을 수 없습니다.");
+  if (data.created_by === context.userId) return;
+  // 배정된 강사도 접근 허용
+  const { data: assigned } = await supabaseAdmin
+    .from("class_instructors")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("instructor_user_id", context.userId)
+    .maybeSingle();
+  if (!assigned) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
 }
@@ -48,18 +57,33 @@ async function assertAdminOnly(context: { supabase: any; userId: string }) {
   if (!admin) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
-// 수강반 목록 (관리자: 전체, 강사: 본인이 생성한 반)
+// 수강반 목록 (관리자: 전체, 강사: 본인 생성 + 배정된 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let builder = supabaseAdmin
+    if (admin) {
+      const { data, error } = await supabaseAdmin
+        .from("classes")
+        .select("id, name, description, thumbnail_url, created_at, created_by")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    // 강사: 본인이 만든 것 + 배정된 것
+    const { data: assigned } = await supabaseAdmin
+      .from("class_instructors")
+      .select("class_id")
+      .eq("instructor_user_id", context.userId);
+    const assignedIds = (assigned ?? []).map((r: any) => r.class_id as string);
+    const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name, description, thumbnail_url, created_at, created_by")
+      .or(
+        `created_by.eq.${context.userId}${assignedIds.length ? `,id.in.(${assignedIds.join(",")})` : ""}`,
+      )
       .order("created_at", { ascending: false });
-    if (!admin) builder = builder.eq("created_by", context.userId);
-    const { data, error } = await builder;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -363,3 +387,93 @@ export const listMyRecentProgress = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+
+// ============================================================
+// 강사 배정 (관리자 전용)
+// ============================================================
+
+// 수강반에 배정된 강사 목록
+export const listClassInstructors = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("class_instructors")
+      .select("instructor_user_id, created_at")
+      .eq("class_id", data.classId);
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r: any) => r.instructor_user_id);
+    if (ids.length === 0) return [];
+    const { data: instr } = await supabaseAdmin
+      .from("instructors")
+      .select("auth_user_id, name, email")
+      .in("auth_user_id", ids);
+    const map = new Map((instr ?? []).map((r: any) => [r.auth_user_id, r]));
+    return (rows ?? []).map((r: any) => {
+      const m: any = map.get(r.instructor_user_id) ?? {};
+      return {
+        user_id: r.instructor_user_id as string,
+        name: (m.name as string) ?? "",
+        email: (m.email as string) ?? "",
+        created_at: r.created_at as string,
+      };
+    });
+  });
+
+// 이름/이메일로 강사 검색 (auth 계정이 있는 강사만)
+export const searchInstructors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
+  .handler(async ({ context, data }) => {
+    await assertAdminOnly(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const q = data.query.trim();
+    const { data: rows, error } = await supabaseAdmin
+      .from("instructors")
+      .select("auth_user_id, name, email")
+      .not("auth_user_id", "is", null)
+      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+      .limit(20);
+    if (error) throw new Error(error.message);
+    return (rows ?? []).map((r: any) => ({
+      user_id: r.auth_user_id as string,
+      name: (r.name as string) ?? "",
+      email: (r.email as string) ?? "",
+    }));
+  });
+
+// 강사 배정
+export const assignInstructor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOnly(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("class_instructors")
+      .insert({ class_id: data.classId, instructor_user_id: data.userId });
+    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 강사 배정 해제
+export const unassignInstructor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ context, data }) => {
+    await assertAdminOnly(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("class_instructors")
+      .delete()
+      .eq("class_id", data.classId)
+      .eq("instructor_user_id", data.userId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

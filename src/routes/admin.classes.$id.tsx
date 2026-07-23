@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown, GraduationCap } from "lucide-react";
 import {
   getClass,
   listClassStudents,
@@ -15,8 +15,13 @@ import {
   unassignStudent,
   listClassVideos,
   swapVideoOrder,
+  listClassInstructors,
+  searchInstructors,
+  assignInstructor,
+  unassignInstructor,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
+import { useAdminRole } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
@@ -25,6 +30,7 @@ export const Route = createFileRoute("/admin/classes/$id")({
 function ClassDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
+  const { isAdmin } = useAdminRole();
   const { data: cls } = useQuery({
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
@@ -82,6 +88,49 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+
+  // 강사 배정 상태
+  const { data: assignedInstructors = [] } = useQuery({
+    queryKey: ["admin", "class", id, "instructors"],
+    queryFn: () => listClassInstructors({ data: { classId: id } }),
+  });
+  const [iq, setIq] = useState("");
+  const [iResults, setIResults] = useState<{ user_id: string; name: string; email: string }[]>([]);
+  const [iSearching, setISearching] = useState(false);
+
+  const searchI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!iq.trim()) return;
+    setISearching(true);
+    try {
+      const rows = await searchInstructors({ data: { query: iq.trim() } });
+      setIResults(rows);
+      if (rows.length === 0) toast.info("일치하는 강사가 없습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setISearching(false);
+    }
+  };
+  const assignI = async (userId: string) => {
+    try {
+      await assignInstructor({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "instructors"] });
+      setIResults((r) => r.filter((s) => s.user_id !== userId));
+      toast.success("강사가 배정되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+  const removeI = async (userId: string) => {
+    try {
+      await unassignInstructor({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "instructors"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
 
 
   return (
@@ -171,6 +220,82 @@ function ClassDetailPage() {
 
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5" /> 강사 배정 ({assignedInstructors.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">
+              배정된 강사는 이 수강반의 학생/영상/진도를 조회하고 관리할 수 있습니다.
+            </p>
+            <form onSubmit={searchI} className="flex gap-2">
+              <div className="flex-1">
+                <Label htmlFor="iquery" className="sr-only">이름 또는 이메일</Label>
+                <Input
+                  id="iquery"
+                  type="text"
+                  placeholder="강사 이름 또는 이메일로 검색"
+                  value={iq}
+                  onChange={(e) => setIq(e.target.value)}
+                />
+              </div>
+              <Button type="submit" disabled={iSearching}>
+                <Search className="mr-1 h-4 w-4" />
+                {iSearching ? "검색 중..." : "검색"}
+              </Button>
+            </form>
+
+            {iResults.length > 0 && (
+              <div className="rounded-md border">
+                <ul className="divide-y">
+                  {iResults.map((r) => {
+                    const already = assignedInstructors.some((s: any) => s.user_id === r.user_id);
+                    return (
+                      <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">{r.name || "-"}</p>
+                          <p className="truncate text-xs text-muted-foreground">{r.email}</p>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={() => assignI(r.user_id)}
+                          disabled={already}
+                        >
+                          {already ? "배정됨" : "배정"}
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            {assignedInstructors.length === 0 ? (
+              <p className="text-sm text-muted-foreground">아직 배정된 강사가 없습니다.</p>
+            ) : (
+              <ul className="divide-y">
+                {assignedInstructors.map((s: any) => (
+                  <li key={s.user_id} className="flex items-center gap-2 py-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{s.name || "-"}</p>
+                      <p className="truncate text-xs text-muted-foreground">{s.email}</p>
+                    </div>
+                    <Button size="sm" variant="ghost" onClick={() => removeI(s.user_id)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
 
       <Card>
         <CardHeader>

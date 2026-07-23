@@ -49,6 +49,35 @@ export type Database = {
           },
         ]
       }
+      class_instructors: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          instructor_user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          instructor_user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          instructor_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_instructors_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_students: {
         Row: {
           class_id: string
