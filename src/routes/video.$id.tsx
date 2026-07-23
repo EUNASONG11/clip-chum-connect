@@ -350,23 +350,33 @@ function VideoPage() {
             if (!opened) setIsPlayerExpanded(true);
           })();
         };
+        let lastWall = Date.now();
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
             if (state === 1) {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
+              const nowMs = Date.now();
+              const wallDelta = (nowMs - lastWall) / 1000;
+              lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
               if (t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
               } else {
-                if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
-                send(t, d);
+                if (!isSeekingRef.current && t > maxAllowedRef.current) {
+                  const allowedGrowth = Math.max(0, wallDelta * 1.5);
+                  maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
+                }
+                const safeT = Math.min(t, maxAllowedRef.current);
+                send(safeT, d);
               }
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
+            } else {
+              lastWall = Date.now();
             }
           } catch {}
         }, 3000);
