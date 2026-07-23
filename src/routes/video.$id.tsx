@@ -96,6 +96,7 @@ function VideoPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
+  const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
   const [ratio, setRatio] = useState(0);
