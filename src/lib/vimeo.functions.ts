@@ -654,7 +654,7 @@ export const bulkCreateInstructorAccounts = createServerFn({ method: "POST" })
 
     const { data: instructors, error } = await supabaseAdmin
       .from("instructors")
-      .select("id, name, phone, auth_user_id")
+      .select("id, name, email, phone, auth_user_id")
       .is("auth_user_id", null);
     if (error) throw new Error(error.message);
 
@@ -665,26 +665,24 @@ export const bulkCreateInstructorAccounts = createServerFn({ method: "POST" })
 
     for (const inst of instructors ?? []) {
       try {
-        const phoneDigits = (inst.phone ?? "").replace(/[^0-9]/g, "");
-        if (!phoneDigits) {
+        const email = (inst.email ?? "").trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           failed++;
-          errors.push(`${inst.name}: 전화번호 없음`);
+          errors.push(`${inst.name}: 이메일 없음 또는 형식 오류`);
           continue;
         }
-        const email = `instructor-${phoneDigits}@mirror.local`;
         let authUserId: string | null = null;
 
         const { data: created1, error: cErr } = await supabaseAdmin.auth.admin.createUser({
           email,
           password: "12345678",
           email_confirm: true,
-          user_metadata: { name: inst.name, phone: phoneDigits, source: "instructor-bulk" },
+          user_metadata: { name: inst.name, source: "instructor-bulk" },
         });
 
         if (cErr) {
-          // 이미 존재하면 조회해서 연결
           const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const found = list?.users.find((u) => u.email === email);
+          const found = list?.users.find((u) => (u.email ?? "").toLowerCase() === email);
           if (found) {
             authUserId = found.id;
             linked++;
