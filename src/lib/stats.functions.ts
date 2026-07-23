@@ -113,16 +113,39 @@ export const getOverviewStats = createServerFn({ method: "GET" })
     };
   });
 
-// 수강반별 통계
+// 수강반별 통계 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
-    const [{ data: classes }, { data: videos }, { data: students }, { data: progress }] = await Promise.all([
-      context.supabase.from("classes").select("id, name").order("created_at", { ascending: false }),
-      context.supabase.from("videos").select("id, class_id"),
-      context.supabase.from("class_students").select("class_id, user_id"),
-      context.supabase.from("video_progress").select("video_id, user_id, watched_ratio, is_completed"),
+    await assertAdminOrInstructor(context);
+    const admin = await isAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let classQuery = supabaseAdmin
+      .from("classes")
+      .select("id, name")
+      .order("created_at", { ascending: false });
+    if (!admin) classQuery = classQuery.eq("created_by", context.userId);
+    const { data: classes } = await classQuery;
+    const classIds = (classes ?? []).map((c: any) => c.id);
+
+    if (classIds.length === 0) return [];
+
+    const [{ data: videos }, { data: students }, { data: progress }] = await Promise.all([
+      supabaseAdmin.from("videos").select("id, class_id").in("class_id", classIds),
+      supabaseAdmin.from("class_students").select("class_id, user_id").in("class_id", classIds),
+      supabaseAdmin
+        .from("videos")
+        .select("id")
+        .in("class_id", classIds)
+        .then(async (res: any) => {
+          const videoIds = (res.data ?? []).map((v: any) => v.id);
+          if (videoIds.length === 0) return { data: [] };
+          return supabaseAdmin
+            .from("video_progress")
+            .select("video_id, user_id, watched_ratio, is_completed")
+            .in("video_id", videoIds);
+        }),
     ]);
 
     const videosByClass = new Map<string, string[]>();
@@ -148,8 +171,8 @@ export const getClassStats = createServerFn({ method: "GET" })
       let completedCells = 0;
       let sumRatio = 0;
       let cellsWithProgress = 0;
-      vids.forEach((vid) => {
-        studs.forEach((uid) => {
+      vids.forEach((vid: string) => {
+        studs.forEach((uid: string) => {
           const p = progressByVideoUser.get(`${vid}:${uid}`);
           if (p) {
             cellsWithProgress += 1;
