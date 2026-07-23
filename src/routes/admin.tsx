@@ -19,14 +19,15 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getMyRole, getMyStatus, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
+import { getMyStatus, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
+import { AdminRoleContext } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — VimStream" }] }),
   component: AdminLayout,
 });
 
-const navItems = [
+const adminNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
   { title: "영상 업로드", url: "/admin/upload", icon: UploadIcon },
   { title: "등록된 영상", url: "/admin/videos", icon: Film },
@@ -35,21 +36,40 @@ const navItems = [
   { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
 ];
 
+const instructorNavItems = [
+  { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
+  { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
+];
+
 function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { state } = useSidebar();
   const isExpanded = state === "expanded";
+  const { isAdmin, isInstructor } = useAdminRole();
+  const items = isAdmin ? adminNavItems : instructorNavItems;
+  const label = isAdmin ? "관리자" : isInstructor ? "강사" : "메뉴";
+  const badgeText = isAdmin ? "관리자" : isInstructor ? "강사" : "";
+
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className={`flex h-12 !flex-row items-center border-b border-sidebar-border ${isExpanded ? "justify-end pr-3" : "justify-center"}`}>
+      <SidebarHeader
+        className={`flex h-12 !flex-row items-center border-b border-sidebar-border ${
+          isExpanded ? "justify-between px-3" : "justify-center"
+        }`}
+      >
+        {isExpanded && badgeText && (
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+            {badgeText}
+          </span>
+        )}
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>관리자</SidebarGroupLabel>
+          <SidebarGroupLabel>{label}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={currentPath === item.url}>
                     <Link to={item.url} className="flex items-center gap-2">
@@ -71,6 +91,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isInstructor, setIsInstructor] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -83,7 +104,8 @@ function AdminLayout() {
         try { await ensureStudentRole(); } catch {}
         const s = await getMyStatus();
         if (s.isAdmin || s.isInstructor) {
-          setIsAdmin(true);
+          setIsAdmin(s.isAdmin);
+          setIsInstructor(s.isInstructor);
         } else {
           const c = await claimAdminIfNone();
           if (c.claimed) {
@@ -91,6 +113,7 @@ function AdminLayout() {
             setIsAdmin(true);
           } else {
             setIsAdmin(false);
+            setIsInstructor(false);
           }
         }
       } finally {
@@ -108,7 +131,7 @@ function AdminLayout() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isInstructor) {
     return (
       <div className="min-h-screen">
         <SiteHeader />
@@ -127,18 +150,20 @@ function AdminLayout() {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
-        <AdminSidebar />
-        <div className="flex flex-1 flex-col min-w-0">
-          <SiteHeader />
-          <main className="flex-1 p-6">
-            <div className="mx-auto max-w-5xl">
-              <Outlet />
-            </div>
-          </main>
+    <AdminRoleContext.Provider value={{ isAdmin, isInstructor, isLoading: false }}>
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-background">
+          <AdminSidebar />
+          <div className="flex flex-1 flex-col min-w-0">
+            <SiteHeader />
+            <main className="flex-1 p-6">
+              <div className="mx-auto max-w-5xl">
+                <Outlet />
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
-    </SidebarProvider>
+      </SidebarProvider>
+    </AdminRoleContext.Provider>
   );
 }
