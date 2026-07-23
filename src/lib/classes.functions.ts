@@ -120,13 +120,14 @@ export const updateClass = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
     if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("classes")
       .update(patch as any)
       .eq("id", data.id);
