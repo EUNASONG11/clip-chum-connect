@@ -221,6 +221,7 @@ function VideoPage() {
       let durationCached: number | null = video.duration ?? null;
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
+      const lastWallRef = { current: Date.now() };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
@@ -228,10 +229,14 @@ function VideoPage() {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
           }
+          lastWallRef.current = Date.now();
         } catch {}
       });
       player.on("timeupdate", (d: any) => {
         const t = d.seconds;
+        const nowMs = Date.now();
+        const wallDelta = (nowMs - lastWallRef.current) / 1000;
+        lastWallRef.current = nowMs;
         const jump = t - lastTimeRef.current;
         // 큰 점프(2초 초과)는 seek 로 간주 → maxAllowed 갱신/전송 금지
         if (jump > 2) {
@@ -243,8 +248,10 @@ function VideoPage() {
           }
         }
         currentTimeRef.current = t;
+        // 재생속도 기반 검증: 실제 흐른 시간의 1.5배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
-          maxAllowedRef.current = t;
+          const allowedGrowth = Math.max(0, wallDelta * 1.5);
+          maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
         // 서버에는 허용된 최대치 이내의 값만 전송해 max_seconds 오염 방지
         const safeT = Math.min(t, maxAllowedRef.current);
@@ -259,6 +266,7 @@ function VideoPage() {
         } else {
           lastTimeRef.current = d.seconds;
         }
+        lastWallRef.current = Date.now();
         isSeekingRef.current = false;
       });
       player.on("pause", (d: any) => {
@@ -342,23 +350,33 @@ function VideoPage() {
             if (!opened) setIsPlayerExpanded(true);
           })();
         };
+        let lastWall = Date.now();
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
             if (state === 1) {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
+              const nowMs = Date.now();
+              const wallDelta = (nowMs - lastWall) / 1000;
+              lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
               if (t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
               } else {
-                if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
-                send(t, d);
+                if (!isSeekingRef.current && t > maxAllowedRef.current) {
+                  const allowedGrowth = Math.max(0, wallDelta * 1.5);
+                  maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
+                }
+                const safeT = Math.min(t, maxAllowedRef.current);
+                send(safeT, d);
               }
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
+            } else {
+              lastWall = Date.now();
             }
           } catch {}
         }, 3000);
