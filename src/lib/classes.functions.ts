@@ -247,12 +247,14 @@ export const unassignStudent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// 수강반의 영상 목록 (RLS로 관리자/학생 자동 처리)
+// 수강반의 영상 목록 (관리자: 전체, 강사: 본인 수강반)
 export const listClassVideos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
       .from("videos")
       .select("id, title, description, thumbnail_url, duration, status, is_published, sort_order, created_at")
       .eq("class_id", data.classId)
@@ -263,7 +265,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
     const videoIds = videos.map((r: any) => r.id);
     const progressMap = new Map<string, any>();
     if (videoIds.length > 0) {
-      const { data: progress, error: pErr } = await context.supabase
+      const { data: progress, error: pErr } = await supabaseAdmin
         .from("video_progress")
         .select("video_id, current_seconds, watched_ratio, is_completed")
         .eq("user_id", context.userId)
