@@ -40,27 +40,72 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
   }
 }
 
-// 전체 요약 통계
+// 전체 요약 통계 (관리자: 전체, 강사: 본인 수강반 기준)
 export const getOverviewStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
-    const [videos, classes, students, progress] = await Promise.all([
-      context.supabase.from("videos").select("id", { count: "exact", head: true }),
-      context.supabase.from("classes").select("id", { count: "exact", head: true }),
-      context.supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "student"),
-      context.supabase.from("video_progress").select("watched_ratio, is_completed"),
+    await assertAdminOrInstructor(context);
+    const admin = await isAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    let classIds: string[] = [];
+    if (admin) {
+      const { data } = await supabaseAdmin.from("classes").select("id");
+      classIds = (data ?? []).map((c: any) => c.id);
+    } else {
+      const { data } = await supabaseAdmin
+        .from("classes")
+        .select("id")
+        .eq("created_by", context.userId);
+      classIds = (data ?? []).map((c: any) => c.id);
+    }
+
+    if (classIds.length === 0) {
+      return {
+        videoCount: 0,
+        classCount: 0,
+        studentCount: 0,
+        totalViews: 0,
+        completedCount: 0,
+        avgWatchedRatio: 0,
+      };
+    }
+
+    const [videos, students, progress] = await Promise.all([
+      supabaseAdmin.from("videos").select("id", { count: "exact", head: true }).in("class_id", classIds),
+      supabaseAdmin
+        .from("class_students")
+        .select("user_id")
+        .in("class_id", classIds)
+        .then((res: any) => {
+          const ids = new Set((res.data ?? []).map((r: any) => r.user_id));
+          return { count: ids.size };
+        }),
+      supabaseAdmin
+        .from("videos")
+        .select("id")
+        .in("class_id", classIds)
+        .then(async (res: any) => {
+          const ids = (res.data ?? []).map((v: any) => v.id);
+          if (ids.length === 0) return { data: [] };
+          return supabaseAdmin
+            .from("video_progress")
+            .select("watched_ratio, is_completed")
+            .in("video_id", ids);
+        }),
     ]);
-    const progressRows = progress.data ?? [];
+
+    const progressRows = (progress as any).data ?? [];
     const totalViews = progressRows.length;
     const completed = progressRows.filter((r: any) => r.is_completed).length;
     const avgRatio =
       totalViews > 0
         ? progressRows.reduce((sum: number, r: any) => sum + Number(r.watched_ratio ?? 0), 0) / totalViews
         : 0;
+
     return {
       videoCount: videos.count ?? 0,
-      classCount: classes.count ?? 0,
+      classCount: classIds.length,
       studentCount: students.count ?? 0,
       totalViews,
       completedCount: completed,
