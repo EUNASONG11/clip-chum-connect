@@ -148,10 +148,17 @@ function VideoPage() {
   }, [id]);
 
   // 저장된 진도 상태 초기화
+  const progressRef = useRef<{ current_seconds: number; max_seconds: number; watched_ratio: number; is_completed: boolean } | null>(null);
   useEffect(() => {
     if (!isAuthed) return;
     getMyProgress({ data: { videoId: id } }).then((p) => {
       if (p) {
+        progressRef.current = {
+          current_seconds: p.current_seconds ?? 0,
+          max_seconds: p.max_seconds ?? p.current_seconds ?? 0,
+          watched_ratio: Number(p.watched_ratio),
+          is_completed: p.is_completed,
+        };
         setRatio(Number(p.watched_ratio));
         setCompleted(p.is_completed);
       }
