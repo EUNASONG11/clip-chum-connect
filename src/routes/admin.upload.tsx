@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
 import { listClasses } from "@/lib/classes.functions";
+import { AdminOnly } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/upload")({
   component: UploadPage,
