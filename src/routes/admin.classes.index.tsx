@@ -28,15 +28,43 @@ function ClassesPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickThumb = (file: File | null) => {
+    if (!file) {
+      setThumbFile(null);
+      setThumbPreview(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) return toast.error("이미지 파일만 업로드할 수 있습니다.");
+    if (file.size > 5 * 1024 * 1024) return toast.error("5MB 이하 이미지를 사용하세요.");
+    setThumbFile(file);
+    setThumbPreview(URL.createObjectURL(file));
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
     setSaving(true);
     try {
-      await createClass({ data: { name: name.trim(), description: desc || null } });
+      const row: any = await createClass({ data: { name: name.trim(), description: desc || null } });
+      if (thumbFile && row?.id) {
+        const ext = thumbFile.name.split(".").pop() || "jpg";
+        const path = `${row.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("class-thumbnails")
+          .upload(path, thumbFile, { upsert: true, contentType: thumbFile.type });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("class-thumbnails").getPublicUrl(path);
+        await updateClass({ data: { id: row.id, thumbnail_url: pub.publicUrl } });
+      }
       setName("");
       setDesc("");
+      setThumbFile(null);
+      setThumbPreview(null);
+      if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "classes"] });
       setTab("list");
@@ -46,6 +74,7 @@ function ClassesPage() {
       setSaving(false);
     }
   };
+
 
   const remove = async (id: string) => {
     if (!confirm("이 수강반을 삭제하시겠습니까? 배정된 학생 정보도 삭제됩니다.")) return;
