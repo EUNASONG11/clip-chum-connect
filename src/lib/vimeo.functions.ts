@@ -640,34 +640,9 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
       };
     }
 
-    // 학생에서 못 찾으면 강사 테이블에서 조회 (강사는 초기 비밀번호가 12345678)
-    const { data: instRows, error: iErr } = await supabaseAdmin
-      .from("instructors")
-      .select("name, phone, auth_user_id")
-      .eq("name", data.name.trim())
-      .eq("phone", phoneDigits)
-      .limit(2);
-    if (iErr) throw new Error(iErr.message);
-    if (!instRows || instRows.length === 0) {
-      throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
-    }
-    if (instRows.length > 1) {
-      throw new Error("동일한 이름/전화번호의 강사 계정이 여러 개 존재합니다. 관리자에게 문의하세요.");
-    }
-    const inst = instRows[0];
-    if (!inst.auth_user_id) {
-      throw new Error("강사 계정이 아직 준비되지 않았습니다. 관리자에게 문의하세요.");
-    }
-    const { data: iUserRes, error: iUserErr } =
-      await supabaseAdmin.auth.admin.getUserById(inst.auth_user_id);
-    if (iUserErr || !iUserRes?.user?.email) {
-      throw new Error("계정 정보를 불러올 수 없습니다.");
-    }
-    return {
-      email: iUserRes.user.email,
-      initialPassword: "12345678",
-    };
+    throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
   });
+
 
 // ============= 강사 계정 일괄 생성 & 최초 비밀번호 변경 =============
 
