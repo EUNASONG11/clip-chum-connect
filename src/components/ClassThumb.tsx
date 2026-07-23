@@ -30,7 +30,11 @@ export function ClassThumb({
     setUrl(null);
     if (!src) return;
     const path = extractPath(src);
-    if (!path) return;
+    if (!path) {
+      // 외부 URL (Vimeo/YouTube 썸네일 등) 은 그대로 사용
+      if (src.startsWith("http")) setUrl(src);
+      return;
+    }
     supabase.storage
       .from(BUCKET)
       .createSignedUrl(path, 60 * 60)
@@ -45,3 +49,4 @@ export function ClassThumb({
   if (!src || !url) return null;
   return <img src={url} alt={alt} className={className} />;
 }
+
