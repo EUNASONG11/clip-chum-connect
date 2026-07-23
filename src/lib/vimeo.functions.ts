@@ -179,11 +179,17 @@ export const getMyRole = createServerFn({ method: "GET" })
     return { isAdmin: Boolean(data), userId: context.userId };
   });
 
-// 5-1) 내 표시 이름 (학생이면 external_students.name, 그 외 이메일)
+// 5-1) 내 표시 이름 (강사는 instructors.name, 학생은 external_students.name, 그 외 이메일)
 export const getMyDisplayName = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inst } = await supabaseAdmin
+      .from("instructors")
+      .select("name")
+      .eq("auth_user_id", context.userId)
+      .maybeSingle();
+    if ((inst as any)?.name) return { name: (inst as any).name };
     const { data } = await supabaseAdmin
       .from("external_students")
       .select("name")
