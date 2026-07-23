@@ -39,6 +39,7 @@ type UserRow = {
   roles: string[];
   isAdmin: boolean;
   isStudent: boolean;
+  isInstructor: boolean;
   isPending: boolean;
   class_count: number;
 };
@@ -50,7 +51,7 @@ const usersQueryOptions = queryOptions({
   staleTime: 30_000,
 });
 
-type TabKey = "admin" | "student" | "pending";
+type TabKey = "admin" | "instructor" | "student" | "pending";
 
 export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
@@ -60,11 +61,12 @@ function Badge({
   tone,
   children,
 }: {
-  tone: "admin" | "student" | "pending";
+  tone: "admin" | "instructor" | "student" | "pending";
   children: React.ReactNode;
 }) {
   const map = {
     admin: "bg-primary/10 text-primary border-primary/20",
+    instructor: "bg-sky-100 text-sky-700 border-sky-200",
     student: "bg-accent/60 text-accent-foreground border-accent",
     pending: "bg-amber-100 text-amber-700 border-amber-200",
   } as const;
@@ -91,24 +93,29 @@ function UsersPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
+    instructor: 1,
     student: 1,
     pending: 1,
   });
+
   const page = pages[tab];
   const setPage = (p: number) =>
     setPages((prev) => ({ ...prev, [tab]: Math.max(1, p) }));
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
+    const instructor: UserRow[] = [];
     const student: UserRow[] = [];
     const pending: UserRow[] = [];
     for (const u of users) {
       if (u.isAdmin) admin.push(u);
+      else if (u.isInstructor) instructor.push(u);
       else if (u.isStudent) student.push(u);
       else pending.push(u);
     }
-    return { admin, student, pending };
+    return { admin, instructor, student, pending };
   }, [users]);
+
 
   const filtered = useMemo(() => {
     const rows = buckets[tab];
@@ -147,11 +154,14 @@ function UsersPage() {
     }
   };
 
-  const doApprove = async (u: UserRow, role: "student" | "admin") => {
+  const roleName = (r: "student" | "admin" | "instructor") =>
+    r === "admin" ? "관리자" : r === "instructor" ? "강사" : "학생";
+
+  const doApprove = async (u: UserRow, role: "student" | "admin" | "instructor") => {
     setBusyId(u.id);
     try {
       await approveUser({ data: { userId: u.id, role } });
-      toast.success(`${role === "admin" ? "관리자" : "학생"}으로 승인되었습니다.`);
+      toast.success(`${roleName(role)}(으)로 승인되었습니다.`);
       refetch();
     } catch (err: any) {
       toast.error(err.message);
@@ -159,6 +169,7 @@ function UsersPage() {
       setBusyId(null);
     }
   };
+
 
   const doReject = async (u: UserRow) => {
     if (!confirm(`${u.email} 계정을 삭제(거절)하시겠습니까?`)) return;
@@ -215,13 +226,14 @@ function UsersPage() {
     }
   };
 
-  const doBulkApprove = async (role: "student" | "admin") => {
+  const doBulkApprove = async (role: "student" | "admin" | "instructor") => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
-    if (!confirm(`${ids.length}명을 ${role === "admin" ? "관리자" : "학생"}으로 승인하시겠습니까?`)) return;
+    if (!confirm(`${ids.length}명을 ${roleName(role)}(으)로 승인하시겠습니까?`)) return;
     setBulkBusy(true);
     try {
       const res: any = await bulkApproveUsers({ data: { userIds: ids, role } });
+
       toast.success(`${res?.count ?? ids.length}명이 승인되었습니다.`);
       setSelectedIds(new Set());
       refetch();
@@ -233,9 +245,10 @@ function UsersPage() {
   };
 
   const roleLabel = (u: UserRow) =>
-    u.isAdmin ? "관리자" : u.isStudent ? "학생" : "승인 대기";
-  const roleTone = (u: UserRow): "admin" | "student" | "pending" =>
-    u.isAdmin ? "admin" : u.isStudent ? "student" : "pending";
+    u.isAdmin ? "관리자" : u.isInstructor ? "강사" : u.isStudent ? "학생" : "승인 대기";
+  const roleTone = (u: UserRow): "admin" | "instructor" | "student" | "pending" =>
+    u.isAdmin ? "admin" : u.isInstructor ? "instructor" : u.isStudent ? "student" : "pending";
+
 
   return (
     <Card className="border-border/60">
@@ -259,11 +272,17 @@ function UsersPage() {
             setSelectedIds(new Set());
           }}
         >
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-2xl grid-cols-4">
             <TabsTrigger value="admin" className="gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5" /> 관리자
               <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                 {buckets.admin.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="instructor" className="gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5" /> 강사
+              <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-[10px] font-semibold text-sky-700">
+                {buckets.instructor.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="student" className="gap-1.5">
@@ -279,6 +298,7 @@ function UsersPage() {
               </span>
             </TabsTrigger>
           </TabsList>
+
         </Tabs>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -288,7 +308,7 @@ function UsersPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPages({ admin: 1, student: 1, pending: 1 });
+                setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
               }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
@@ -340,11 +360,22 @@ function UsersPage() {
                 className="gap-1"
               >
                 <Check className="h-3.5 w-3.5" />
-                {bulkBusy ? "처리 중..." : `학생으로 일괄 승인 (${selectedIds.size})`}
+                {bulkBusy ? "처리 중..." : `학생 승인 (${selectedIds.size})`}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => doBulkApprove("instructor")}
+                className="gap-1"
+              >
+                <Check className="h-3.5 w-3.5" />
+                강사 승인 ({selectedIds.size})
               </Button>
             </div>
           </div>
         )}
+
 
         <div className="overflow-x-auto rounded-xl border border-border/60">
           <table className="w-full text-sm">
@@ -433,7 +464,16 @@ function UsersPage() {
                                 onClick={() => doApprove(u, "student")}
                                 className="gap-1"
                               >
-                                <Check className="h-3.5 w-3.5" /> 승인
+                                <Check className="h-3.5 w-3.5" /> 학생 승인
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={busy}
+                                onClick={() => doApprove(u, "instructor")}
+                                className="gap-1"
+                              >
+                                <Check className="h-3.5 w-3.5" /> 강사 승인
                               </Button>
                               <Button
                                 size="sm"
@@ -446,7 +486,7 @@ function UsersPage() {
                               </Button>
                             </>
                           )}
-                          {u.isStudent && !u.isAdmin && (
+                          {(u.isStudent || u.isInstructor) && !u.isAdmin && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -457,6 +497,7 @@ function UsersPage() {
                               <UserPlus className="h-3.5 w-3.5" /> 관리자로
                             </Button>
                           )}
+
                           {u.isAdmin && (
                             <Button
                               size="sm"

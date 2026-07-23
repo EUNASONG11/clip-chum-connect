@@ -240,9 +240,11 @@ export const getMyStatus = createServerFn({ method: "GET" })
     return {
       isAdmin: roles.includes("admin"),
       isStudent: roles.includes("student"),
-      isPending: !roles.includes("admin") && !roles.includes("student"),
+      isInstructor: roles.includes("instructor"),
+      isPending: !roles.includes("admin") && !roles.includes("student") && !roles.includes("instructor"),
     };
   });
+
 
 // 6-2) 사용자 목록 (관리자 전용) — 수강반 수 포함
 export const listUsers = createServerFn({ method: "GET" })
@@ -337,7 +339,8 @@ export const listUsers = createServerFn({ method: "GET" })
         const roles = roleMap.get(u.id) ?? [];
         const isAdmin = roles.includes("admin");
         const isStudent = roles.includes("student");
-        const isPending = !isAdmin && !isStudent;
+        const isInstructor = roles.includes("instructor");
+        const isPending = !isAdmin && !isStudent && !isInstructor;
         const ext = extMap.get(u.id);
         return {
           id: u.id,
@@ -352,11 +355,14 @@ export const listUsers = createServerFn({ method: "GET" })
           roles,
           isAdmin,
           isStudent,
+          isInstructor,
           isPending,
           class_count: classCount.get(u.id) ?? 0,
         };
       })
       .filter((u: any) => {
+        // 관리자·강사는 external_students 상태와 무관하게 항상 표시
+        if (u.isAdmin || u.isInstructor) return true;
         const status = extMap.get(u.id)?.enrollment_status ?? null;
         // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
         if (!status) return !u.isStudent && !u.isPending;
@@ -364,6 +370,7 @@ export const listUsers = createServerFn({ method: "GET" })
         return true;
       });
   });
+
 
 
 // 6-3) 관리자 권한 부여 (이메일로)
@@ -409,7 +416,8 @@ export const approveUser = createServerFn({ method: "POST" })
     z
       .object({
         userId: z.string().uuid(),
-        role: z.enum(["student", "admin"]).default("student"),
+        role: z.enum(["student", "admin", "instructor"]).default("student"),
+
       })
       .parse(input),
   )
@@ -435,7 +443,7 @@ export const bulkApproveUsers = createServerFn({ method: "POST" })
     z
       .object({
         userIds: z.array(z.string().uuid()).min(1).max(2000),
-        role: z.enum(["student", "admin"]).default("student"),
+        role: z.enum(["student", "admin", "instructor"]).default("student"),
       })
       .parse(input),
   )
@@ -470,7 +478,7 @@ export const revertToPending = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId)
-      .in("role", ["student", "admin"]);
+      .in("role", ["student", "admin", "instructor"]);
     // pending 역할 부여
     const { error } = await supabaseAdmin
       .from("user_roles")
