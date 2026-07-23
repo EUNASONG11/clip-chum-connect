@@ -89,6 +89,49 @@ function ClassDetailPage() {
     }
   };
 
+  // 강사 배정 상태
+  const { data: assignedInstructors = [] } = useQuery({
+    queryKey: ["admin", "class", id, "instructors"],
+    queryFn: () => listClassInstructors({ data: { classId: id } }),
+  });
+  const [iq, setIq] = useState("");
+  const [iResults, setIResults] = useState<{ user_id: string; name: string; email: string }[]>([]);
+  const [iSearching, setISearching] = useState(false);
+
+  const searchI = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!iq.trim()) return;
+    setISearching(true);
+    try {
+      const rows = await searchInstructors({ data: { query: iq.trim() } });
+      setIResults(rows);
+      if (rows.length === 0) toast.info("일치하는 강사가 없습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setISearching(false);
+    }
+  };
+  const assignI = async (userId: string) => {
+    try {
+      await assignInstructor({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "instructors"] });
+      setIResults((r) => r.filter((s) => s.user_id !== userId));
+      toast.success("강사가 배정되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+  const removeI = async (userId: string) => {
+    try {
+      await unassignInstructor({ data: { classId: id, userId } });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "instructors"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+
 
   return (
     <div className="space-y-6">
