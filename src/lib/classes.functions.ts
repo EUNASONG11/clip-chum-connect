@@ -140,8 +140,9 @@ export const deleteClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
-    const { error } = await context.supabase.from("classes").delete().eq("id", data.id);
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("classes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
