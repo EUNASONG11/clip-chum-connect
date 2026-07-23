@@ -298,13 +298,14 @@ export const updateVideo = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOnly(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = {};
     for (const k of ["title", "description", "class_id", "is_published", "sort_order", "completion_ratio"] as const) {
       if (data[k] !== undefined) patch[k] = data[k];
     }
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase.from("videos").update(patch as any).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("videos").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
