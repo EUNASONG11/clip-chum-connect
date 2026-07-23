@@ -148,128 +148,130 @@ function UploadPage() {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>새 영상 추가</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Tabs defaultValue="vimeo" className="w-full">
-          <TabsList>
-            <TabsTrigger value="vimeo" className="gap-2">
-              <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
-            </TabsTrigger>
-            <TabsTrigger value="youtube" className="gap-2">
-              <Youtube className="h-4 w-4" /> YouTube 링크
-            </TabsTrigger>
-          </TabsList>
+    <AdminOnly>
+      <Card>
+        <CardHeader>
+          <CardTitle>새 영상 추가</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="vimeo" className="w-full">
+            <TabsList>
+              <TabsTrigger value="vimeo" className="gap-2">
+                <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
+              </TabsTrigger>
+              <TabsTrigger value="youtube" className="gap-2">
+                <Youtube className="h-4 w-4" /> YouTube 링크
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="vimeo" className="pt-4">
-            <form onSubmit={upload} className="space-y-4">
-              <div>
-                <Label htmlFor="title">제목</Label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="desc">설명</Label>
-                <Textarea id="desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TabsContent value="vimeo" className="pt-4">
+              <form onSubmit={upload} className="space-y-4">
                 <div>
-                  <Label>수강반</Label>
-                  {classSelect(classId, setClassId)}
+                  <Label htmlFor="title">제목</Label>
+                  <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
                 </div>
                 <div>
-                  <Label htmlFor="order">노출 순서</Label>
+                  <Label htmlFor="desc">설명</Label>
+                  <Textarea id="desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>수강반</Label>
+                    {classSelect(classId, setClassId)}
+                  </div>
+                  <div>
+                    <Label htmlFor="order">노출 순서</Label>
+                    <Input
+                      id="order"
+                      type="number"
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
+                  <Label htmlFor="pub">학생에게 공개</Label>
+                </div>
+                <div>
+                  <Label htmlFor="file">영상 파일</Label>
                   <Input
-                    id="order"
-                    type="number"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(Number(e.target.value))}
+                    id="file"
+                    type="file"
+                    accept="video/*"
+                    ref={fileRef}
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   />
+                  {file && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                    </p>
+                  )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
-                <Label htmlFor="pub">학생에게 공개</Label>
-              </div>
-              <div>
-                <Label htmlFor="file">영상 파일</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  accept="video/*"
-                  ref={fileRef}
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
-                {file && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
-                  </p>
+                {progress !== null && (
+                  <div>
+                    <Progress value={progress} />
+                    <p className="mt-1 text-xs text-muted-foreground">{progress}%</p>
+                  </div>
                 )}
-              </div>
-              {progress !== null && (
-                <div>
-                  <Progress value={progress} />
-                  <p className="mt-1 text-xs text-muted-foreground">{progress}%</p>
-                </div>
-              )}
-              {file && (
-                <Button type="submit" disabled={uploading}>
-                  {uploading ? "업로드 중..." : "업로드"}
-                </Button>
-              )}
-            </form>
-          </TabsContent>
+                {file && (
+                  <Button type="submit" disabled={uploading}>
+                    {uploading ? "업로드 중..." : "업로드"}
+                  </Button>
+                )}
+              </form>
+            </TabsContent>
 
-          <TabsContent value="youtube" className="pt-4">
-            <form onSubmit={addYt} className="space-y-4">
-              <div>
-                <Label htmlFor="yt-url">YouTube 링크</Label>
-                <Input
-                  id="yt-url"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                  value={ytUrl}
-                  onChange={(e) => setYtUrl(e.target.value)}
-                  required
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  youtube.com/watch, youtu.be, /embed, /shorts 링크 지원
-                </p>
-              </div>
-              <div>
-                <Label htmlFor="yt-title">제목</Label>
-                <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
-              </div>
-              <div>
-                <Label htmlFor="yt-desc">설명</Label>
-                <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TabsContent value="youtube" className="pt-4">
+              <form onSubmit={addYt} className="space-y-4">
                 <div>
-                  <Label>수강반</Label>
-                  {classSelect(ytClassId, setYtClassId)}
-                </div>
-                <div>
-                  <Label htmlFor="yt-order">노출 순서</Label>
+                  <Label htmlFor="yt-url">YouTube 링크</Label>
                   <Input
-                    id="yt-order"
-                    type="number"
-                    value={ytSort}
-                    onChange={(e) => setYtSort(Number(e.target.value))}
+                    id="yt-url"
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    value={ytUrl}
+                    onChange={(e) => setYtUrl(e.target.value)}
+                    required
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    youtube.com/watch, youtu.be, /embed, /shorts 링크 지원
+                  </p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
-                <Label htmlFor="yt-pub">학생에게 공개</Label>
-              </div>
-              <Button type="submit" disabled={ytSaving}>
-                {ytSaving ? "추가 중..." : "추가"}
-              </Button>
-            </form>
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+                <div>
+                  <Label htmlFor="yt-title">제목</Label>
+                  <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="yt-desc">설명</Label>
+                  <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>수강반</Label>
+                    {classSelect(ytClassId, setYtClassId)}
+                  </div>
+                  <div>
+                    <Label htmlFor="yt-order">노출 순서</Label>
+                    <Input
+                      id="yt-order"
+                      type="number"
+                      value={ytSort}
+                      onChange={(e) => setYtSort(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
+                  <Label htmlFor="yt-pub">학생에게 공개</Label>
+                </div>
+                <Button type="submit" disabled={ytSaving}>
+                  {ytSaving ? "추가 중..." : "추가"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </AdminOnly>
   );
 }
