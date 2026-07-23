@@ -2,12 +2,42 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-async function assertAdmin(context: any) {
-  const [{ data: isAdmin }, { data: isInstructor }] = await Promise.all([
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "instructor" }),
-  ]);
-  if (!isAdmin && !isInstructor) throw new Error("Forbidden");
+async function isAdmin(context: any) {
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+async function isInstructor(context: any) {
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "instructor",
+  });
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+async function assertAdminOrInstructor(context: any) {
+  const [admin, instructor] = await Promise.all([isAdmin(context), isInstructor(context)]);
+  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+}
+
+async function assertOwnClassOrAdmin(context: any, classId: string) {
+  const admin = await isAdmin(context);
+  if (admin) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("classes")
+    .select("created_by")
+    .eq("id", classId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.created_by !== context.userId) {
+    throw new Error("해당 수강반에 대한 권한이 없습니다.");
+  }
 }
 
 // 전체 요약 통계
