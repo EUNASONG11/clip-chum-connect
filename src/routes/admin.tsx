@@ -19,7 +19,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getMyRole, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
+import { getMyRole, getMyStatus, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — VimStream" }] }),
