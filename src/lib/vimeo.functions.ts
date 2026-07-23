@@ -333,6 +333,16 @@ export const listUsers = createServerFn({ method: "GET" })
       if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
     });
 
+    // instructors 테이블에서 강사 정보 조회
+    const { data: instRows } = await retry(
+      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone").not("auth_user_id", "is", null),
+      "instructors",
+    );
+    const instMap = new Map<string, { name: string | null; phone: string | null }>();
+    (instRows ?? []).forEach((r: any) => {
+      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+    });
+
     const formatPhone = (p: string | null | undefined) => {
       if (!p) return "";
       const d = p.replace(/[^0-9]/g, "");
