@@ -73,22 +73,7 @@ export function ClassThumbnailUploader({
 
   return (
     <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={pick}
-        disabled={busy}
-        className={`${dims} flex-shrink-0 overflow-hidden rounded-md border bg-muted transition hover:opacity-80`}
-        aria-label="썸네일 변경"
-      >
-        {currentUrl ? (
-          <ClassThumb src={currentUrl} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
-          </div>
-        )}
 
-      </button>
       <div className="flex flex-col gap-1">
         <Button type="button" size="sm" variant="outline" onClick={pick} disabled={busy}>
           {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <ImagePlus className="mr-1 h-3 w-3" />}
