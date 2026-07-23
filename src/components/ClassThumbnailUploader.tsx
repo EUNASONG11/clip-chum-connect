@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateClass } from "@/lib/classes.functions";
+import { ClassThumb } from "@/components/ClassThumb";
+
 
 const BUCKET = "class-thumbnails";
 
@@ -42,11 +44,11 @@ export function ClassThumbnailUploader({
         .from(BUCKET)
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const url = data.publicUrl;
-      await updateClass({ data: { id: classId, thumbnail_url: url } });
+      const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60);
+      await updateClass({ data: { id: classId, thumbnail_url: path } });
       toast.success("썸네일이 저장되었습니다.");
-      onChange?.(url);
+      onChange?.(signed?.signedUrl ?? path);
+
     } catch (err: any) {
       toast.error(err.message ?? "업로드 실패");
     } finally {
@@ -79,12 +81,13 @@ export function ClassThumbnailUploader({
         aria-label="썸네일 변경"
       >
         {currentUrl ? (
-          <img src={currentUrl} alt="" className="h-full w-full object-cover" />
+          <ClassThumb src={currentUrl} className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted-foreground">
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
           </div>
         )}
+
       </button>
       <div className="flex flex-col gap-1">
         <Button type="button" size="sm" variant="outline" onClick={pick} disabled={busy}>

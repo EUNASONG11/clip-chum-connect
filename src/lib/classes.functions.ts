@@ -72,7 +72,7 @@ export const updateClass = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(2000).optional().nullable(),
-        thumbnail_url: z.string().url().nullable().optional(),
+        thumbnail_url: z.string().max(1000).nullable().optional(),
       })
       .parse(i),
   )

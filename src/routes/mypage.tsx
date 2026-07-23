@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, LogOut, Play, User } from "lucide-react";
 import { getMyDisplayName, getMyRole } from "@/lib/vimeo.functions";
 import { listClasses, listMyRecentProgress } from "@/lib/classes.functions";
+import { ClassThumb } from "@/components/ClassThumb";
+
 
 export const Route = createFileRoute("/mypage")({
   head: () => ({
@@ -124,9 +126,10 @@ function MyPage() {
                     >
                       <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
                         {c.thumbnail_url && (
-                          <img src={c.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          <ClassThumb src={c.thumbnail_url} className="h-full w-full object-cover" />
                         )}
                       </div>
+
                       <span className="flex-1 truncate font-medium">{c.name}</span>
                     </Link>
                   </li>
