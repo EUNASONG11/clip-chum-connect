@@ -216,6 +216,7 @@ function VideoPage() {
             title: false,
             byline: false,
             portrait: false,
+            vimeo_logo: false,
           });
       let durationCached: number | null = video.duration ?? null;
       const maxAllowedRef = { current: 0 };
