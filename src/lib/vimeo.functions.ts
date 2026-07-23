@@ -179,11 +179,17 @@ export const getMyRole = createServerFn({ method: "GET" })
     return { isAdmin: Boolean(data), userId: context.userId };
   });
 
-// 5-1) 내 표시 이름 (학생이면 external_students.name, 그 외 이메일)
+// 5-1) 내 표시 이름 (강사는 instructors.name, 학생은 external_students.name, 그 외 이메일)
 export const getMyDisplayName = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inst } = await supabaseAdmin
+      .from("instructors")
+      .select("name")
+      .eq("auth_user_id", context.userId)
+      .maybeSingle();
+    if ((inst as any)?.name) return { name: (inst as any).name };
     const { data } = await supabaseAdmin
       .from("external_students")
       .select("name")
@@ -327,6 +333,16 @@ export const listUsers = createServerFn({ method: "GET" })
       if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
     });
 
+    // instructors 테이블에서 강사 정보 조회
+    const { data: instRows } = await retry(
+      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone").not("auth_user_id", "is", null),
+      "instructors",
+    );
+    const instMap = new Map<string, { name: string | null; phone: string | null }>();
+    (instRows ?? []).forEach((r: any) => {
+      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+    });
+
     const formatPhone = (p: string | null | undefined) => {
       if (!p) return "";
       const d = p.replace(/[^0-9]/g, "");
@@ -342,15 +358,17 @@ export const listUsers = createServerFn({ method: "GET" })
         const isInstructor = roles.includes("instructor");
         const isPending = !isAdmin && !isStudent && !isInstructor;
         const ext = extMap.get(u.id);
+        const inst = instMap.get(u.id);
         return {
           id: u.id,
           email: u.email ?? "",
           nickname:
+            inst?.name ??
             ext?.name ??
             (u.user_metadata as any)?.nickname ??
             (u.email ?? "").split("@")[0] ??
             "",
-          phone: formatPhone(ext?.phone),
+          phone: formatPhone(inst?.phone ?? ext?.phone),
           created_at: u.created_at,
           roles,
           isAdmin,

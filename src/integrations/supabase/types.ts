@@ -188,6 +188,57 @@ export type Database = {
         }
         Relationships: []
       }
+      instructors: {
+        Row: {
+          auth_user_id: string | null
+          branch: string | null
+          created_at: string
+          department_id: number | null
+          email: string | null
+          external_id: string | null
+          hire_date: string | null
+          id: string
+          is_active: boolean
+          is_team_leader: boolean
+          name: string
+          phone: string | null
+          team_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          auth_user_id?: string | null
+          branch?: string | null
+          created_at?: string
+          department_id?: number | null
+          email?: string | null
+          external_id?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_team_leader?: boolean
+          name: string
+          phone?: string | null
+          team_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          auth_user_id?: string | null
+          branch?: string | null
+          created_at?: string
+          department_id?: number | null
+          email?: string | null
+          external_id?: string | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          is_team_leader?: boolean
+          name?: string
+          phone?: string | null
+          team_id?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
