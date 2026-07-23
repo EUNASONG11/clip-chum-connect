@@ -57,18 +57,33 @@ async function assertAdminOnly(context: { supabase: any; userId: string }) {
   if (!admin) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
-// 수강반 목록 (관리자: 전체, 강사: 본인이 생성한 반)
+// 수강반 목록 (관리자: 전체, 강사: 본인 생성 + 배정된 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let builder = supabaseAdmin
+    if (admin) {
+      const { data, error } = await supabaseAdmin
+        .from("classes")
+        .select("id, name, description, thumbnail_url, created_at, created_by")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    }
+    // 강사: 본인이 만든 것 + 배정된 것
+    const { data: assigned } = await supabaseAdmin
+      .from("class_instructors")
+      .select("class_id")
+      .eq("instructor_user_id", context.userId);
+    const assignedIds = (assigned ?? []).map((r: any) => r.class_id as string);
+    const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name, description, thumbnail_url, created_at, created_by")
+      .or(
+        `created_by.eq.${context.userId}${assignedIds.length ? `,id.in.(${assignedIds.join(",")})` : ""}`,
+      )
       .order("created_at", { ascending: false });
-    if (!admin) builder = builder.eq("created_by", context.userId);
-    const { data, error } = await builder;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
