@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List } from "lucide-react";
-import { listClasses, createClass, deleteClass } from "@/lib/classes.functions";
+import { Trash2, Users, Plus, List, ImagePlus, X } from "lucide-react";
+import { listClasses, createClass, deleteClass, updateClass } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/admin/classes/")({
   component: ClassesPage,
@@ -26,15 +28,43 @@ function ClassesPage() {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [saving, setSaving] = useState(false);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [thumbPreview, setThumbPreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickThumb = (file: File | null) => {
+    if (!file) {
+      setThumbFile(null);
+      setThumbPreview(null);
+      return;
+    }
+    if (!file.type.startsWith("image/")) return toast.error("이미지 파일만 업로드할 수 있습니다.");
+    if (file.size > 5 * 1024 * 1024) return toast.error("5MB 이하 이미지를 사용하세요.");
+    setThumbFile(file);
+    setThumbPreview(URL.createObjectURL(file));
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
     setSaving(true);
     try {
-      await createClass({ data: { name: name.trim(), description: desc || null } });
+      const row: any = await createClass({ data: { name: name.trim(), description: desc || null } });
+      if (thumbFile && row?.id) {
+        const ext = thumbFile.name.split(".").pop() || "jpg";
+        const path = `${row.id}/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("class-thumbnails")
+          .upload(path, thumbFile, { upsert: true, contentType: thumbFile.type });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("class-thumbnails").getPublicUrl(path);
+        await updateClass({ data: { id: row.id, thumbnail_url: pub.publicUrl } });
+      }
       setName("");
       setDesc("");
+      setThumbFile(null);
+      setThumbPreview(null);
+      if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "classes"] });
       setTab("list");
@@ -44,6 +74,7 @@ function ClassesPage() {
       setSaving(false);
     }
   };
+
 
   const remove = async (id: string) => {
     if (!confirm("이 수강반을 삭제하시겠습니까? 배정된 학생 정보도 삭제됩니다.")) return;
@@ -133,9 +164,44 @@ function ClassesPage() {
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </div>
+              <div>
+                <Label>썸네일 (선택)</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-24 w-40 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted transition hover:opacity-80"
+                    aria-label="썸네일 선택"
+                  >
+                    {thumbPreview ? (
+                      <img src={thumbPreview} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </button>
+                  <div className="flex flex-col gap-1">
+                    <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+                      <ImagePlus className="mr-1 h-3 w-3" /> {thumbPreview ? "변경" : "선택"}
+                    </Button>
+                    {thumbPreview && (
+                      <Button type="button" size="sm" variant="ghost" onClick={() => pickThumb(null)}>
+                        <X className="mr-1 h-3 w-3" /> 제거
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              </div>
               <Button type="submit" disabled={saving}>
                 {saving ? "생성 중..." : "생성"}
               </Button>
+
             </form>
           </CardContent>
         </Card>
