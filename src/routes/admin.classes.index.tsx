@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List } from "lucide-react";
-import { listClasses, createClass, deleteClass } from "@/lib/classes.functions";
+import { Trash2, Users, Plus, List, ImagePlus, X } from "lucide-react";
+import { listClasses, createClass, deleteClass, updateClass } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export const Route = createFileRoute("/admin/classes/")({
   component: ClassesPage,
