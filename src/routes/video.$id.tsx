@@ -63,7 +63,7 @@ function formatDuration(sec: number | null) {
 function getVimeoEmbedUrl(video: Video) {
   if (!video.player_embed_url) return null;
   const separator = video.player_embed_url.includes("?") ? "&" : "?";
-  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&responsive=1`;
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1`;
 }
 
 async function requestElementFullscreen(element: Element | null) {
