@@ -394,8 +394,7 @@ function VideoPage() {
                   const allowedGrowth = Math.max(0, wallDelta * 1.5);
                   maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
                 }
-                const safeT = Math.min(t, maxAllowedRef.current);
-                send(safeT, d);
+                send(t, d);
               }
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
