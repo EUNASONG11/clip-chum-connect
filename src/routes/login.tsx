@@ -149,9 +149,10 @@ function AuthPage() {
         <CardContent className="space-y-4">
           <Tabs value={tab} onValueChange={(v) => setTab(v as "student" | "admin")}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="student">학생</TabsTrigger>
-              <TabsTrigger value="admin">관리자/강사</TabsTrigger>
+              <TabsTrigger value="student">학생/강사</TabsTrigger>
+              <TabsTrigger value="admin">관리자</TabsTrigger>
             </TabsList>
+
 
             <TabsContent value="student" className="pt-4">
               <form onSubmit={submitStudent} className="space-y-3">
