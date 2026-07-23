@@ -164,9 +164,44 @@ function ClassesPage() {
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </div>
+              <div>
+                <Label>썸네일 (선택)</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="flex h-24 w-40 flex-shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted transition hover:opacity-80"
+                    aria-label="썸네일 선택"
+                  >
+                    {thumbPreview ? (
+                      <img src={thumbPreview} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </button>
+                  <div className="flex flex-col gap-1">
+                    <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+                      <ImagePlus className="mr-1 h-3 w-3" /> {thumbPreview ? "변경" : "선택"}
+                    </Button>
+                    {thumbPreview && (
+                      <Button type="button" size="sm" variant="ghost" onClick={() => pickThumb(null)}>
+                        <X className="mr-1 h-3 w-3" /> 제거
+                      </Button>
+                    )}
+                  </div>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              </div>
               <Button type="submit" disabled={saving}>
                 {saving ? "생성 중..." : "생성"}
               </Button>
+
             </form>
           </CardContent>
         </Card>
