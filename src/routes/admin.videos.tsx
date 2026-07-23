@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
+import { AdminOnly } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
