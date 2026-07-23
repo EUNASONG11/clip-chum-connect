@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown, GraduationCap } from "lucide-react";
 import {
   getClass,
   listClassStudents,
@@ -15,8 +15,13 @@ import {
   unassignStudent,
   listClassVideos,
   swapVideoOrder,
+  listClassInstructors,
+  searchInstructors,
+  assignInstructor,
+  unassignInstructor,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
+import { useAdminRole } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
