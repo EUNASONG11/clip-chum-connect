@@ -220,37 +220,57 @@ function VideoPage() {
           });
       let durationCached: number | null = video.duration ?? null;
       const isSeekingRef = { current: false };
+      const lastTimeRef = { current: 0 };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
+            lastTimeRef.current = resumeAtRef.current;
           }
         } catch {}
       });
       player.on("timeupdate", (d: any) => {
-        currentTimeRef.current = d.seconds;
-        // seek 중에는 maxAllowed 를 갱신하지 않아 seeked 이벤트에서 되돌리기 판단이 무력화되지 않음
-        if (!isSeekingRef.current && d.seconds > maxAllowedRef.current) {
-          maxAllowedRef.current = d.seconds;
+        const t = d.seconds;
+        const jump = t - lastTimeRef.current;
+        // 큰 점프(2초 초과)는 seek 로 간주 → maxAllowed 갱신/전송 금지
+        if (jump > 2) {
+          isSeekingRef.current = true;
+          if (t > maxAllowedRef.current + 2) {
+            player.setCurrentTime(maxAllowedRef.current).catch(() => {});
+            lastTimeRef.current = maxAllowedRef.current;
+            return;
+          }
         }
-        send(d.seconds, durationCached);
+        currentTimeRef.current = t;
+        if (!isSeekingRef.current && t > maxAllowedRef.current) {
+          maxAllowedRef.current = t;
+        }
+        // 서버에는 허용된 최대치 이내의 값만 전송해 max_seconds 오염 방지
+        const safeT = Math.min(t, maxAllowedRef.current);
+        send(safeT, durationCached);
+        lastTimeRef.current = t;
       });
       player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
-        isSeekingRef.current = false;
-        // 앞으로 건너뛰기 방지: 최대 시청 지점 + 2초 초과 시 되돌림
         if (d.seconds > maxAllowedRef.current + 2) {
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
-        } else if (d.seconds > maxAllowedRef.current) {
-          maxAllowedRef.current = d.seconds;
+          lastTimeRef.current = maxAllowedRef.current;
+        } else {
+          lastTimeRef.current = d.seconds;
         }
+        isSeekingRef.current = false;
       });
-      player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
+      player.on("pause", (d: any) => {
+        currentTimeRef.current = d.seconds;
+        const safeT = Math.min(d.seconds, maxAllowedRef.current);
+        send(safeT, durationCached);
+      });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => {
         // 이어보기/최근 시청 클릭은 허용 (maxAllowed 갱신)
         if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
+        lastTimeRef.current = sec;
         player.setCurrentTime(sec).catch(() => {});
         player.play().catch(() => {});
       };
