@@ -608,5 +608,6 @@ function UsersPage() {
 
       </CardContent>
     </Card>
+    </AdminOnly>
   );
 }
