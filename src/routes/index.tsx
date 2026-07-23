@@ -88,22 +88,28 @@ function Home() {
               key={c.id}
               to="/class/$id"
               params={{ id: c.id }}
-              className="group overflow-hidden rounded-xl border bg-card p-6 transition hover:shadow-lg"
+              className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg"
             >
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-primary/10 p-3">
-                  <Film className="h-6 w-6 text-primary" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-semibold group-hover:text-primary">
-                    {c.name}
-                  </h3>
-                  {c.description && (
-                    <p className="line-clamp-1 text-sm text-muted-foreground">
-                      {c.description}
-                    </p>
-                  )}
-                </div>
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                {c.thumbnail_url ? (
+                  <img
+                    src={c.thumbnail_url}
+                    alt={c.name}
+                    className="h-full w-full object-cover transition group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Film className="h-10 w-10 text-muted-foreground/60" />
+                  </div>
+                )}
+              </div>
+              <div className="p-5">
+                <h3 className="truncate font-semibold group-hover:text-primary">{c.name}</h3>
+                {c.description && (
+                  <p className="line-clamp-2 mt-1 text-sm text-muted-foreground">
+                    {c.description}
+                  </p>
+                )}
               </div>
             </Link>
           ))}

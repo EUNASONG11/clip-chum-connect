@@ -17,7 +17,7 @@ export const listClasses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("classes")
-      .select("id, name, description, created_at")
+      .select("id, name, description, thumbnail_url, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -30,7 +30,7 @@ export const getClass = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("classes")
-      .select("id, name, description, created_at")
+      .select("id, name, description, thumbnail_url, created_at")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -70,16 +70,22 @@ export const updateClass = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        name: z.string().min(1).max(100),
+        name: z.string().min(1).max(100).optional(),
         description: z.string().max(2000).optional().nullable(),
+        thumbnail_url: z.string().url().nullable().optional(),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
+    const patch: Record<string, unknown> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.description !== undefined) patch.description = data.description ?? null;
+    if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
+    if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await context.supabase
       .from("classes")
-      .update({ name: data.name, description: data.description ?? null })
+      .update(patch as any)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
