@@ -39,6 +39,7 @@ type UserRow = {
   roles: string[];
   isAdmin: boolean;
   isStudent: boolean;
+  isInstructor: boolean;
   isPending: boolean;
   class_count: number;
 };
@@ -50,7 +51,7 @@ const usersQueryOptions = queryOptions({
   staleTime: 30_000,
 });
 
-type TabKey = "admin" | "student" | "pending";
+type TabKey = "admin" | "instructor" | "student" | "pending";
 
 export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
@@ -60,11 +61,12 @@ function Badge({
   tone,
   children,
 }: {
-  tone: "admin" | "student" | "pending";
+  tone: "admin" | "instructor" | "student" | "pending";
   children: React.ReactNode;
 }) {
   const map = {
     admin: "bg-primary/10 text-primary border-primary/20",
+    instructor: "bg-sky-100 text-sky-700 border-sky-200",
     student: "bg-accent/60 text-accent-foreground border-accent",
     pending: "bg-amber-100 text-amber-700 border-amber-200",
   } as const;
@@ -91,9 +93,11 @@ function UsersPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
+    instructor: 1,
     student: 1,
     pending: 1,
   });
+
   const page = pages[tab];
   const setPage = (p: number) =>
     setPages((prev) => ({ ...prev, [tab]: Math.max(1, p) }));
