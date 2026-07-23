@@ -358,15 +358,17 @@ export const listUsers = createServerFn({ method: "GET" })
         const isInstructor = roles.includes("instructor");
         const isPending = !isAdmin && !isStudent && !isInstructor;
         const ext = extMap.get(u.id);
+        const inst = instMap.get(u.id);
         return {
           id: u.id,
           email: u.email ?? "",
           nickname:
+            inst?.name ??
             ext?.name ??
             (u.user_metadata as any)?.nickname ??
             (u.email ?? "").split("@")[0] ??
             "",
-          phone: formatPhone(ext?.phone),
+          phone: formatPhone(inst?.phone ?? ext?.phone),
           created_at: u.created_at,
           roles,
           isAdmin,
