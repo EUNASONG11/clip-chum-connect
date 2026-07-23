@@ -40,7 +40,7 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
     .from("class_instructors")
     .select("class_id")
     .eq("class_id", classId)
-    .eq("user_id", context.userId)
+    .eq("instructor_user_id", context.userId)
     .maybeSingle();
   if (aErr) throw new Error(aErr.message);
   if (!assigned) throw new Error("해당 수강반에 대한 권한이 없습니다.");
