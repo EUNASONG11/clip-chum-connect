@@ -186,7 +186,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = data.query.trim();
     const digits = q.replace(/[^0-9]/g, "");
