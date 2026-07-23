@@ -238,12 +238,14 @@ function VideoPage() {
             vimeo_logo: false,
           });
       let durationCached: number | null = video.duration ?? null;
+      durationRef.current = durationCached;
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
+          durationRef.current = durationCached;
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
