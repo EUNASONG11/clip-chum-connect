@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Trash2, Users, Plus, List, ImagePlus, X } from "lucide-react";
 import { listClasses, createClass, deleteClass, updateClass } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
+import { ClassThumb } from "@/components/ClassThumb";
+
 import { supabase } from "@/integrations/supabase/client";
 
 

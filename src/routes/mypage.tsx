@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { GraduationCap, LogOut, Play, User } from "lucide-react";
 import { getMyDisplayName, getMyRole } from "@/lib/vimeo.functions";
 import { listClasses, listMyRecentProgress } from "@/lib/classes.functions";
+import { ClassThumb } from "@/components/ClassThumb";
+
 
 export const Route = createFileRoute("/mypage")({
   head: () => ({

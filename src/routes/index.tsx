@@ -7,6 +7,8 @@ import { GraduationCap, Film } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { listClasses } from "@/lib/classes.functions";
 import { getMyRole } from "@/lib/vimeo.functions";
+import { ClassThumb } from "@/components/ClassThumb";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
