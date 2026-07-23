@@ -38,7 +38,16 @@ async function assertOwnClassOrAdmin(
     .eq("id", classId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.created_by !== context.userId) {
+  if (!data) throw new Error("수강반을 찾을 수 없습니다.");
+  if (data.created_by === context.userId) return;
+  // 배정된 강사도 접근 허용
+  const { data: assigned } = await supabaseAdmin
+    .from("class_instructors")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("instructor_user_id", context.userId)
+    .maybeSingle();
+  if (!assigned) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
 }
