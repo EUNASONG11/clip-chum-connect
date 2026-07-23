@@ -274,9 +274,9 @@ function VideoPage() {
           const allowedGrowth = Math.max(0, wallDelta * 1.5);
           maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
-        // 서버에는 허용된 최대치 이내의 값만 전송해 max_seconds 오염 방지
-        const safeT = Math.min(t, maxAllowedRef.current);
-        send(safeT, durationCached);
+        // current_seconds는 실제 마지막 위치를 저장 (이어보기용)
+        // max_seconds는 서버에서 이전 최대치 +7초 cap으로 안전하게 계산
+        send(t, durationCached);
         lastTimeRef.current = t;
       });
       player.on("seeking", () => { isSeekingRef.current = true; });
@@ -292,8 +292,7 @@ function VideoPage() {
       });
       player.on("pause", (d: any) => {
         currentTimeRef.current = d.seconds;
-        const safeT = Math.min(d.seconds, maxAllowedRef.current);
-        send(safeT, durationCached);
+        send(d.seconds, durationCached);
       });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => {
