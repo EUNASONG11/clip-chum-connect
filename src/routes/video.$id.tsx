@@ -107,6 +107,10 @@ function VideoPage() {
     if (!isPlayerExpanded) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    const orientation = (screen as any).orientation;
+    if (orientation?.lock) {
+      orientation.lock("landscape").catch(() => {});
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setIsPlayerExpanded(false);
     };
@@ -114,6 +118,9 @@ function VideoPage() {
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
+      if (orientation?.unlock) {
+        try { orientation.unlock(); } catch {}
+      }
     };
   }, [isPlayerExpanded]);
 
