@@ -42,11 +42,11 @@ export function ClassThumbnailUploader({
         .from(BUCKET)
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-      const url = data.publicUrl;
-      await updateClass({ data: { id: classId, thumbnail_url: url } });
+      const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60);
+      await updateClass({ data: { id: classId, thumbnail_url: path } });
       toast.success("썸네일이 저장되었습니다.");
-      onChange?.(url);
+      onChange?.(signed?.signedUrl ?? path);
+
     } catch (err: any) {
       toast.error(err.message ?? "업로드 실패");
     } finally {
