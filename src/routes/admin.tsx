@@ -95,8 +95,9 @@ function AdminLayout() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userData.user) {
+        await supabase.auth.signOut().catch(() => {});
         navigate({ to: "/login" });
         return;
       }
@@ -115,6 +116,12 @@ function AdminLayout() {
             setIsAdmin(false);
             setIsInstructor(false);
           }
+        }
+      } catch (e: any) {
+        if (String(e?.message ?? "").includes("Unauthorized")) {
+          await supabase.auth.signOut().catch(() => {});
+          navigate({ to: "/login" });
+          return;
         }
       } finally {
         setChecking(false);
