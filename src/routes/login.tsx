@@ -6,6 +6,7 @@ import {
   getMyStatus,
   checkEmailExists,
   resolveStudentLogin,
+  getMyMustChangePassword,
 } from "@/lib/vimeo.functions";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,14 @@ export const Route = createFileRoute("/login")({
 
 async function routeByStatus(navigate: ReturnType<typeof useNavigate>) {
   try {
+    // 강사 최초 로그인 시 비밀번호 변경 강제
+    try {
+      const mc = await getMyMustChangePassword();
+      if (mc.mustChange) {
+        navigate({ to: "/change-password", replace: true });
+        return;
+      }
+    } catch {}
     const s = await getMyStatus();
     if (s.isPending) {
       toast.error("관리자 승인 대기 중입니다. 승인 후 이용 가능합니다.");
@@ -34,6 +43,7 @@ async function routeByStatus(navigate: ReturnType<typeof useNavigate>) {
     navigate({ to: "/" });
   }
 }
+
 
 function AuthPage() {
   const navigate = useNavigate();
