@@ -194,20 +194,31 @@ export const getClassStats = createServerFn({ method: "GET" })
     });
   });
 
-// 특정 수강반 학생별 상세
+// 특정 수강반 학생별 상세 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStudentStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const [{ data: videos }, { data: students }, { data: progress }] = await Promise.all([
-      context.supabase.from("videos").select("id, title").eq("class_id", data.classId),
-      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId),
-      context.supabase.from("video_progress").select("video_id, user_id, watched_ratio, is_completed, updated_at"),
+      supabaseAdmin.from("videos").select("id, title").eq("class_id", data.classId),
+      supabaseAdmin.from("class_students").select("user_id").eq("class_id", data.classId),
+      supabaseAdmin
+        .from("videos")
+        .select("id")
+        .eq("class_id", data.classId)
+        .then(async (res: any) => {
+          const ids = (res.data ?? []).map((v: any) => v.id);
+          if (ids.length === 0) return { data: [] };
+          return supabaseAdmin
+            .from("video_progress")
+            .select("video_id, user_id, watched_ratio, is_completed, updated_at")
+            .in("video_id", ids);
+        }),
     ]);
     const videoIds = new Set((videos ?? []).map((v: any) => v.id));
     const studentIds = (students ?? []).map((s: any) => s.user_id);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
     const emailById = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
 
