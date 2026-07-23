@@ -104,15 +104,18 @@ function UsersPage() {
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
+    const instructor: UserRow[] = [];
     const student: UserRow[] = [];
     const pending: UserRow[] = [];
     for (const u of users) {
       if (u.isAdmin) admin.push(u);
+      else if (u.isInstructor) instructor.push(u);
       else if (u.isStudent) student.push(u);
       else pending.push(u);
     }
-    return { admin, student, pending };
+    return { admin, instructor, student, pending };
   }, [users]);
+
 
   const filtered = useMemo(() => {
     const rows = buckets[tab];
