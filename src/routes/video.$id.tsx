@@ -96,6 +96,7 @@ function VideoPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
+  const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
   const [ratio, setRatio] = useState(0);
@@ -171,10 +172,10 @@ function VideoPage() {
     if (!video || !containerRef.current) return;
     let cleanup = () => {};
 
-    const send = async (currentSeconds: number, duration: number | null, ended = false) => {
+    const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
       if (!isAuthed) return;
       const now = Date.now();
-      if (!ended && now - lastSentRef.current < 4500) return;
+      if (!force && !ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
       try {
         const r = await upsertMyProgress({
@@ -189,6 +190,24 @@ function VideoPage() {
         if (r.is_completed) setCompleted(true);
       } catch {}
     };
+
+    // 페이지 이탈/백그라운드 전환 직전에도 진도를 강제 저장
+    const saveOnLeave = () => {
+      const t = currentTimeRef.current;
+      const d = durationRef.current;
+      if (t > 0) send(t, d, false, true);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") saveOnLeave();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", saveOnLeave);
+    const onBeforeUnload = () => {
+      // beforeunload는 동기적이어야 하므로 sendBeacon 대신 visibilitychange/pagehide에 의존
+      // 단, 이탈 직전 한 번 더 시도 (비동기 저장이 완료될 수도, 안 될 수도 있음)
+      saveOnLeave();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
     const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
@@ -219,12 +238,14 @@ function VideoPage() {
             vimeo_logo: false,
           });
       let durationCached: number | null = video.duration ?? null;
+      durationRef.current = durationCached;
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
+          durationRef.current = durationCached;
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
@@ -253,9 +274,9 @@ function VideoPage() {
           const allowedGrowth = Math.max(0, wallDelta * 1.5);
           maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
-        // 서버에는 허용된 최대치 이내의 값만 전송해 max_seconds 오염 방지
-        const safeT = Math.min(t, maxAllowedRef.current);
-        send(safeT, durationCached);
+        // current_seconds는 실제 마지막 위치를 저장 (이어보기용)
+        // max_seconds는 서버에서 이전 최대치 +7초 cap으로 안전하게 계산
+        send(t, durationCached);
         lastTimeRef.current = t;
       });
       player.on("seeking", () => { isSeekingRef.current = true; });
@@ -271,8 +292,7 @@ function VideoPage() {
       });
       player.on("pause", (d: any) => {
         currentTimeRef.current = d.seconds;
-        const safeT = Math.min(d.seconds, maxAllowedRef.current);
-        send(safeT, durationCached);
+        send(d.seconds, durationCached);
       });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => {
@@ -299,6 +319,9 @@ function VideoPage() {
         })();
       };
       cleanup = () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("pagehide", saveOnLeave);
+        window.removeEventListener("beforeunload", onBeforeUnload);
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
@@ -312,6 +335,7 @@ function VideoPage() {
             onReady: () => {
               try {
                 const d = player.getDuration?.();
+                durationRef.current = d ?? null;
                 if (resumeAtRef.current > 5 && d && resumeAtRef.current < d - 3) {
                   player.seekTo(resumeAtRef.current, true);
                 }
@@ -370,8 +394,7 @@ function VideoPage() {
                   const allowedGrowth = Math.max(0, wallDelta * 1.5);
                   maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
                 }
-                const safeT = Math.min(t, maxAllowedRef.current);
-                send(safeT, d);
+                send(t, d);
               }
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
@@ -381,6 +404,9 @@ function VideoPage() {
           } catch {}
         }, 3000);
         cleanup = () => {
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+          window.removeEventListener("pagehide", saveOnLeave);
+          window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
           try { player.destroy?.(); } catch {}
         };
