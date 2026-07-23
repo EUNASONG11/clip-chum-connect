@@ -190,16 +190,9 @@ function VideoPage() {
       } catch {}
     };
 
-    // 최초 이어보기 위치
-    const resumeAtRef = { current: 0 as number };
-    if (isAuthed) {
-      getMyProgress({ data: { videoId: id } })
-        .then((p) => {
-          if (p) resumeAtRef.current = p.current_seconds ?? 0;
-        })
-        .catch(() => {});
-    }
-
+    // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
+    const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
+    const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
 
     if (video.source === "vimeo") {
       // Vimeo Player SDK
@@ -226,25 +219,31 @@ function VideoPage() {
             vimeo_logo: false,
           });
       let durationCached: number | null = video.duration ?? null;
-      const maxAllowedRef = { current: 0 };
+      const isSeekingRef = { current: false };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
-            maxAllowedRef.current = resumeAtRef.current;
           }
         } catch {}
       });
       player.on("timeupdate", (d: any) => {
         currentTimeRef.current = d.seconds;
-        if (d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
+        // seek 중에는 maxAllowed 를 갱신하지 않아 seeked 이벤트에서 되돌리기 판단이 무력화되지 않음
+        if (!isSeekingRef.current && d.seconds > maxAllowedRef.current) {
+          maxAllowedRef.current = d.seconds;
+        }
         send(d.seconds, durationCached);
       });
+      player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
+        isSeekingRef.current = false;
         // 앞으로 건너뛰기 방지: 최대 시청 지점 + 2초 초과 시 되돌림
         if (d.seconds > maxAllowedRef.current + 2) {
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
+        } else if (d.seconds > maxAllowedRef.current) {
+          maxAllowedRef.current = d.seconds;
         }
       });
       player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
