@@ -319,6 +319,9 @@ function VideoPage() {
         })();
       };
       cleanup = () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("pagehide", saveOnLeave);
+        window.removeEventListener("beforeunload", onBeforeUnload);
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
