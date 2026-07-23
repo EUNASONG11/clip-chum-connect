@@ -72,17 +72,27 @@ export const listClasses = createServerFn({ method: "GET" })
       return data ?? [];
     }
     // 강사: 본인이 만든 것 + 배정된 것
-    const { data: assigned } = await supabaseAdmin
-      .from("class_instructors")
-      .select("class_id")
-      .eq("instructor_user_id", context.userId);
-    const assignedIds = (assigned ?? []).map((r: any) => r.class_id as string);
+    const [{ data: assigned }, { data: enrolled }] = await Promise.all([
+      supabaseAdmin
+        .from("class_instructors")
+        .select("class_id")
+        .eq("instructor_user_id", context.userId),
+      supabaseAdmin
+        .from("class_students")
+        .select("class_id")
+        .eq("user_id", context.userId),
+    ]);
+    const idSet = new Set<string>([
+      ...(assigned ?? []).map((r: any) => r.class_id as string),
+      ...(enrolled ?? []).map((r: any) => r.class_id as string),
+    ]);
+    const ids = Array.from(idSet);
+    const orParts = [`created_by.eq.${context.userId}`];
+    if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name, description, thumbnail_url, created_at, created_by")
-      .or(
-        `created_by.eq.${context.userId}${assignedIds.length ? `,id.in.(${assignedIds.join(",")})` : ""}`,
-      )
+      .or(orParts.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
