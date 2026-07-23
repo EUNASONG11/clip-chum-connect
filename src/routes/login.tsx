@@ -29,7 +29,7 @@ async function routeByStatus(navigate: ReturnType<typeof useNavigate>) {
       await supabase.auth.signOut();
       return;
     }
-    navigate({ to: s.isAdmin ? "/admin" : "/" });
+    navigate({ to: s.isAdmin || s.isInstructor ? "/admin" : "/" });
   } catch {
     navigate({ to: "/" });
   }
