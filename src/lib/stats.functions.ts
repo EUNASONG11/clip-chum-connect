@@ -35,9 +35,15 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
     .eq("id", classId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data || data.created_by !== context.userId) {
-    throw new Error("해당 수강반에 대한 권한이 없습니다.");
-  }
+  if (data && data.created_by === context.userId) return;
+  const { data: assigned, error: aErr } = await supabaseAdmin
+    .from("class_instructors")
+    .select("class_id")
+    .eq("class_id", classId)
+    .eq("user_id", context.userId)
+    .maybeSingle();
+  if (aErr) throw new Error(aErr.message);
+  if (!assigned) throw new Error("해당 수강반에 대한 권한이 없습니다.");
 }
 
 // 전체 요약 통계 (관리자: 전체, 강사: 본인 수강반 기준)
