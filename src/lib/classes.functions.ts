@@ -92,7 +92,7 @@ export const createClass = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { data: row, error } = await context.supabase
       .from("classes")
       .insert({
