@@ -266,6 +266,7 @@ function VideoPage() {
         } else {
           lastTimeRef.current = d.seconds;
         }
+        lastWallRef.current = Date.now();
         isSeekingRef.current = false;
       });
       player.on("pause", (d: any) => {
