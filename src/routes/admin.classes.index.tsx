@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Trash2, Users, Plus, List } from "lucide-react";
 import { listClasses, createClass, deleteClass } from "@/lib/classes.functions";
+import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
 
 export const Route = createFileRoute("/admin/classes/")({
   component: ClassesPage,
