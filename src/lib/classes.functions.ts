@@ -69,9 +69,11 @@ export const getClass = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at")
+      .select("id, name, description, thumbnail_url, created_at, created_by")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
