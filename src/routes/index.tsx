@@ -106,10 +106,10 @@ function Home() {
                 )}
 
               </div>
-              <div className="p-5">
-                <h3 className="truncate font-semibold group-hover:text-primary">{c.name}</h3>
+              <div className="p-3">
+                <h3 className="truncate text-sm font-semibold group-hover:text-primary">{c.name}</h3>
                 {c.description && (
-                  <p className="line-clamp-2 mt-1 text-sm text-muted-foreground">
+                  <p className="line-clamp-2 mt-0.5 text-xs text-muted-foreground">
                     {c.description}
                   </p>
                 )}
