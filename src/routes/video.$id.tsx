@@ -269,6 +269,7 @@ function VideoPage() {
     } else if (video.source === "youtube") {
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
+        const maxAllowedRef = { current: resumeAtRef.current };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -283,12 +284,21 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
+              // 앞으로 건너뛰기 방지
+              if (t > maxAllowedRef.current + 2) {
+                try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+                return;
+              }
+              if (t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
             },
           },
         });
-        seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
+        seekRef.current = (sec: number) => {
+          if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
+          try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {}
+        };
         fullscreenRef.current = () => {
           void (async () => {
             const opened =
@@ -304,10 +314,15 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
-              send(t, d);
+              if (t > maxAllowedRef.current + 2) {
+                try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+              } else {
+                if (t > maxAllowedRef.current) maxAllowedRef.current = t;
+                send(t, d);
+              }
             }
           } catch {}
-        }, 5000);
+        }, 3000);
         cleanup = () => {
           clearInterval(iv);
           try { player.destroy?.(); } catch {}

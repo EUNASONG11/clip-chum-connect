@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -23,6 +24,11 @@ import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.in
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
+const MypageRoute = MypageRouteImport.update({
+  id: '/mypage',
+  path: '/mypage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
@@ -124,6 +132,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/mypage': typeof MypageRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/mypage'
     | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/mypage'
     | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
@@ -170,6 +181,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/mypage'
     | '/admin/dashboard'
     | '/admin/upload'
     | '/admin/users'
@@ -186,6 +198,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  MypageRoute: typeof MypageRoute
   ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
   ApiPublicWebhooksStudentsSyncRoute: typeof ApiPublicWebhooksStudentsSyncRoute
@@ -193,6 +206,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/mypage': {
+      id: '/mypage'
+      path: '/mypage'
+      fullPath: '/mypage'
+      preLoaderRoute: typeof MypageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -313,6 +333,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  MypageRoute: MypageRoute,
   ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
   ApiPublicWebhooksStudentsSyncRoute: ApiPublicWebhooksStudentsSyncRoute,
