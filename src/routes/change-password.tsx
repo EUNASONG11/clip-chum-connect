@@ -99,7 +99,7 @@ function ChangePasswordPage() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPw1 ? "비밀번호 숨기기" : "비밀번호 보기"}
                 >
-                  {showPw1 ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPw1 ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
             </div>
@@ -121,7 +121,7 @@ function ChangePasswordPage() {
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   aria-label={showPw2 ? "비밀번호 숨기기" : "비밀번호 보기"}
                 >
-                  {showPw2 ? <EyeOff size={18} /> : <Eye size={18} />}
+                  {showPw2 ? <Eye size={18} /> : <EyeOff size={18} />}
                 </button>
               </div>
             </div>
