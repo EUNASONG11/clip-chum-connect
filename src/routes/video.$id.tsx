@@ -172,10 +172,10 @@ function VideoPage() {
     if (!video || !containerRef.current) return;
     let cleanup = () => {};
 
-    const send = async (currentSeconds: number, duration: number | null, ended = false) => {
+    const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
       if (!isAuthed) return;
       const now = Date.now();
-      if (!ended && now - lastSentRef.current < 4500) return;
+      if (!force && !ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
       try {
         const r = await upsertMyProgress({
@@ -190,6 +190,24 @@ function VideoPage() {
         if (r.is_completed) setCompleted(true);
       } catch {}
     };
+
+    // 페이지 이탈/백그라운드 전환 직전에도 진도를 강제 저장
+    const saveOnLeave = () => {
+      const t = currentTimeRef.current;
+      const d = durationRef.current;
+      if (t > 0) send(t, d, false, true);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") saveOnLeave();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("pagehide", saveOnLeave);
+    const onBeforeUnload = () => {
+      // beforeunload는 동기적이어야 하므로 sendBeacon 대신 visibilitychange/pagehide에 의존
+      // 단, 이탈 직전 한 번 더 시도 (비동기 저장이 완료될 수도, 안 될 수도 있음)
+      saveOnLeave();
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
 
     // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
     const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
