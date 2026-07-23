@@ -49,8 +49,9 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const prevMax = prev?.max_seconds ?? 0;
-    // 서버 측에서도 큰 점프 차단: 이전 최대치보다 15초 이상 앞선 값은 허용하지 않음
-    const cappedCurrent = Math.min(data.currentSeconds, prevMax + 15);
+    // 서버 측 이중 차단: 이전 최대치보다 3초 이상 앞선 값은 진도에 반영하지 않음
+    // (클라이언트가 실시간 재생분만 max로 승격하므로, 정상 재생 tick도 이 범위 내에 들어옴)
+    const cappedCurrent = Math.min(data.currentSeconds, prevMax + 3);
     const nextMax = Math.max(prevMax, cappedCurrent);
     const ratio = duration && duration > 0 ? Math.min(1, nextMax / duration) : 0;
     const alreadyCompleted = prev?.is_completed ?? false;
