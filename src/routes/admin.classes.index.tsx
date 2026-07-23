@@ -81,11 +81,24 @@ function ClassesPage() {
               <ul className="divide-y">
                 {classes.map((c: any) => (
                   <li key={c.id} className="flex items-center gap-3 py-3">
+                    <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
+                      {c.thumbnail_url ? (
+                        <img src={c.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                      ) : null}
+                    </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{c.name}</p>
                       {c.description && (
                         <p className="truncate text-xs text-muted-foreground">{c.description}</p>
                       )}
+                      <div className="mt-2">
+                        <ClassThumbnailUploader
+                          classId={c.id}
+                          currentUrl={c.thumbnail_url}
+                          size="sm"
+                          onChange={() => qc.invalidateQueries({ queryKey: ["admin", "classes"] })}
+                        />
+                      </div>
                     </div>
                     <Button asChild size="sm" variant="outline">
                       <Link to="/admin/classes/$id" params={{ id: c.id }}>
