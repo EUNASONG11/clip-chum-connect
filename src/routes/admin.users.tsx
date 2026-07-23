@@ -253,7 +253,8 @@ function UsersPage() {
 
 
   return (
-    <Card className="border-border/60">
+    <AdminOnly>
+      <Card className="border-border/60">
       <CardHeader className="pb-4">
         <div className="flex flex-wrap items-center gap-3">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
