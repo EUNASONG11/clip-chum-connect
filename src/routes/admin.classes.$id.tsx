@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3, Search } from "lucide-react";
+import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown } from "lucide-react";
 import {
   getClass,
   listClassStudents,
@@ -14,6 +14,7 @@ import {
   assignStudent,
   unassignStudent,
   listClassVideos,
+  swapVideoOrder,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 
@@ -185,15 +186,41 @@ function ClassDetailPage() {
             </p>
           ) : (
             <ul className="divide-y">
-              {videos.map((v: any) => (
+              {videos.map((v: any, i: number) => (
                 <li key={v.id} className="flex items-center gap-3 py-2">
-                  <span className="w-6 text-xs text-muted-foreground">{v.sort_order}</span>
+                  <span className="w-6 text-xs text-muted-foreground">{i + 1}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{v.title}</p>
                     <p className="text-xs text-muted-foreground">
                       {v.is_published ? "공개" : "비공개"} · {v.status}
                     </p>
                   </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={i === 0}
+                    onClick={async () => {
+                      try {
+                        await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "up" } });
+                        qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
+                      } catch (e: any) { toast.error(e.message); }
+                    }}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    disabled={i === videos.length - 1}
+                    onClick={async () => {
+                      try {
+                        await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "down" } });
+                        qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
+                      } catch (e: any) { toast.error(e.message); }
+                    }}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
                 </li>
               ))}
             </ul>
