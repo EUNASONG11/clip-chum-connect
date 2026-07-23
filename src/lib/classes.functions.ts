@@ -219,7 +219,7 @@ export const assignStudent = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_students")
