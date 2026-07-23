@@ -23,6 +23,8 @@ function ChangePasswordPage() {
   const navigate = useNavigate();
   const [pw1, setPw1] = useState("");
   const [pw2, setPw2] = useState("");
+  const [showPw1, setShowPw1] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
