@@ -738,3 +738,51 @@ export const clearMyMustChangePassword = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ============= 강사 명부(로스터) 관리 =============
+
+export const listInstructorRoster = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("instructors")
+      .select("id, name, email, phone, branch, auth_user_id, must_change_password")
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const updateInstructorEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        email: z.string().trim().email().max(255),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = data.email.toLowerCase();
+    const { data: row, error: fErr } = await supabaseAdmin
+      .from("instructors")
+      .select("id, auth_user_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fErr) throw new Error(fErr.message);
+    if (!row) throw new Error("강사를 찾을 수 없습니다.");
+    const { error } = await supabaseAdmin
+      .from("instructors")
+      .update({ email })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    // 이미 계정이 있으면 auth 이메일도 갱신
+    if (row.auth_user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(row.auth_user_id, { email });
+    }
+    return { ok: true };
+  });
+
