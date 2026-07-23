@@ -43,7 +43,7 @@ async function assertOwnClassOrAdmin(
   // 배정된 강사도 접근 허용
   const { data: assigned } = await supabaseAdmin
     .from("class_instructors")
-    .select("id")
+    .select("class_id")
     .eq("class_id", classId)
     .eq("instructor_user_id", context.userId)
     .maybeSingle();
@@ -51,7 +51,7 @@ async function assertOwnClassOrAdmin(
   // 배정된 학생도 접근 허용
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
-    .select("id")
+    .select("class_id")
     .eq("class_id", classId)
     .eq("user_id", context.userId)
     .maybeSingle();
