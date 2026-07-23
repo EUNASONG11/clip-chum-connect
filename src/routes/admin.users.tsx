@@ -28,7 +28,7 @@ import {
   revertToPending,
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
-
+import { AdminOnly } from "@/components/AdminRole";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
