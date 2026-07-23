@@ -26,7 +26,9 @@ import {
   rejectUser,
   bulkApproveUsers,
   revertToPending,
+  bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
+
 
 import { Checkbox } from "@/components/ui/checkbox";
 
