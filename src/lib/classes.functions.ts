@@ -47,9 +47,18 @@ async function assertOwnClassOrAdmin(
     .eq("class_id", classId)
     .eq("instructor_user_id", context.userId)
     .maybeSingle();
-  if (!assigned) {
+  if (assigned) return;
+  // 배정된 학생도 접근 허용
+  const { data: enrolled } = await supabaseAdmin
+    .from("class_students")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("user_id", context.userId)
+    .maybeSingle();
+  if (!enrolled) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
+
 }
 
 async function assertAdminOnly(context: { supabase: any; userId: string }) {
