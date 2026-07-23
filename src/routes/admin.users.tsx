@@ -154,11 +154,14 @@ function UsersPage() {
     }
   };
 
-  const doApprove = async (u: UserRow, role: "student" | "admin") => {
+  const roleName = (r: "student" | "admin" | "instructor") =>
+    r === "admin" ? "관리자" : r === "instructor" ? "강사" : "학생";
+
+  const doApprove = async (u: UserRow, role: "student" | "admin" | "instructor") => {
     setBusyId(u.id);
     try {
       await approveUser({ data: { userId: u.id, role } });
-      toast.success(`${role === "admin" ? "관리자" : "학생"}으로 승인되었습니다.`);
+      toast.success(`${roleName(role)}(으)로 승인되었습니다.`);
       refetch();
     } catch (err: any) {
       toast.error(err.message);
@@ -166,6 +169,7 @@ function UsersPage() {
       setBusyId(null);
     }
   };
+
 
   const doReject = async (u: UserRow) => {
     if (!confirm(`${u.email} 계정을 삭제(거절)하시겠습니까?`)) return;
