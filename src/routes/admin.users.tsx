@@ -360,11 +360,22 @@ function UsersPage() {
                 className="gap-1"
               >
                 <Check className="h-3.5 w-3.5" />
-                {bulkBusy ? "처리 중..." : `학생으로 일괄 승인 (${selectedIds.size})`}
+                {bulkBusy ? "처리 중..." : `학생 승인 (${selectedIds.size})`}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={bulkBusy || selectedIds.size === 0}
+                onClick={() => doBulkApprove("instructor")}
+                className="gap-1"
+              >
+                <Check className="h-3.5 w-3.5" />
+                강사 승인 ({selectedIds.size})
               </Button>
             </div>
           </div>
         )}
+
 
         <div className="overflow-x-auto rounded-xl border border-border/60">
           <table className="w-full text-sm">
