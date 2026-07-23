@@ -3,12 +3,13 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("관리자만 접근할 수 있습니다.");
+  const [adminRes, instRes] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "instructor" }),
+  ]);
+  if (adminRes.error) throw new Error(adminRes.error.message);
+  if (instRes.error) throw new Error(instRes.error.message);
+  if (!adminRes.data && !instRes.data) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
 }
 
 // 수강반 목록 (관리자: 전체, 학생: 배정된 반 — RLS로 처리)
