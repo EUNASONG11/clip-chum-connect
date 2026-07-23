@@ -26,7 +26,9 @@ import {
   rejectUser,
   bulkApproveUsers,
   revertToPending,
+  bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
+
 
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -259,11 +261,36 @@ function UsersPage() {
           </span>
           <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          <div className="ml-auto">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={bulkBusy}
+              onClick={async () => {
+                if (!confirm("아직 계정이 없는 강사들에게 초기 비밀번호 12345678로 계정을 일괄 생성하시겠습니까?")) return;
+                setBulkBusy(true);
+                try {
+                  const res: any = await bulkCreateInstructorAccounts();
+                  toast.success(
+                    `강사 계정 처리 완료 (신규 ${res.created}, 연결 ${res.linked}, 실패 ${res.failed} / 총 ${res.total})`,
+                  );
+                  refetch();
+                } catch (err: any) {
+                  toast.error(err.message ?? "일괄 생성에 실패했습니다.");
+                } finally {
+                  setBulkBusy(false);
+                }
+              }}
+            >
+              강사 계정 일괄 생성
+            </Button>
+          </div>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           새로 가입한 회원을 승인하거나 관리자 권한을 부여할 수 있습니다.
         </p>
       </CardHeader>
+
       <CardContent className="space-y-5">
         <Tabs
           value={tab}

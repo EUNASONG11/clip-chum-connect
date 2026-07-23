@@ -200,6 +200,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_team_leader: boolean
+          must_change_password: boolean
           name: string
           phone: string | null
           team_id: number | null
@@ -216,6 +217,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_team_leader?: boolean
+          must_change_password?: boolean
           name: string
           phone?: string | null
           team_id?: number | null
@@ -232,6 +234,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_team_leader?: boolean
+          must_change_password?: boolean
           name?: string
           phone?: string | null
           team_id?: number | null
