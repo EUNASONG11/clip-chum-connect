@@ -17,7 +17,7 @@ export const listClasses = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("classes")
-      .select("id, name, description, created_at")
+      .select("id, name, description, thumbnail_url, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -30,7 +30,7 @@ export const getClass = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("classes")
-      .select("id, name, description, created_at")
+      .select("id, name, description, thumbnail_url, created_at")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
