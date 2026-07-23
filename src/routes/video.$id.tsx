@@ -276,7 +276,9 @@ function VideoPage() {
     } else if (video.source === "youtube") {
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
-        const maxAllowedRef = { current: resumeAtRef.current };
+        const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
+        const isSeekingRef = { current: false };
+        const lastTimeRef = { current: 0 };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -291,14 +293,20 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
+              // seek 중에는 maxAllowed 를 갱신하지 않음 (구간 점프로 seek 감지)
+              const jump = t - lastTimeRef.current;
+              if (jump > 4) isSeekingRef.current = true;
               // 앞으로 건너뛰기 방지
               if (t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+                isSeekingRef.current = false;
                 return;
               }
-              if (t > maxAllowedRef.current) maxAllowedRef.current = t;
+              if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
+              if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
+              lastTimeRef.current = t;
             },
           },
         });
@@ -321,12 +329,16 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
+              const jump = t - lastTimeRef.current;
+              if (jump > 4) isSeekingRef.current = true;
               if (t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
               } else {
-                if (t > maxAllowedRef.current) maxAllowedRef.current = t;
+                if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
                 send(t, d);
               }
+              if (state === 1) isSeekingRef.current = false;
+              lastTimeRef.current = t;
             }
           } catch {}
         }, 3000);
