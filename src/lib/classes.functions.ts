@@ -321,8 +321,9 @@ export const swapVideoOrder = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
-    const { data: list, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: list, error } = await supabaseAdmin
       .from("videos")
       .select("id, sort_order")
       .eq("class_id", data.classId)
@@ -338,7 +339,6 @@ export const swapVideoOrder = createServerFn({ method: "POST" })
     if (swapWith < 0 || swapWith >= normalized.length) return { ok: true };
     const a = normalized[idx];
     const b = normalized[swapWith];
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // 우선 전체 정규화 저장 (기존 값이 NULL/중복이어도 안전하게)
     for (const r of normalized) {
       if (r.id === a.id || r.id === b.id) continue;
