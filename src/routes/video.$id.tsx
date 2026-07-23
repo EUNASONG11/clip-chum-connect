@@ -404,6 +404,9 @@ function VideoPage() {
           } catch {}
         }, 3000);
         cleanup = () => {
+          document.removeEventListener("visibilitychange", onVisibilityChange);
+          window.removeEventListener("pagehide", saveOnLeave);
+          window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
           try { player.destroy?.(); } catch {}
         };
