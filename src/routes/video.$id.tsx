@@ -221,6 +221,7 @@ function VideoPage() {
       let durationCached: number | null = video.duration ?? null;
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
+      const lastWallRef = { current: Date.now() };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
@@ -228,10 +229,14 @@ function VideoPage() {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
           }
+          lastWallRef.current = Date.now();
         } catch {}
       });
       player.on("timeupdate", (d: any) => {
         const t = d.seconds;
+        const nowMs = Date.now();
+        const wallDelta = (nowMs - lastWallRef.current) / 1000;
+        lastWallRef.current = nowMs;
         const jump = t - lastTimeRef.current;
         // 큰 점프(2초 초과)는 seek 로 간주 → maxAllowed 갱신/전송 금지
         if (jump > 2) {
@@ -243,8 +248,10 @@ function VideoPage() {
           }
         }
         currentTimeRef.current = t;
+        // 재생속도 기반 검증: 실제 흐른 시간의 1.5배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
-          maxAllowedRef.current = t;
+          const allowedGrowth = Math.max(0, wallDelta * 1.5);
+          maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
         // 서버에는 허용된 최대치 이내의 값만 전송해 max_seconds 오염 방지
         const safeT = Math.min(t, maxAllowedRef.current);
