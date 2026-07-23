@@ -478,7 +478,7 @@ export const revertToPending = createServerFn({ method: "POST" })
       .from("user_roles")
       .delete()
       .eq("user_id", data.userId)
-      .in("role", ["student", "admin"]);
+      .in("role", ["student", "admin", "instructor"]);
     // pending 역할 부여
     const { error } = await supabaseAdmin
       .from("user_roles")
