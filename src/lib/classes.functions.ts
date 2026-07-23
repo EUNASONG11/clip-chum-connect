@@ -48,14 +48,18 @@ async function assertAdminOnly(context: { supabase: any; userId: string }) {
   if (!admin) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
-// 수강반 목록 (관리자: 전체, 학생: 배정된 반 — RLS로 처리)
+// 수강반 목록 (관리자: 전체, 강사: 본인이 생성한 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const admin = await isAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let builder = supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at")
+      .select("id, name, description, thumbnail_url, created_at, created_by")
       .order("created_at", { ascending: false });
+    if (!admin) builder = builder.eq("created_by", context.userId);
+    const { data, error } = await builder;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
