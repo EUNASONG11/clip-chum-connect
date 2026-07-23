@@ -8,10 +8,10 @@ function extractPath(value: string): string | null {
   const marker = `/${BUCKET}/`;
   const idx = value.indexOf(marker);
   if (idx >= 0) return value.slice(idx + marker.length).split("?")[0];
-  // 이미 path 형태로 저장된 경우
   if (!value.startsWith("http")) return value;
   return null;
 }
+
 
 // 프라이빗 버킷의 썸네일을 signed URL 로 표시
 export function ClassThumb({
