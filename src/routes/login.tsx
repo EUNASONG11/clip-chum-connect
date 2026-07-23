@@ -140,7 +140,7 @@ function AuthPage() {
           <Tabs value={tab} onValueChange={(v) => setTab(v as "student" | "admin")}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="student">학생</TabsTrigger>
-              <TabsTrigger value="admin">관리자</TabsTrigger>
+              <TabsTrigger value="admin">관리자/강사</TabsTrigger>
             </TabsList>
 
             <TabsContent value="student" className="pt-4">
