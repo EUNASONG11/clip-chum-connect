@@ -464,7 +464,16 @@ function UsersPage() {
                                 onClick={() => doApprove(u, "student")}
                                 className="gap-1"
                               >
-                                <Check className="h-3.5 w-3.5" /> 승인
+                                <Check className="h-3.5 w-3.5" /> 학생 승인
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                disabled={busy}
+                                onClick={() => doApprove(u, "instructor")}
+                                className="gap-1"
+                              >
+                                <Check className="h-3.5 w-3.5" /> 강사 승인
                               </Button>
                               <Button
                                 size="sm"
@@ -477,7 +486,7 @@ function UsersPage() {
                               </Button>
                             </>
                           )}
-                          {u.isStudent && !u.isAdmin && (
+                          {(u.isStudent || u.isInstructor) && !u.isAdmin && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -488,6 +497,7 @@ function UsersPage() {
                               <UserPlus className="h-3.5 w-3.5" /> 관리자로
                             </Button>
                           )}
+
                           {u.isAdmin && (
                             <Button
                               size="sm"
