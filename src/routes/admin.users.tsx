@@ -240,9 +240,10 @@ function UsersPage() {
   };
 
   const roleLabel = (u: UserRow) =>
-    u.isAdmin ? "관리자" : u.isStudent ? "학생" : "승인 대기";
-  const roleTone = (u: UserRow): "admin" | "student" | "pending" =>
-    u.isAdmin ? "admin" : u.isStudent ? "student" : "pending";
+    u.isAdmin ? "관리자" : u.isInstructor ? "강사" : u.isStudent ? "학생" : "승인 대기";
+  const roleTone = (u: UserRow): "admin" | "instructor" | "student" | "pending" =>
+    u.isAdmin ? "admin" : u.isInstructor ? "instructor" : u.isStudent ? "student" : "pending";
+
 
   return (
     <Card className="border-border/60">
