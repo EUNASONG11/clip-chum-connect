@@ -11,6 +11,7 @@ import {
   updateInstructorEmail,
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
+import { AdminOnly } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/instructors")({
   head: () => ({ meta: [{ title: "강사 명부 — 관리자" }] }),
