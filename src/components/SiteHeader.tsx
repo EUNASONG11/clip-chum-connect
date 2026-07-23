@@ -51,9 +51,12 @@ export function SiteHeader() {
         <nav className="flex items-center gap-3">
           {email ? (
             <>
-              <span className="hidden rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground sm:inline">
-                {displayName ?? email}
-              </span>
+              {displayName && (
+                <span className="hidden rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground sm:inline">
+                  {displayName}
+                </span>
+              )}
+
               <Button
                 size="sm"
                 variant="outline"
