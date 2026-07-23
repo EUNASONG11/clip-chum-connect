@@ -295,7 +295,7 @@ function UsersPage() {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPages({ admin: 1, student: 1, pending: 1 });
+                setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
               }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="pl-9"
