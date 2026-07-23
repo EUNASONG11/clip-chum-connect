@@ -203,19 +203,29 @@ function ClassDetailPage() {
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
           ) : (
-            <ul className="divide-y">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {students.map((s: any) => (
-                <li key={s.user_id} className="flex items-center gap-2 py-2">
+                <div
+                  key={s.user_id}
+                  className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
+                >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm">{s.name || s.email}</p>
-                    {s.phone && <p className="truncate text-xs text-muted-foreground">{s.phone}</p>}
+                    <p className="truncate text-sm font-medium">{s.name || s.email}</p>
+                    {s.phone && (
+                      <p className="truncate text-xs text-muted-foreground">{s.phone}</p>
+                    )}
                   </div>
-                  <Button size="sm" variant="ghost" onClick={() => remove(s.user_id)}>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => remove(s.user_id)}
+                  >
                     <X className="h-4 w-4" />
                   </Button>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
 
         </CardContent>
@@ -277,19 +287,27 @@ function ClassDetailPage() {
             {assignedInstructors.length === 0 ? (
               <p className="text-sm text-muted-foreground">아직 배정된 강사가 없습니다.</p>
             ) : (
-              <ul className="divide-y">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {assignedInstructors.map((s: any) => (
-                  <li key={s.user_id} className="flex items-center gap-2 py-2">
+                  <div
+                    key={s.user_id}
+                    className="flex items-center gap-2 rounded-md border bg-card px-3 py-2"
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm">{s.name || "-"}</p>
+                      <p className="truncate text-sm font-medium">{s.name || "-"}</p>
                       <p className="truncate text-xs text-muted-foreground">{s.email}</p>
                     </div>
-                    <Button size="sm" variant="ghost" onClick={() => removeI(s.user_id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => removeI(s.user_id)}
+                    >
                       <X className="h-4 w-4" />
                     </Button>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </CardContent>
         </Card>
