@@ -115,83 +115,85 @@ function VideosPage() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>등록된 영상 ({rows.length})</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">아직 없습니다.</p>
-        ) : (
-          <ul className="divide-y">
-            {rows.map((r) => (
-              <li key={r.id} className="space-y-3 py-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
-                    {r.thumbnail_url && (
-                      <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+    <AdminOnly>
+      <Card>
+        <CardHeader>
+          <CardTitle>등록된 영상 ({rows.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {rows.length === 0 ? (
+            <p className="text-sm text-muted-foreground">아직 없습니다.</p>
+          ) : (
+            <ul className="divide-y">
+              {rows.map((r) => (
+                <li key={r.id} className="space-y-3 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
+                      {r.thumbnail_url && (
+                        <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{r.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="uppercase">{r.source}</span>
+                        {" · "}상태:{" "}
+                        <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
+                          {statusLabel(r.status)}
+                        </span>
+                      </p>
+                    </div>
+                    {r.source === "vimeo" && (
+                      <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
                     )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{r.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="uppercase">{r.source}</span>
-                      {" · "}상태:{" "}
-                      <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
-                        {statusLabel(r.status)}
-                      </span>
-                    </p>
-                  </div>
-                  {r.source === "vimeo" && (
-                    <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
-                      <RefreshCw className="h-4 w-4" />
+                    <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </div>
+                  </div>
 
-                <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_100px_auto_auto]">
-                  <div>
-                    <label className="text-xs text-muted-foreground">수강반</label>
-                    <Select
-                      value={(value(r, "class_id") as string | null) ?? NO_CLASS}
-                      onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
-                    >
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_CLASS}>미지정</SelectItem>
-                        {classes.map((c: any) => (
-                          <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_100px_auto_auto]">
+                    <div>
+                      <label className="text-xs text-muted-foreground">수강반</label>
+                      <Select
+                        value={(value(r, "class_id") as string | null) ?? NO_CLASS}
+                        onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                          {classes.map((c: any) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">순서</label>
+                      <Input
+                        type="number"
+                        value={value(r, "sort_order") as number}
+                        onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={value(r, "is_published") as boolean}
+                        onCheckedChange={(v) => patch(r.id, { is_published: v })}
+                      />
+                      <span className="text-xs">공개</span>
+                    </div>
+                    <Button size="sm" disabled={!dirty(r.id)} onClick={() => save(r)}>
+                      <Save className="mr-1 h-4 w-4" /> 저장
+                    </Button>
                   </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">순서</label>
-                    <Input
-                      type="number"
-                      value={value(r, "sort_order") as number}
-                      onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={value(r, "is_published") as boolean}
-                      onCheckedChange={(v) => patch(r.id, { is_published: v })}
-                    />
-                    <span className="text-xs">공개</span>
-                  </div>
-                  <Button size="sm" disabled={!dirty(r.id)} onClick={() => save(r)}>
-                    <Save className="mr-1 h-4 w-4" /> 저장
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+    </AdminOnly>
   );
 }
