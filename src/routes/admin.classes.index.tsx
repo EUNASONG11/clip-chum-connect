@@ -57,9 +57,9 @@ function ClassesPage() {
           .from("class-thumbnails")
           .upload(path, thumbFile, { upsert: true, contentType: thumbFile.type });
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("class-thumbnails").getPublicUrl(path);
-        await updateClass({ data: { id: row.id, thumbnail_url: pub.publicUrl } });
+        await updateClass({ data: { id: row.id, thumbnail_url: path } });
       }
+
       setName("");
       setDesc("");
       setThumbFile(null);
@@ -114,9 +114,10 @@ function ClassesPage() {
                   <li key={c.id} className="flex items-center gap-3 py-3">
                     <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
                       {c.thumbnail_url ? (
-                        <img src={c.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        <ClassThumb src={c.thumbnail_url} className="h-full w-full object-cover" />
                       ) : null}
                     </div>
+
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{c.name}</p>
                       {c.description && (

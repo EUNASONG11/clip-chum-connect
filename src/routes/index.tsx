@@ -92,7 +92,7 @@ function Home() {
             >
               <div className="aspect-video w-full overflow-hidden bg-muted">
                 {c.thumbnail_url ? (
-                  <img
+                  <ClassThumb
                     src={c.thumbnail_url}
                     alt={c.name}
                     className="h-full w-full object-cover transition group-hover:scale-105"
@@ -102,6 +102,7 @@ function Home() {
                     <Film className="h-10 w-10 text-muted-foreground/60" />
                   </div>
                 )}
+
               </div>
               <div className="p-5">
                 <h3 className="truncate font-semibold group-hover:text-primary">{c.name}</h3>
