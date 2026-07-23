@@ -214,7 +214,24 @@ export const listClassVideos = createServerFn({ method: "GET" })
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const videos = rows ?? [];
+    const videoIds = videos.map((r: any) => r.id);
+    const progressMap = new Map<string, any>();
+    if (videoIds.length > 0) {
+      const { data: progress, error: pErr } = await context.supabase
+        .from("video_progress")
+        .select("video_id, current_seconds, watched_ratio, is_completed")
+        .eq("user_id", context.userId)
+        .in("video_id", videoIds);
+      if (pErr) throw new Error(pErr.message);
+      for (const p of progress ?? []) {
+        progressMap.set(p.video_id as string, p);
+      }
+    }
+    return videos.map((r: any) => ({
+      ...r,
+      progress: progressMap.get(r.id as string) ?? null,
+    }));
   });
 
 // 영상 수정 (관리자)
