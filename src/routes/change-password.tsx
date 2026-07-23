@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { KeyRound } from "lucide-react";
+import { Eye, EyeOff, KeyRound } from "lucide-react";
 
 export const Route = createFileRoute("/change-password")({
   head: () => ({
@@ -23,6 +23,8 @@ function ChangePasswordPage() {
   const navigate = useNavigate();
   const [pw1, setPw1] = useState("");
   const [pw2, setPw2] = useState("");
+  const [showPw1, setShowPw1] = useState(false);
+  const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -80,26 +82,48 @@ function ChangePasswordPage() {
           <form onSubmit={submit} className="space-y-3">
             <div>
               <Label htmlFor="pw1">새 비밀번호</Label>
-              <Input
-                id="pw1"
-                type="password"
-                minLength={8}
-                required
-                value={pw1}
-                onChange={(e) => setPw1(e.target.value)}
-                placeholder="8자 이상"
-              />
+              <div className="relative">
+                <Input
+                  id="pw1"
+                  type={showPw1 ? "text" : "password"}
+                  minLength={8}
+                  required
+                  value={pw1}
+                  onChange={(e) => setPw1(e.target.value)}
+                  placeholder="8자 이상"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw1((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPw1 ? "비밀번호 숨기기" : "비밀번호 보기"}
+                >
+                  {showPw1 ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <div>
               <Label htmlFor="pw2">새 비밀번호 확인</Label>
-              <Input
-                id="pw2"
-                type="password"
-                minLength={8}
-                required
-                value={pw2}
-                onChange={(e) => setPw2(e.target.value)}
-              />
+              <div className="relative">
+                <Input
+                  id="pw2"
+                  type={showPw2 ? "text" : "password"}
+                  minLength={8}
+                  required
+                  value={pw2}
+                  onChange={(e) => setPw2(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw2((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPw2 ? "비밀번호 숨기기" : "비밀번호 보기"}
+                >
+                  {showPw2 ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "처리 중..." : "비밀번호 변경"}
