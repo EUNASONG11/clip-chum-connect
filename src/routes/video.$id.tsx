@@ -218,18 +218,35 @@ function VideoPage() {
             portrait: false,
           });
       let durationCached: number | null = video.duration ?? null;
+      const maxAllowedRef = { current: 0 };
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
+            maxAllowedRef.current = resumeAtRef.current;
           }
         } catch {}
       });
-      player.on("timeupdate", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
+      player.on("timeupdate", (d: any) => {
+        currentTimeRef.current = d.seconds;
+        if (d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
+        send(d.seconds, durationCached);
+      });
+      player.on("seeked", (d: any) => {
+        // 앞으로 건너뛰기 방지: 최대 시청 지점 + 2초 초과 시 되돌림
+        if (d.seconds > maxAllowedRef.current + 2) {
+          player.setCurrentTime(maxAllowedRef.current).catch(() => {});
+        }
+      });
       player.on("pause", (d: any) => { currentTimeRef.current = d.seconds; send(d.seconds, durationCached); });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
-      seekRef.current = (sec: number) => { player.setCurrentTime(sec).catch(() => {}); player.play().catch(() => {}); };
+      seekRef.current = (sec: number) => {
+        // 이어보기/최근 시청 클릭은 허용 (maxAllowed 갱신)
+        if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
+        player.setCurrentTime(sec).catch(() => {});
+        player.play().catch(() => {});
+      };
       fullscreenRef.current = () => {
         void (async () => {
           try {
@@ -252,6 +269,7 @@ function VideoPage() {
     } else if (video.source === "youtube") {
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
+        const maxAllowedRef = { current: resumeAtRef.current };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -266,12 +284,21 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
+              // 앞으로 건너뛰기 방지
+              if (t > maxAllowedRef.current + 2) {
+                try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+                return;
+              }
+              if (t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
             },
           },
         });
-        seekRef.current = (sec: number) => { try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {} };
+        seekRef.current = (sec: number) => {
+          if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
+          try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {}
+        };
         fullscreenRef.current = () => {
           void (async () => {
             const opened =
@@ -287,10 +314,15 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
-              send(t, d);
+              if (t > maxAllowedRef.current + 2) {
+                try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+              } else {
+                if (t > maxAllowedRef.current) maxAllowedRef.current = t;
+                send(t, d);
+              }
             }
           } catch {}
-        }, 5000);
+        }, 3000);
         cleanup = () => {
           clearInterval(iv);
           try { player.destroy?.(); } catch {}

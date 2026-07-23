@@ -244,3 +244,57 @@ export const updateVideo = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// 차시 순서 재정렬 (인접 항목과 교환)
+export const swapVideoOrder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      classId: z.string().uuid(),
+      videoId: z.string().uuid(),
+      direction: z.enum(["up", "down"]),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { data: list, error } = await context.supabase
+      .from("videos")
+      .select("id, sort_order")
+      .eq("class_id", data.classId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    const rows = (list ?? []) as { id: string; sort_order: number | null }[];
+    // 정규화된 순서 확보
+    const normalized = rows.map((r, i) => ({ ...r, sort_order: i }));
+    const idx = normalized.findIndex((r) => r.id === data.videoId);
+    if (idx < 0) return { ok: true };
+    const swapWith = data.direction === "up" ? idx - 1 : idx + 1;
+    if (swapWith < 0 || swapWith >= normalized.length) return { ok: true };
+    const a = normalized[idx];
+    const b = normalized[swapWith];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 우선 전체 정규화 저장 (기존 값이 NULL/중복이어도 안전하게)
+    for (const r of normalized) {
+      if (r.id === a.id || r.id === b.id) continue;
+      await supabaseAdmin.from("videos").update({ sort_order: r.sort_order }).eq("id", r.id);
+    }
+    await supabaseAdmin.from("videos").update({ sort_order: b.sort_order }).eq("id", a.id);
+    await supabaseAdmin.from("videos").update({ sort_order: a.sort_order }).eq("id", b.id);
+    return { ok: true };
+  });
+
+// 내 최근 학습(진도) 요약 — 마이페이지용
+export const listMyRecentProgress = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("video_progress")
+      .select("video_id, current_seconds, watched_ratio, is_completed, updated_at, videos(id, title, thumbnail_url, class_id, duration)")
+      .eq("user_id", context.userId)
+      .order("updated_at", { ascending: false })
+      .limit(10);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
