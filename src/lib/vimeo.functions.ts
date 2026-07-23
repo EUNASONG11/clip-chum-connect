@@ -640,34 +640,9 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
       };
     }
 
-    // 학생에서 못 찾으면 강사 테이블에서 조회 (강사는 초기 비밀번호가 12345678)
-    const { data: instRows, error: iErr } = await supabaseAdmin
-      .from("instructors")
-      .select("name, phone, auth_user_id")
-      .eq("name", data.name.trim())
-      .eq("phone", phoneDigits)
-      .limit(2);
-    if (iErr) throw new Error(iErr.message);
-    if (!instRows || instRows.length === 0) {
-      throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
-    }
-    if (instRows.length > 1) {
-      throw new Error("동일한 이름/전화번호의 강사 계정이 여러 개 존재합니다. 관리자에게 문의하세요.");
-    }
-    const inst = instRows[0];
-    if (!inst.auth_user_id) {
-      throw new Error("강사 계정이 아직 준비되지 않았습니다. 관리자에게 문의하세요.");
-    }
-    const { data: iUserRes, error: iUserErr } =
-      await supabaseAdmin.auth.admin.getUserById(inst.auth_user_id);
-    if (iUserErr || !iUserRes?.user?.email) {
-      throw new Error("계정 정보를 불러올 수 없습니다.");
-    }
-    return {
-      email: iUserRes.user.email,
-      initialPassword: "12345678",
-    };
+    throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
   });
+
 
 // ============= 강사 계정 일괄 생성 & 최초 비밀번호 변경 =============
 
@@ -679,7 +654,7 @@ export const bulkCreateInstructorAccounts = createServerFn({ method: "POST" })
 
     const { data: instructors, error } = await supabaseAdmin
       .from("instructors")
-      .select("id, name, phone, auth_user_id")
+      .select("id, name, email, phone, auth_user_id")
       .is("auth_user_id", null);
     if (error) throw new Error(error.message);
 
@@ -690,26 +665,24 @@ export const bulkCreateInstructorAccounts = createServerFn({ method: "POST" })
 
     for (const inst of instructors ?? []) {
       try {
-        const phoneDigits = (inst.phone ?? "").replace(/[^0-9]/g, "");
-        if (!phoneDigits) {
+        const email = (inst.email ?? "").trim().toLowerCase();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           failed++;
-          errors.push(`${inst.name}: 전화번호 없음`);
+          errors.push(`${inst.name}: 이메일 없음 또는 형식 오류`);
           continue;
         }
-        const email = `instructor-${phoneDigits}@mirror.local`;
         let authUserId: string | null = null;
 
         const { data: created1, error: cErr } = await supabaseAdmin.auth.admin.createUser({
           email,
           password: "12345678",
           email_confirm: true,
-          user_metadata: { name: inst.name, phone: phoneDigits, source: "instructor-bulk" },
+          user_metadata: { name: inst.name, source: "instructor-bulk" },
         });
 
         if (cErr) {
-          // 이미 존재하면 조회해서 연결
           const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const found = list?.users.find((u) => u.email === email);
+          const found = list?.users.find((u) => (u.email ?? "").toLowerCase() === email);
           if (found) {
             authUserId = found.id;
             linked++;
@@ -762,6 +735,54 @@ export const clearMyMustChangePassword = createServerFn({ method: "POST" })
       .from("instructors")
       .update({ must_change_password: false })
       .eq("auth_user_id", context.userId);
+    return { ok: true };
+  });
+
+// ============= 강사 명부(로스터) 관리 =============
+
+export const listInstructorRoster = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("instructors")
+      .select("id, name, email, phone, branch, auth_user_id, must_change_password")
+      .order("name", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const updateInstructorEmail = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        email: z.string().trim().email().max(255),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const email = data.email.toLowerCase();
+    const { data: row, error: fErr } = await supabaseAdmin
+      .from("instructors")
+      .select("id, auth_user_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fErr) throw new Error(fErr.message);
+    if (!row) throw new Error("강사를 찾을 수 없습니다.");
+    const { error } = await supabaseAdmin
+      .from("instructors")
+      .update({ email })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    // 이미 계정이 있으면 auth 이메일도 갱신
+    if (row.auth_user_id) {
+      await supabaseAdmin.auth.admin.updateUserById(row.auth_user_id, { email });
+    }
     return { ok: true };
   });
 

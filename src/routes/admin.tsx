@@ -32,6 +32,7 @@ const navItems = [
   { title: "등록된 영상", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
   { title: "사용자 관리", url: "/admin/users", icon: Users },
+  { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
 ];
 
 function AdminSidebar() {
