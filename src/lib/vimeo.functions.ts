@@ -240,9 +240,11 @@ export const getMyStatus = createServerFn({ method: "GET" })
     return {
       isAdmin: roles.includes("admin"),
       isStudent: roles.includes("student"),
-      isPending: !roles.includes("admin") && !roles.includes("student"),
+      isInstructor: roles.includes("instructor"),
+      isPending: !roles.includes("admin") && !roles.includes("student") && !roles.includes("instructor"),
     };
   });
+
 
 // 6-2) 사용자 목록 (관리자 전용) — 수강반 수 포함
 export const listUsers = createServerFn({ method: "GET" })
