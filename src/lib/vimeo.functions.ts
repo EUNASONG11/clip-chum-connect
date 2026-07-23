@@ -416,7 +416,8 @@ export const approveUser = createServerFn({ method: "POST" })
     z
       .object({
         userId: z.string().uuid(),
-        role: z.enum(["student", "admin"]).default("student"),
+        role: z.enum(["student", "admin", "instructor"]).default("student"),
+
       })
       .parse(input),
   )
