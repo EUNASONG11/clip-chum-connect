@@ -2,24 +2,64 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
-  const [adminRes, instRes] = await Promise.all([
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
-    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "instructor" }),
-  ]);
-  if (adminRes.error) throw new Error(adminRes.error.message);
-  if (instRes.error) throw new Error(instRes.error.message);
-  if (!adminRes.data && !instRes.data) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+async function isAdmin(context: { supabase: any; userId: string }) {
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  });
+  if (error) throw new Error(error.message);
+  return !!data;
 }
 
-// 수강반 목록 (관리자: 전체, 학생: 배정된 반 — RLS로 처리)
+async function isInstructor(context: { supabase: any; userId: string }) {
+  const { data, error } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "instructor",
+  });
+  if (error) throw new Error(error.message);
+  return !!data;
+}
+
+async function assertAdminOrInstructor(context: { supabase: any; userId: string }) {
+  const [admin, instructor] = await Promise.all([isAdmin(context), isInstructor(context)]);
+  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+}
+
+async function assertOwnClassOrAdmin(
+  context: { supabase: any; userId: string },
+  classId: string,
+) {
+  const admin = await isAdmin(context);
+  if (admin) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("classes")
+    .select("created_by")
+    .eq("id", classId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.created_by !== context.userId) {
+    throw new Error("해당 수강반에 대한 권한이 없습니다.");
+  }
+}
+
+async function assertAdminOnly(context: { supabase: any; userId: string }) {
+  const admin = await isAdmin(context);
+  if (!admin) throw new Error("관리자만 접근할 수 있습니다.");
+}
+
+// 수강반 목록 (관리자: 전체, 강사: 본인이 생성한 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const admin = await isAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let builder = supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at")
+      .select("id, name, description, thumbnail_url, created_at, created_by")
       .order("created_at", { ascending: false });
+    if (!admin) builder = builder.eq("created_by", context.userId);
+    const { data, error } = await builder;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -29,9 +69,11 @@ export const getClass = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at")
+      .select("id, name, description, thumbnail_url, created_at, created_by")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -50,7 +92,7 @@ export const createClass = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { data: row, error } = await context.supabase
       .from("classes")
       .insert({
@@ -78,13 +120,14 @@ export const updateClass = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
     if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase
+    const { error } = await supabaseAdmin
       .from("classes")
       .update(patch as any)
       .eq("id", data.id);
@@ -97,8 +140,9 @@ export const deleteClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
-    const { error } = await context.supabase.from("classes").delete().eq("id", data.id);
+    await assertOwnClassOrAdmin(context, data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("classes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -108,7 +152,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_students")
@@ -142,7 +186,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = data.query.trim();
     const digits = q.replace(/[^0-9]/g, "");
@@ -175,7 +219,7 @@ export const assignStudent = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_students")
@@ -192,7 +236,7 @@ export const unassignStudent = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_students")
@@ -203,12 +247,14 @@ export const unassignStudent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// 수강반의 영상 목록 (RLS로 관리자/학생 자동 처리)
+// 수강반의 영상 목록 (관리자: 전체, 강사: 본인 수강반)
 export const listClassVideos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { data: rows, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
       .from("videos")
       .select("id, title, description, thumbnail_url, duration, status, is_published, sort_order, created_at")
       .eq("class_id", data.classId)
@@ -219,7 +265,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
     const videoIds = videos.map((r: any) => r.id);
     const progressMap = new Map<string, any>();
     if (videoIds.length > 0) {
-      const { data: progress, error: pErr } = await context.supabase
+      const { data: progress, error: pErr } = await supabaseAdmin
         .from("video_progress")
         .select("video_id, current_seconds, watched_ratio, is_completed")
         .eq("user_id", context.userId)
@@ -252,13 +298,14 @@ export const updateVideo = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOnly(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = {};
     for (const k of ["title", "description", "class_id", "is_published", "sort_order", "completion_ratio"] as const) {
       if (data[k] !== undefined) patch[k] = data[k];
     }
     if (Object.keys(patch).length === 0) return { ok: true };
-    const { error } = await context.supabase.from("videos").update(patch as any).eq("id", data.id);
+    const { error } = await supabaseAdmin.from("videos").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -274,8 +321,9 @@ export const swapVideoOrder = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
-    const { data: list, error } = await context.supabase
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: list, error } = await supabaseAdmin
       .from("videos")
       .select("id, sort_order")
       .eq("class_id", data.classId)
@@ -291,7 +339,6 @@ export const swapVideoOrder = createServerFn({ method: "POST" })
     if (swapWith < 0 || swapWith >= normalized.length) return { ok: true };
     const a = normalized[idx];
     const b = normalized[swapWith];
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // 우선 전체 정규화 저장 (기존 값이 NULL/중복이어도 안전하게)
     for (const r of normalized) {
       if (r.id === a.id || r.id === b.id) continue;
