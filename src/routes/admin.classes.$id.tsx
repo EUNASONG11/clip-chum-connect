@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2,
 } from "lucide-react";
 import {
   getClass,
@@ -70,6 +70,7 @@ function ClassDetailPage() {
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
 
@@ -80,7 +81,8 @@ function ClassDetailPage() {
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFolderName.trim()) return;
+    if (!newFolderName.trim() || isCreatingFolder) return;
+    setIsCreatingFolder(true);
     try {
       await createClassFolder({ data: { classId: id, name: newFolderName.trim() } });
       setNewFolderName("");
@@ -89,6 +91,8 @@ function ClassDetailPage() {
       toast.success("폴더가 생성되었습니다.");
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setIsCreatingFolder(false);
     }
   };
 
@@ -416,18 +420,26 @@ function ClassDetailPage() {
             </Button>
           )}
           {creatingFolder && (
-            <form onSubmit={handleCreateFolder} className="flex gap-2">
+            <form onSubmit={handleCreateFolder} className="flex items-center gap-2">
               <Input
                 autoFocus
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="폴더 이름 (예: 1주차)"
+                disabled={isCreatingFolder}
               />
-              <Button type="submit" size="sm">추가</Button>
+              <Button type="submit" size="sm" disabled={isCreatingFolder}>
+                {isCreatingFolder ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "추가"
+                )}
+              </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="ghost"
+                disabled={isCreatingFolder}
                 onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
               >취소</Button>
             </form>
