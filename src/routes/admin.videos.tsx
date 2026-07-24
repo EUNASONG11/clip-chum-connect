@@ -86,6 +86,8 @@ function VideosPage() {
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
+          allow_seek: e.allow_seek,
+          max_playback_rate: e.max_playback_rate,
         },
       });
       toast.success("저장되었습니다.");
