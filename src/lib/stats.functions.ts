@@ -225,8 +225,11 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
     ]);
     const videoIds = new Set((videos ?? []).map((v: any) => v.id));
     const studentIds = (students ?? []).map((s: any) => s.user_id);
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
-    const emailById = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
+    const { data: ext } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone")
+      .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
+    const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
 
     const rel = (progress ?? []).filter((p: any) => videoIds.has(p.video_id));
     return studentIds.map((uid) => {
@@ -239,9 +242,11 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         (max: string | null, p: any) => (!max || p.updated_at > max ? p.updated_at : max),
         null as string | null,
       );
+      const e: any = extMap.get(uid);
       return {
         user_id: uid,
-        email: emailById.get(uid) ?? "",
+        name: e?.name ?? "",
+        phone: e?.phone ?? "",
         video_total: videoIds.size,
         completed,
         avg_watched_ratio: Math.min(1, avg),
