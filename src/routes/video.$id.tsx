@@ -363,8 +363,8 @@ function VideoPage() {
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
-      const allowSeek = !!video.allow_seek;
-      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const allowSeek = effectiveAllowSeek;
+      const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       // iframe 을 컨테이너에 동적으로 생성 (strict-mode 이중 마운트 안전)
       const container = containerRef.current;
       container.innerHTML = "";
