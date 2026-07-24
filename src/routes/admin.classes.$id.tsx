@@ -148,6 +148,15 @@ function ClassDetailPage() {
         )}
       </div>
 
+      <Tabs defaultValue="students" className="w-full">
+        <TabsList>
+          <TabsTrigger value="students">학생 배정</TabsTrigger>
+          {isAdmin && <TabsTrigger value="instructors">강사 배정</TabsTrigger>}
+          <TabsTrigger value="videos">영상</TabsTrigger>
+          <TabsTrigger value="stats">학습 현황</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="students">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
