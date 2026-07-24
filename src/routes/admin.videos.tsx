@@ -125,6 +125,8 @@ function VideosPage() {
           sort_order: e.sort_order,
           allow_seek: e.allow_seek,
           max_playback_rate: e.max_playback_rate,
+          rewatch_allow_seek: e.rewatch_allow_seek,
+          rewatch_max_playback_rate: e.rewatch_max_playback_rate,
           completion_ratio: e.completion_ratio,
         },
       });
