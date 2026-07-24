@@ -50,7 +50,8 @@ type UserRow = {
 const usersQueryOptions = queryOptions({
   queryKey: ["admin", "users"],
   queryFn: async () => (await listUsers()) as UserRow[],
-  staleTime: 30_000,
+  staleTime: 5 * 60_000,
+  gcTime: 10 * 60_000,
 });
 
 type TabKey = "admin" | "instructor" | "student" | "pending";
