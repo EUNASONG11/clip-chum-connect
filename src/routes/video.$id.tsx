@@ -188,6 +188,13 @@ function VideoPage() {
   // 플레이어 초기화 + 이벤트 바인딩
   useEffect(() => {
     if (!video || !containerRef.current) return;
+    if (isAuthed && !progressLoaded) return;
+    const effectiveAllowSeek = initialCompleted && video.rewatch_allow_seek !== null
+      ? !!video.rewatch_allow_seek
+      : !!video.allow_seek;
+    const effectiveMaxRate = initialCompleted && video.rewatch_max_playback_rate !== null
+      ? Number(video.rewatch_max_playback_rate)
+      : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
     const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
