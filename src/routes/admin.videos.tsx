@@ -180,15 +180,15 @@ function VideosPage() {
             <ul className="divide-y">
               {rows.map((r) => (
                 <li key={r.id} className="py-4">
-                  <div className="flex items-center gap-4">
-                    <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
                       {r.thumbnail_url && (
                         <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{r.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         <span className="uppercase">{r.source}</span>
                         {" · "}상태:{" "}
                         <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
@@ -197,22 +197,26 @@ function VideosPage() {
                         {r.class_id && (
                           <>
                             {" · "}
-                            {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                            <span className="truncate">
+                              {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                            </span>
                           </>
                         )}
                       </p>
                     </div>
-                    {r.source === "vimeo" && (
-                      <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
-                        <RefreshCw className="h-4 w-4" />
+                    <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+                      {r.source === "vimeo" && (
+                        <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
+                        <Settings2 className="mr-1 h-4 w-4" /> 설정
                       </Button>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
-                      <Settings2 className="mr-1 h-4 w-4" /> 설정
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
 
                   <Dialog
