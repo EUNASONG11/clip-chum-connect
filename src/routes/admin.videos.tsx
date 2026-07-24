@@ -11,9 +11,7 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2 } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
-import { useAdminRole } from "@/components/AdminRole";
-import { ShieldCheck } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
 import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
@@ -54,22 +52,6 @@ const statusMap: Record<string, string> = {
 };
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
-function RoleGate({ children }: { children: React.ReactNode }) {
-  const { isAdmin, isInstructor, isLoading } = useAdminRole();
-  if (isLoading) return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
-  if (!isAdmin && !isInstructor) {
-    return (
-      <div className="mx-auto max-w-md p-10 text-center">
-        <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
-        <h2 className="mt-4 text-xl font-semibold">접근 권한이 없습니다.</h2>
-        <Button asChild variant="outline" className="mt-4">
-          <Link to="/admin/dashboard">대시보드로</Link>
-        </Button>
-      </div>
-    );
-  }
-  return <>{children}</>;
-}
 
 function VideosPage() {
   const { isAdmin } = useAdminRole();
