@@ -20,6 +20,8 @@ type Video = {
   player_embed_url: string | null;
   thumbnail_url: string | null;
   duration: number | null;
+  allow_seek: boolean;
+  max_playback_rate: number;
 };
 
 export const Route = createFileRoute("/video/$id")({
