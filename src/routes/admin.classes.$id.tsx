@@ -6,8 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown, GraduationCap } from "lucide-react";
+import {
+  ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2,
+} from "lucide-react";
 import {
   getClass,
   listClassStudents,
@@ -20,6 +30,11 @@ import {
   searchInstructors,
   assignInstructor,
   unassignInstructor,
+  listClassFolders,
+  createClassFolder,
+  updateClassFolder,
+  deleteClassFolder,
+  setVideoFolder,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
