@@ -60,7 +60,7 @@ function VideosPage() {
   const load = async () => {
     const { data } = await supabase
       .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,created_at")
+      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     setRows((data as Row[] | null) ?? []);
