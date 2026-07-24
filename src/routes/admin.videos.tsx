@@ -120,6 +120,7 @@ function VideosPage() {
         },
       });
       toast.success("저장되었습니다.");
+      setOpenId(null);
       load();
     } catch (err: any) {
       toast.error(err.message);
