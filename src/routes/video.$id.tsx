@@ -107,6 +107,8 @@ function VideoPage() {
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
 
   useEffect(() => {
