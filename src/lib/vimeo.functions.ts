@@ -634,6 +634,7 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         status: "ready",
         created_by: context.userId,
         class_id: data.class_id ?? null,
+        folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
       })
