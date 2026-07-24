@@ -36,6 +36,8 @@ type Row = {
   sort_order: number;
   allow_seek: boolean;
   max_playback_rate: number;
+  rewatch_allow_seek: boolean | null;
+  rewatch_max_playback_rate: number | null;
   completion_ratio: number;
   created_at: string;
 };
