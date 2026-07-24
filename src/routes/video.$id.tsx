@@ -23,6 +23,8 @@ type Video = {
   duration: number | null;
   allow_seek: boolean;
   max_playback_rate: number;
+  rewatch_allow_seek: boolean | null;
+  rewatch_max_playback_rate: number | null;
 };
 
 export const Route = createFileRoute("/video/$id")({
