@@ -337,6 +337,8 @@ export const updateVideo = createServerFn({ method: "POST" })
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
         completion_ratio: z.number().min(0).max(1).optional(),
+        allow_seek: z.boolean().optional(),
+        max_playback_rate: z.number().min(0.5).max(4).optional(),
       })
       .parse(i),
   )
@@ -344,7 +346,7 @@ export const updateVideo = createServerFn({ method: "POST" })
     await assertAdminOnly(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: Record<string, unknown> = {};
-    for (const k of ["title", "description", "class_id", "is_published", "sort_order", "completion_ratio"] as const) {
+    for (const k of ["title", "description", "class_id", "is_published", "sort_order", "completion_ratio", "allow_seek", "max_playback_rate"] as const) {
       if (data[k] !== undefined) patch[k] = data[k];
     }
     if (Object.keys(patch).length === 0) return { ok: true };
