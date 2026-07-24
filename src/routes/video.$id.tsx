@@ -354,6 +354,12 @@ function VideoPage() {
       iframe.className = "absolute inset-0 h-full w-full";
       container.appendChild(iframe);
       iframeRef.current = iframe;
+      cleanup = () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("pagehide", saveOnLeave);
+        window.removeEventListener("beforeunload", onBeforeUnload);
+        try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
+      };
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current || !container.contains(iframeRef.current)) return;
         const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
