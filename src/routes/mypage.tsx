@@ -163,7 +163,7 @@ function MyPage() {
                       >
                         <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
                           {v.thumbnail_url && (
-                            <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                            <VideoThumb src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
