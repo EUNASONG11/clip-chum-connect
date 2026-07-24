@@ -85,7 +85,7 @@ export function ClassThumbnailUploader({
         <ClassThumb
           src={currentUrl}
           alt="수강반 썸네일"
-          className="h-full w-full object-cover transition group-hover:opacity-75"
+          className="h-full w-full object-cover"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-muted-foreground">
@@ -93,7 +93,7 @@ export function ClassThumbnailUploader({
         </div>
       )}
 
-      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 opacity-0 transition group-hover:opacity-100">
+      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/30 opacity-0 transition group-hover:opacity-100">
         <Button type="button" size="sm" variant="secondary" onClick={pick} disabled={busy}>
           {busy ? (
             <Loader2 className="mr-1 h-3 w-3 animate-spin" />
