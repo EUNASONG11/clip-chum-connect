@@ -343,8 +343,19 @@ function VideoPage() {
     } else if (video.source === "youtube") {
       const allowSeek = !!video.allow_seek;
       const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      // iframe 을 컨테이너에 동적으로 생성 (strict-mode 이중 마운트 안전)
+      const container = containerRef.current;
+      container.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
+      iframe.allowFullscreen = true;
+      iframe.title = video.title;
+      iframe.className = "absolute inset-0 h-full w-full";
+      container.appendChild(iframe);
+      iframeRef.current = iframe;
       loadYouTubeApi().then((YT) => {
-        if (!iframeRef.current) return;
+        if (!iframeRef.current || !container.contains(iframeRef.current)) return;
         const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
