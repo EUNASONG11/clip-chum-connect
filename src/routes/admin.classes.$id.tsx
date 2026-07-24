@@ -455,23 +455,32 @@ function ClassDetailPage() {
                 if (items.length === 0 && group.id === null && folders.length === 0) return null;
                 return (
                   <div key={group.id ?? "none"} className="rounded-md border">
-                    <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
+                    <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                       {group.id && editingFolderId === group.id ? (
                         <>
-                          <Input
-                            autoFocus
-                            className="h-7 flex-1"
-                            value={editingFolderName}
-                            onChange={(e) => setEditingFolderName(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === "Enter") handleRenameFolder(group.id!); }}
-                          />
-                          <Button size="sm" onClick={() => handleRenameFolder(group.id!)}>저장</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingFolderId(null)}>취소</Button>
+                          <div className="flex flex-1 items-center gap-2">
+                            <Input
+                              autoFocus
+                              className="h-7 flex-1"
+                              value={editingFolderName}
+                              onChange={(e) => setEditingFolderName(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") handleRenameFolder(group.id!); }}
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button size="sm" onClick={() => handleRenameFolder(group.id!)}>저장</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingFolderId(null)}>취소</Button>
+                          </div>
                         </>
                       ) : (
                         <>
+                          <div className="flex items-center gap-2">
+                            <Folder className="h-4 w-4 text-muted-foreground" />
+                            {group.name}
+                            <span className="text-xs text-muted-foreground">({items.length})</span>
+                          </div>
                           {group.id && (
-                            <>
+                            <div className="flex items-center gap-1">
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -488,11 +497,8 @@ function ClassDetailPage() {
                               >
                                 <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
-                            </>
+                            </div>
                           )}
-                          <Folder className="h-4 w-4 text-muted-foreground" />
-                          {group.name}
-                          <span className="text-xs text-muted-foreground">({items.length})</span>
                         </>
                       )}
                     </div>
