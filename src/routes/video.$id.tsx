@@ -388,17 +388,15 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
-              // seek 중에는 maxAllowed 를 갱신하지 않음 (구간 점프로 seek 감지)
+              // 큰 점프만 seek 로 간주 (정상 재생 중 상태 변화는 무시)
               const jump = t - lastTimeRef.current;
-              if (jump > 4) isSeekingRef.current = true;
-              // 앞으로 건너뛰기 방지
-              if (!allowSeek && t > maxAllowedRef.current + 2) {
+              if (jump > 4 && !allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 isSeekingRef.current = false;
+                lastTimeRef.current = maxAllowedRef.current;
                 return;
               }
               if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
-              else if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
@@ -430,16 +428,17 @@ function VideoPage() {
               lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
+              // 정상 재생 진행분(실제 흐른 시간의 최대배속+0.5배)만큼 먼저 성장 허용
+              if (jump <= 4 && t > maxAllowedRef.current) {
+                const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
+                maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
+              }
               if (jump > 4) isSeekingRef.current = true;
               if (!allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
+                lastTimeRef.current = maxAllowedRef.current;
               } else {
-                if (allowSeek && t > maxAllowedRef.current) {
-                  maxAllowedRef.current = t;
-                } else if (!isSeekingRef.current && t > maxAllowedRef.current) {
-                  const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
-                  maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
-                }
+                if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
                 send(t, d);
               }
               if (state === 1) isSeekingRef.current = false;
