@@ -41,6 +41,10 @@ function ClassPage() {
     queryKey: ["class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
+  const { data: folders = [] } = useQuery({
+    queryKey: ["class", id, "folders"],
+    queryFn: () => listClassFolders({ data: { classId: id } }),
+  });
 
   if (!loadingCls && !cls) throw notFound();
 
