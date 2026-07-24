@@ -119,7 +119,7 @@ function VideosPage() {
   };
 
   return (
-    <AdminOnly>
+    <RoleGate>
       <Card>
         <CardHeader>
           <CardTitle>등록된 영상 ({rows.length})</CardTitle>
