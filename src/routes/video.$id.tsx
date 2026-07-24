@@ -343,8 +343,25 @@ function VideoPage() {
     } else if (video.source === "youtube") {
       const allowSeek = !!video.allow_seek;
       const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      // iframe 을 컨테이너에 동적으로 생성 (strict-mode 이중 마운트 안전)
+      const container = containerRef.current;
+      container.innerHTML = "";
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
+      iframe.allowFullscreen = true;
+      iframe.title = video.title;
+      iframe.className = "absolute inset-0 h-full w-full";
+      container.appendChild(iframe);
+      iframeRef.current = iframe;
+      cleanup = () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        window.removeEventListener("pagehide", saveOnLeave);
+        window.removeEventListener("beforeunload", onBeforeUnload);
+        try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
+      };
       loadYouTubeApi().then((YT) => {
-        if (!iframeRef.current) return;
+        if (!iframeRef.current || !container.contains(iframeRef.current)) return;
         const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
@@ -438,6 +455,7 @@ function VideoPage() {
           window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
           try { player.destroy?.(); } catch {}
+          try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
         };
       });
     }
@@ -478,16 +496,7 @@ function VideoPage() {
               }
             >
               <div ref={containerRef} className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}>
-                {video.source === "youtube" && (
-                  <iframe
-                    ref={iframeRef}
-                    src={`https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
-                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                    allowFullScreen
-                    className="absolute inset-0 h-full w-full"
-                    title={video.title}
-                  />
-                )}
+                {/* iframe은 useEffect에서 동적으로 삽입됩니다. */}
               </div>
               <button
                 type="button"
