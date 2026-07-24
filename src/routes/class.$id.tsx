@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClassThumb } from "@/components/ClassThumb";
+import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { ArrowLeft, Play, Film, CheckCircle2, Folder } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
@@ -84,7 +84,7 @@ function ClassPage() {
               >
                 <div className="relative w-28 shrink-0 overflow-hidden rounded-lg aspect-video bg-muted">
                   {v.thumbnail_url ? (
-                    <ClassThumb
+                    <VideoThumb
                       src={v.thumbnail_url}
                       alt={v.title}
                       className="h-full w-full object-cover transition group-hover:scale-105"
