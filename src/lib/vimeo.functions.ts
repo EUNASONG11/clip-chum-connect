@@ -167,8 +167,8 @@ export const refreshVideoStatus = createServerFn({ method: "POST" })
       .select("vimeo_video_id, class_id")
       .eq("id", data.id)
       .single();
-    await assertOwnClassOrAdmin(context, existing?.class_id);
     if (e1) throw new Error(e1.message);
+    await assertOwnClassOrAdmin(context, existing.class_id);
     const v = await vimeoFetch(`/videos/${existing.vimeo_video_id}`);
     const status: string = v?.upload?.status === "complete" ? "ready" : v?.status ?? "uploading";
     const thumb = v?.pictures?.sizes?.[v.pictures.sizes.length - 1]?.link ?? null;
@@ -196,8 +196,8 @@ export const deleteVideo = createServerFn({ method: "POST" })
       .select("vimeo_video_id, class_id")
       .eq("id", data.id)
       .single();
-    await assertOwnClassOrAdmin(context, existing?.class_id);
     if (e1) throw new Error(e1.message);
+    await assertOwnClassOrAdmin(context, existing.class_id);
 
     try {
       await vimeoFetch(`/videos/${existing.vimeo_video_id}`, { method: "DELETE" });
