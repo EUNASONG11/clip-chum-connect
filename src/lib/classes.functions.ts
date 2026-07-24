@@ -343,8 +343,33 @@ export const updateVideo = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdminOnly(context);
+    const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (!admin) {
+      // 강사: 영상이 속한 수강반의 담당(생성자 또는 배정 강사)만 수정 가능
+      const { data: v, error: ve } = await supabaseAdmin
+        .from("videos")
+        .select("class_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (ve) throw new Error(ve.message);
+      if (!v) throw new Error("영상을 찾을 수 없습니다.");
+      const check = async (cid: string | null | undefined) => {
+        if (!cid) throw new Error("해당 영상에 대한 권한이 없습니다.");
+        const { data: cls } = await supabaseAdmin
+          .from("classes").select("created_by").eq("id", cid).maybeSingle();
+        if (cls?.created_by === context.userId) return;
+        const { data: assigned } = await supabaseAdmin
+          .from("class_instructors").select("class_id")
+          .eq("class_id", cid).eq("instructor_user_id", context.userId).maybeSingle();
+        if (!assigned) throw new Error("해당 영상에 대한 권한이 없습니다.");
+      };
+      await check(v.class_id);
+      // 다른 수강반으로 옮기려면 대상 수강반에도 권한 필요
+      if (data.class_id !== undefined && data.class_id !== v.class_id) {
+        await check(data.class_id);
+      }
+    }
     const patch: Record<string, unknown> = {};
     for (const k of ["title", "description", "class_id", "is_published", "sort_order", "completion_ratio", "allow_seek", "max_playback_rate"] as const) {
       if (data[k] !== undefined) patch[k] = data[k];

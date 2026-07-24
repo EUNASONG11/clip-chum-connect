@@ -11,7 +11,9 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
-import { AdminOnly } from "@/components/AdminRole";
+import { useAdminRole } from "@/components/AdminRole";
+import { ShieldCheck } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
@@ -48,7 +50,25 @@ const statusMap: Record<string, string> = {
 };
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
+function RoleGate({ children }: { children: React.ReactNode }) {
+  const { isAdmin, isInstructor, isLoading } = useAdminRole();
+  if (isLoading) return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
+  if (!isAdmin && !isInstructor) {
+    return (
+      <div className="mx-auto max-w-md p-10 text-center">
+        <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
+        <h2 className="mt-4 text-xl font-semibold">접근 권한이 없습니다.</h2>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to="/admin/dashboard">대시보드로</Link>
+        </Button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 function VideosPage() {
+  const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
 
@@ -63,10 +83,15 @@ function VideosPage() {
       .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
-    setRows((data as Row[] | null) ?? []);
+    let list = (data as Row[] | null) ?? [];
+    if (!isAdmin) {
+      const allowed = new Set((classes as any[]).map((c) => c.id));
+      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    }
+    setRows(list);
     setEdits({});
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [isAdmin, classes]);
 
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
@@ -119,7 +144,7 @@ function VideosPage() {
   };
 
   return (
-    <AdminOnly>
+    <RoleGate>
       <Card>
         <CardHeader>
           <CardTitle>등록된 영상 ({rows.length})</CardTitle>
@@ -222,6 +247,6 @@ function VideosPage() {
           )}
         </CardContent>
       </Card>
-    </AdminOnly>
+    </RoleGate>
   );
 }
