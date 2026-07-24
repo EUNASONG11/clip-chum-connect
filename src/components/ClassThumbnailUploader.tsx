@@ -5,7 +5,7 @@ import { ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { updateClass } from "@/lib/classes.functions";
 import { ClassThumb } from "@/components/ClassThumb";
-
+import { cn } from "@/lib/utils";
 
 const BUCKET = "class-thumbnails";
 
@@ -14,11 +14,13 @@ export function ClassThumbnailUploader({
   currentUrl,
   onChange,
   size = "md",
+  className,
 }: {
   classId: string;
   currentUrl: string | null | undefined;
   onChange?: (url: string | null) => void;
   size?: "sm" | "md";
+  className?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -72,19 +74,41 @@ export function ClassThumbnailUploader({
   };
 
   return (
-    <div className="flex items-center gap-3">
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-md bg-muted",
+        dims,
+        className
+      )}
+    >
+      {currentUrl ? (
+        <ClassThumb
+          src={currentUrl}
+          alt="수강반 썸네일"
+          className="h-full w-full object-cover transition group-hover:opacity-75"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <ImagePlus className={size === "sm" ? "h-6 w-6" : "h-8 w-8"} />
+        </div>
+      )}
 
-      <div className="flex flex-col gap-1">
-        <Button type="button" size="sm" variant="outline" onClick={pick} disabled={busy}>
-          {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <ImagePlus className="mr-1 h-3 w-3" />}
+      <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 opacity-0 transition group-hover:opacity-100">
+        <Button type="button" size="sm" variant="secondary" onClick={pick} disabled={busy}>
+          {busy ? (
+            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          ) : (
+            <ImagePlus className="mr-1 h-3 w-3" />
+          )}
           {currentUrl ? "변경" : "업로드"}
         </Button>
         {currentUrl && (
-          <Button type="button" size="sm" variant="ghost" onClick={remove} disabled={busy}>
+          <Button type="button" size="sm" variant="destructive" onClick={remove} disabled={busy}>
             <Trash2 className="mr-1 h-3 w-3" /> 제거
           </Button>
         )}
       </div>
+
       <input
         ref={inputRef}
         type="file"
