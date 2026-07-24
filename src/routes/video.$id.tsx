@@ -340,11 +340,19 @@ function VideoPage() {
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
+      const allowSeek = !!video.allow_seek;
+      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
         const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
+        const enforceRate = () => {
+          try {
+            const r = player.getPlaybackRate?.();
+            if (typeof r === "number" && r > maxRate) player.setPlaybackRate?.(maxRate);
+          } catch {}
+        };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -354,8 +362,10 @@ function VideoPage() {
                 if (resumeAtRef.current > 5 && d && resumeAtRef.current < d - 3) {
                   player.seekTo(resumeAtRef.current, true);
                 }
+                enforceRate();
               } catch {}
             },
+            onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
@@ -364,12 +374,13 @@ function VideoPage() {
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
               // 앞으로 건너뛰기 방지
-              if (t > maxAllowedRef.current + 2) {
+              if (!allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 isSeekingRef.current = false;
                 return;
               }
-              if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
+              if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
+              else if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
@@ -402,11 +413,13 @@ function VideoPage() {
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
-              if (t > maxAllowedRef.current + 2) {
+              if (!allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
               } else {
-                if (!isSeekingRef.current && t > maxAllowedRef.current) {
-                  const allowedGrowth = Math.max(0, wallDelta * 1.5);
+                if (allowSeek && t > maxAllowedRef.current) {
+                  maxAllowedRef.current = t;
+                } else if (!isSeekingRef.current && t > maxAllowedRef.current) {
+                  const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
                   maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
                 }
                 send(t, d);
