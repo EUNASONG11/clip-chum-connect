@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
-import { listClasses } from "@/lib/classes.functions";
+import { listClasses, listClassFolders } from "@/lib/classes.functions";
 import { RoleGate } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/upload")({
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/admin/upload")({
 });
 
 const NO_CLASS = "__none__";
+const NO_FOLDER = "__none__";
 
 function UploadPage() {
   const { data: classes = [] } = useQuery({
@@ -33,6 +34,7 @@ function UploadPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [classId, setClassId] = useState<string>(NO_CLASS);
+  const [folderId, setFolderId] = useState<string>(NO_FOLDER);
   const [isPublished, setIsPublished] = useState(false);
   const [sortOrder, setSortOrder] = useState<number>(0);
   const [file, setFile] = useState<File | null>(null);
@@ -45,9 +47,21 @@ function UploadPage() {
   const [ytTitle, setYtTitle] = useState("");
   const [ytDesc, setYtDesc] = useState("");
   const [ytClassId, setYtClassId] = useState<string>(NO_CLASS);
+  const [ytFolderId, setYtFolderId] = useState<string>(NO_FOLDER);
   const [ytPublished, setYtPublished] = useState(false);
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
+
+  const { data: folders = [] } = useQuery({
+    queryKey: ["admin", "class-folders", classId],
+    queryFn: () => listClassFolders({ data: { classId } }),
+    enabled: classId !== NO_CLASS,
+  });
+  const { data: ytFolders = [] } = useQuery({
+    queryKey: ["admin", "class-folders", ytClassId],
+    queryFn: () => listClassFolders({ data: { classId: ytClassId } }),
+    enabled: ytClassId !== NO_CLASS,
+  });
 
   const upload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +96,7 @@ function UploadPage() {
           title,
           description: description || null,
           class_id: classId === NO_CLASS ? null : classId,
+          folder_id: classId === NO_CLASS || folderId === NO_FOLDER ? null : folderId,
           is_published: isPublished,
           sort_order: sortOrder,
         },
@@ -91,6 +106,7 @@ function UploadPage() {
       setTitle("");
       setDescription("");
       setClassId(NO_CLASS);
+      setFolderId(NO_FOLDER);
       setIsPublished(false);
       setSortOrder(0);
       setFile(null);
@@ -115,6 +131,7 @@ function UploadPage() {
           title: ytTitle,
           description: ytDesc || null,
           class_id: ytClassId === NO_CLASS ? null : ytClassId,
+          folder_id: ytClassId === NO_CLASS || ytFolderId === NO_FOLDER ? null : ytFolderId,
           is_published: ytPublished,
           sort_order: ytSort,
         },
@@ -124,6 +141,7 @@ function UploadPage() {
       setYtTitle("");
       setYtDesc("");
       setYtClassId(NO_CLASS);
+      setYtFolderId(NO_FOLDER);
       setYtPublished(false);
       setYtSort(0);
     } catch (err: any) {
@@ -142,6 +160,25 @@ function UploadPage() {
         <SelectItem value={NO_CLASS}>미지정</SelectItem>
         {classes.map((c: any) => (
           <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const folderSelect = (
+    value: string,
+    onChange: (v: string) => void,
+    list: any[],
+    disabled: boolean,
+  ) => (
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
+      <SelectTrigger>
+        <SelectValue placeholder={disabled ? "수강반을 먼저 선택" : "폴더 선택 (선택 사항)"} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={NO_FOLDER}>폴더 없음</SelectItem>
+        {list.map((f: any) => (
+          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
         ))}
       </SelectContent>
     </Select>
@@ -174,10 +211,17 @@ function UploadPage() {
                   <Label htmlFor="desc">설명</Label>
                   <Textarea id="desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
                     <Label>수강반</Label>
-                    {classSelect(classId, setClassId)}
+                    {classSelect(classId, (v) => {
+                      setClassId(v);
+                      setFolderId(NO_FOLDER);
+                    })}
+                  </div>
+                  <div>
+                    <Label>폴더</Label>
+                    {folderSelect(folderId, setFolderId, folders, classId === NO_CLASS)}
                   </div>
                   <div>
                     <Label htmlFor="order">노출 순서</Label>
@@ -245,10 +289,17 @@ function UploadPage() {
                   <Label htmlFor="yt-desc">설명</Label>
                   <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
                 </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <div>
                     <Label>수강반</Label>
-                    {classSelect(ytClassId, setYtClassId)}
+                    {classSelect(ytClassId, (v) => {
+                      setYtClassId(v);
+                      setYtFolderId(NO_FOLDER);
+                    })}
+                  </div>
+                  <div>
+                    <Label>폴더</Label>
+                    {folderSelect(ytFolderId, setYtFolderId, ytFolders, ytClassId === NO_CLASS)}
                   </div>
                   <div>
                     <Label htmlFor="yt-order">노출 순서</Label>

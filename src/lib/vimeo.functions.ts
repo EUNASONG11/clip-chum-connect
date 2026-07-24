@@ -118,6 +118,7 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional().nullable(),
         class_id: z.string().uuid().nullable().optional(),
+        folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
       })
@@ -146,6 +147,7 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         status,
         created_by: context.userId,
         class_id: data.class_id ?? null,
+        folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
       })
@@ -607,6 +609,7 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional().nullable(),
         class_id: z.string().uuid().nullable().optional(),
+        folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
       })
@@ -631,6 +634,7 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         status: "ready",
         created_by: context.userId,
         class_id: data.class_id ?? null,
+        folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
       })
