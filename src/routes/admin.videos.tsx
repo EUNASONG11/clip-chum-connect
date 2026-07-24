@@ -15,6 +15,8 @@ import { useAdminRole } from "@/components/AdminRole";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { VideoThumb } from "@/components/VideoThumb";
+import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
@@ -183,7 +185,7 @@ function VideosPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
                       {r.thumbnail_url && (
-                        <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
