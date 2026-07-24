@@ -375,7 +375,7 @@ export const updateVideo = createServerFn({ method: "POST" })
       }
     }
     const patch: Record<string, unknown> = {};
-    for (const k of ["title", "description", "class_id", "folder_id", "is_published", "sort_order", "completion_ratio", "allow_seek", "max_playback_rate", "thumbnail_url"] as const) {
+    for (const k of ["title", "description", "class_id", "folder_id", "is_published", "sort_order", "completion_ratio", "allow_seek", "max_playback_rate", "rewatch_allow_seek", "rewatch_max_playback_rate", "thumbnail_url"] as const) {
       if (data[k] !== undefined) patch[k] = data[k];
     }
 
