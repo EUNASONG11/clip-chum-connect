@@ -598,21 +598,21 @@ function ClassDetailPage() {
               <table className="w-full text-sm">
                 <thead className="text-left text-xs text-muted-foreground">
                   <tr>
-                    <th className="py-2">학생</th>
-                    <th className="py-2">완료</th>
-                    <th className="py-2">평균 시청률</th>
-                    <th className="py-2">최근 학습</th>
+                    <th className="py-2 pr-4 whitespace-nowrap">학생</th>
+                    <th className="py-2 pr-4 whitespace-nowrap">완료</th>
+                    <th className="py-2 pr-4 whitespace-nowrap">평균 시청률</th>
+                    <th className="py-2 pr-4 whitespace-nowrap">최근 학습</th>
                   </tr>
                 </thead>
                 <tbody>
                   {studentStats.map((s: any) => (
                     <tr key={s.user_id} className="border-t">
-                      <td className="py-2 truncate">{s.name || "-"}{s.phone ? ` (${s.phone})` : ""}</td>
-                      <td className="py-2">
+                      <td className="py-2 pr-4 whitespace-nowrap">{s.name || "-"}{s.phone ? ` (${s.phone})` : ""}</td>
+                      <td className="py-2 pr-4 whitespace-nowrap">
                         {s.completed} / {s.video_total}
                       </td>
-                      <td className="py-2">{Math.round(s.avg_watched_ratio * 100)}%</td>
-                      <td className="py-2 text-xs text-muted-foreground">
+                      <td className="py-2 pr-4 whitespace-nowrap">{Math.round(s.avg_watched_ratio * 100)}%</td>
+                      <td className="py-2 pr-4 whitespace-nowrap text-xs text-muted-foreground">
                         {s.last_activity ? new Date(s.last_activity).toLocaleString("ko-KR") : "-"}
                       </td>
                     </tr>
