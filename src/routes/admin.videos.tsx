@@ -114,6 +114,7 @@ function VideosPage() {
       await updateVideo({
         data: {
           id: r.id,
+          title: e.title,
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
