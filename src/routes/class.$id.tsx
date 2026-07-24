@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClassThumb } from "@/components/ClassThumb";
-import { ArrowLeft, Play, Film, CheckCircle2 } from "lucide-react";
-import { getClass, listClassVideos } from "@/lib/classes.functions";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { ArrowLeft, Play, Film, CheckCircle2, Folder } from "lucide-react";
+import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
 
 export const Route = createFileRoute("/class/$id")({
   component: ClassPage,
