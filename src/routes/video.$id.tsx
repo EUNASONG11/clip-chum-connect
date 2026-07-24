@@ -278,8 +278,8 @@ function VideoPage() {
           lastWallRef.current = Date.now();
         } catch {}
       });
-      const allowSeek = !!video.allow_seek;
-      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const allowSeek = effectiveAllowSeek;
+      const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       const enforceRate = async () => {
         try {
           const rate = await (player as any).getPlaybackRate?.();
