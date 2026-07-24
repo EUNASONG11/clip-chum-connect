@@ -338,6 +338,7 @@ export type Database = {
       }
       videos: {
         Row: {
+          allow_seek: boolean
           class_id: string | null
           completion_ratio: number
           created_at: string
@@ -348,6 +349,7 @@ export type Database = {
           external_video_id: string | null
           id: string
           is_published: boolean
+          max_playback_rate: number
           player_embed_url: string | null
           sort_order: number
           source: string
@@ -359,6 +361,7 @@ export type Database = {
           vimeo_video_id: string | null
         }
         Insert: {
+          allow_seek?: boolean
           class_id?: string | null
           completion_ratio?: number
           created_at?: string
@@ -369,6 +372,7 @@ export type Database = {
           external_video_id?: string | null
           id?: string
           is_published?: boolean
+          max_playback_rate?: number
           player_embed_url?: string | null
           sort_order?: number
           source?: string
@@ -380,6 +384,7 @@ export type Database = {
           vimeo_video_id?: string | null
         }
         Update: {
+          allow_seek?: boolean
           class_id?: string | null
           completion_ratio?: number
           created_at?: string
@@ -390,6 +395,7 @@ export type Database = {
           external_video_id?: string | null
           id?: string
           is_published?: boolean
+          max_playback_rate?: number
           player_embed_url?: string | null
           sort_order?: number
           source?: string
