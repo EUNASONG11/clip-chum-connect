@@ -144,7 +144,7 @@ function VideoPage() {
   useEffect(() => {
     supabase
       .from("videos")
-      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration")
+      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,allow_seek,max_playback_rate")
       .eq("id", id)
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
