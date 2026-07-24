@@ -1,0 +1,1 @@
+ALTER TABLE public.videos ALTER COLUMN completion_ratio SET DEFAULT 1.0;
