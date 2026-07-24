@@ -114,6 +114,7 @@ function VideosPage() {
           sort_order: e.sort_order,
           allow_seek: e.allow_seek,
           max_playback_rate: e.max_playback_rate,
+          completion_ratio: e.completion_ratio,
         },
       });
       toast.success("저장되었습니다.");
