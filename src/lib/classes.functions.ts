@@ -524,3 +524,147 @@ export const unassignInstructor = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ================= 폴더 관리 =================
+
+// 폴더 목록 (관리자/강사/학생 - 각 접근 권한에 따라)
+export const listClassFolders = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("class_folders")
+      .select("id, name, sort_order, created_at")
+      .eq("class_id", data.classId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+// 폴더 생성 (관리자/담당 강사)
+export const createClassFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      classId: z.string().uuid(),
+      name: z.string().min(1).max(100),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 다음 sort_order 계산
+    const { data: existing } = await supabaseAdmin
+      .from("class_folders")
+      .select("sort_order")
+      .eq("class_id", data.classId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
+    const { data: inserted, error } = await supabaseAdmin
+      .from("class_folders")
+      .insert({
+        class_id: data.classId,
+        name: data.name,
+        sort_order: nextOrder,
+        created_by: context.userId,
+      })
+      .select("id, name, sort_order")
+      .single();
+    if (error) throw new Error(error.message);
+    return inserted;
+  });
+
+// 폴더 수정 (이름 변경)
+export const updateClassFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      id: z.string().uuid(),
+      name: z.string().min(1).max(100),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: f, error: fe } = await supabaseAdmin
+      .from("class_folders")
+      .select("class_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fe) throw new Error(fe.message);
+    if (!f) throw new Error("폴더를 찾을 수 없습니다.");
+    await assertOwnClassOrAdmin(context, (f as any).class_id);
+    const { error } = await supabaseAdmin
+      .from("class_folders")
+      .update({ name: data.name })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 폴더 삭제 (해당 폴더의 영상들은 폴더 미지정 상태로 남음)
+export const deleteClassFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: f, error: fe } = await supabaseAdmin
+      .from("class_folders")
+      .select("class_id")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (fe) throw new Error(fe.message);
+    if (!f) throw new Error("폴더를 찾을 수 없습니다.");
+    await assertOwnClassOrAdmin(context, (f as any).class_id);
+    const { error } = await supabaseAdmin
+      .from("class_folders")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 영상의 폴더 지정 변경
+export const setVideoFolder = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      videoId: z.string().uuid(),
+      folderId: z.string().uuid().nullable(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: v, error: ve } = await supabaseAdmin
+      .from("videos")
+      .select("class_id")
+      .eq("id", data.videoId)
+      .maybeSingle();
+    if (ve) throw new Error(ve.message);
+    if (!v || !(v as any).class_id) throw new Error("영상을 찾을 수 없습니다.");
+    await assertOwnClassOrAdmin(context, (v as any).class_id);
+    if (data.folderId) {
+      const { data: f } = await supabaseAdmin
+        .from("class_folders")
+        .select("class_id")
+        .eq("id", data.folderId)
+        .maybeSingle();
+      if (!f || (f as any).class_id !== (v as any).class_id) {
+        throw new Error("잘못된 폴더입니다.");
+      }
+    }
+    const { error } = await supabaseAdmin
+      .from("videos")
+      .update({ folder_id: data.folderId })
+      .eq("id", data.videoId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
