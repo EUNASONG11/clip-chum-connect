@@ -425,6 +425,8 @@ function ClassDetailPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
