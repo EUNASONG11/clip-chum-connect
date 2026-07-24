@@ -410,33 +410,28 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 폴더 관리 */}
-          <div className="rounded-md border bg-muted/30 p-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">폴더</p>
-              {!creatingFolder && (
-                <Button size="sm" variant="outline" onClick={() => setCreatingFolder(true)}>
-                  <FolderPlus className="mr-1 h-4 w-4" /> 폴더 추가
-                </Button>
-              )}
-            </div>
-            {creatingFolder && (
-              <form onSubmit={handleCreateFolder} className="mt-2 flex gap-2">
-                <Input
-                  autoFocus
-                  value={newFolderName}
-                  onChange={(e) => setNewFolderName(e.target.value)}
-                  placeholder="폴더 이름 (예: 1주차)"
-                />
-                <Button type="submit" size="sm">추가</Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
-                >취소</Button>
-              </form>
-            )}
-          </div>
+          {!creatingFolder && (
+            <Button size="sm" variant="outline" onClick={() => setCreatingFolder(true)}>
+              <FolderPlus className="mr-1 h-4 w-4" /> 폴더 추가
+            </Button>
+          )}
+          {creatingFolder && (
+            <form onSubmit={handleCreateFolder} className="flex gap-2">
+              <Input
+                autoFocus
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="폴더 이름 (예: 1주차)"
+              />
+              <Button type="submit" size="sm">추가</Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
+              >취소</Button>
+            </form>
+          )}
 
           {/* 영상 목록 (폴더별 그룹) */}
           {videos.length === 0 ? (
