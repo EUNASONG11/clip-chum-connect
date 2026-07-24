@@ -23,6 +23,8 @@ type Video = {
   duration: number | null;
   allow_seek: boolean;
   max_playback_rate: number;
+  rewatch_allow_seek: boolean | null;
+  rewatch_max_playback_rate: number | null;
 };
 
 export const Route = createFileRoute("/video/$id")({
@@ -105,6 +107,8 @@ function VideoPage() {
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
 
   useEffect(() => {
@@ -145,7 +149,7 @@ function VideoPage() {
   useEffect(() => {
     supabase
       .from("videos")
-      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,allow_seek,max_playback_rate")
+      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate")
       .eq("id", id)
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
@@ -154,7 +158,13 @@ function VideoPage() {
   // 저장된 진도 상태 초기화
   const progressRef = useRef<{ current_seconds: number; max_seconds: number; watched_ratio: number; is_completed: boolean } | null>(null);
   useEffect(() => {
-    if (!isAuthed) return;
+    setProgressLoaded(false);
+    setInitialCompleted(false);
+    if (!isAuthed) {
+      progressRef.current = null;
+      setProgressLoaded(true);
+      return;
+    }
     getMyProgress({ data: { videoId: id } }).then((p) => {
       if (p) {
         progressRef.current = {
@@ -165,14 +175,26 @@ function VideoPage() {
         };
         setRatio(Number(p.watched_ratio));
         setCompleted(p.is_completed);
+        setInitialCompleted(p.is_completed);
+      } else {
+        progressRef.current = null;
       }
-    }).catch(() => {});
+      setProgressLoaded(true);
+    }).catch(() => setProgressLoaded(true));
   }, [id, isAuthed]);
+
 
 
   // 플레이어 초기화 + 이벤트 바인딩
   useEffect(() => {
     if (!video || !containerRef.current) return;
+    if (isAuthed && !progressLoaded) return;
+    const effectiveAllowSeek = initialCompleted && video.rewatch_allow_seek !== null
+      ? !!video.rewatch_allow_seek
+      : !!video.allow_seek;
+    const effectiveMaxRate = initialCompleted && video.rewatch_max_playback_rate !== null
+      ? Number(video.rewatch_max_playback_rate)
+      : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
     const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
@@ -256,8 +278,8 @@ function VideoPage() {
           lastWallRef.current = Date.now();
         } catch {}
       });
-      const allowSeek = !!video.allow_seek;
-      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const allowSeek = effectiveAllowSeek;
+      const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       const enforceRate = async () => {
         try {
           const rate = await (player as any).getPlaybackRate?.();
@@ -341,8 +363,8 @@ function VideoPage() {
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
-      const allowSeek = !!video.allow_seek;
-      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const allowSeek = effectiveAllowSeek;
+      const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       // iframe 을 컨테이너에 동적으로 생성 (strict-mode 이중 마운트 안전)
       const container = containerRef.current;
       container.innerHTML = "";
@@ -460,7 +482,7 @@ function VideoPage() {
     }
 
     return () => cleanup();
-  }, [video, id]);
+  }, [video, id, isAuthed, progressLoaded, initialCompleted]);
 
   if (video === undefined) {
     return (

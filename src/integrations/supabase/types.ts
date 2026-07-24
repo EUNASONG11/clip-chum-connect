@@ -390,6 +390,8 @@ export type Database = {
           is_published: boolean
           max_playback_rate: number
           player_embed_url: string | null
+          rewatch_allow_seek: boolean | null
+          rewatch_max_playback_rate: number | null
           sort_order: number
           source: string
           status: string
@@ -414,6 +416,8 @@ export type Database = {
           is_published?: boolean
           max_playback_rate?: number
           player_embed_url?: string | null
+          rewatch_allow_seek?: boolean | null
+          rewatch_max_playback_rate?: number | null
           sort_order?: number
           source?: string
           status?: string
@@ -438,6 +442,8 @@ export type Database = {
           is_published?: boolean
           max_playback_rate?: number
           player_embed_url?: string | null
+          rewatch_allow_seek?: boolean | null
+          rewatch_max_playback_rate?: number | null
           sort_order?: number
           source?: string
           status?: string
