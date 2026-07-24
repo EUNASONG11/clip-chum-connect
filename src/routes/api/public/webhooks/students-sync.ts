@@ -126,12 +126,8 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
             authUserId = created.user.id;
           }
 
-          // Grant student role if we created / linked a user.
-          if (authUserId) {
-            await supabaseAdmin
-              .from("user_roles")
-              .upsert({ user_id: authUserId, role: "student" }, { onConflict: "user_id,role" });
-          }
+          // 신규 계정은 역할을 부여하지 않고 "승인 대기" 상태로 둠.
+          // 관리자가 사용자 관리 페이지에서 승인해야 학생 권한이 부여됩니다.
         }
 
         // Upsert mirror row.
