@@ -44,12 +44,18 @@ const instructorNavItems = [
 
 function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const isExpanded = state === "expanded";
   const { isAdmin, isInstructor } = useAdminRole();
   const items = isAdmin ? adminNavItems : instructorNavItems;
   const label = isAdmin ? "관리자" : isInstructor ? "강사" : "메뉴";
   const badgeText = isAdmin ? "관리자" : isInstructor ? "강사" : "";
+
+  const handleNavClick = () => {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar collapsible="icon">
@@ -73,7 +79,7 @@ function AdminSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={currentPath === item.url}>
-                    <Link to={item.url} className="flex items-center gap-2">
+                    <Link to={item.url} className="flex items-center gap-2" onClick={handleNavClick}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
