@@ -157,190 +157,214 @@ function VideosPage() {
 
   return (
     <RoleGate>
-      <Card>
-        <CardHeader>
-          <CardTitle>등록된 영상 ({rows.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">아직 없습니다.</p>
-          ) : (
-            <ul className="divide-y">
-              {rows.map((r) => (
-                <li key={r.id} className="py-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-                    <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
-                      {r.thumbnail_url && (
-                        <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{r.title}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        <span className="uppercase">{r.source}</span>
-                        {" · "}상태:{" "}
-                        <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
-                          {statusLabel(r.status)}
-                        </span>
-                        {r.class_id && (
-                          <>
-                            {" · "}
-                            <span className="truncate">
-                              {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list" className="gap-2">
+            <Film className="h-4 w-4" /> 등록된 영상
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="gap-2">
+            <UploadIcon className="h-4 w-4" /> 영상 업로드
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upload" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>새 영상 추가</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VideoUploadForm onUploaded={() => load()} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="list" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>등록된 영상 ({rows.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">아직 없습니다.</p>
+              ) : (
+                <ul className="divide-y">
+                  {rows.map((r) => (
+                    <li key={r.id} className="py-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
+                          {r.thumbnail_url && (
+                            <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{r.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            <span className="uppercase">{r.source}</span>
+                            {" · "}상태:{" "}
+                            <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
+                              {statusLabel(r.status)}
                             </span>
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
-                      {r.source === "vimeo" && (
-                        <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
-                        <Settings2 className="mr-1 h-4 w-4" /> 설정
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <Dialog
-                    open={openId === r.id}
-                    onOpenChange={(o) => {
-                      if (!o && dirty(r.id)) {
-                        const confirmed = window.confirm("변경사항이 저장되지 않았습니다. 닫으시겠습니까?");
-                        if (!confirmed) return;
-                      }
-                      setOpenId(o ? r.id : null);
-                      if (!o) {
-                        setEdits((prev) => {
-                          const next = { ...prev };
-                          delete next[r.id];
-                          return next;
-                        });
-                      }
-                    }}
-                  >
-                    <DialogContent className="max-w-lg">
-                      <DialogHeader>
-                        <DialogTitle className="truncate">{r.title}</DialogTitle>
-                        <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-xs text-muted-foreground">제목</label>
-                          <Input
-                            value={value(r, "title") as string}
-                            onChange={(e) => patch(r.id, { title: e.target.value })}
-                            placeholder="영상 제목"
-                            className="mt-1"
-                          />
+                            {r.class_id && (
+                              <>
+                                {" · "}
+                                <span className="truncate">
+                                  {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                                </span>
+                              </>
+                            )}
+                          </p>
                         </div>
-                        <div>
-                          <label className="text-xs text-muted-foreground">썸네일</label>
-                          <div className="mt-1">
-                            <VideoThumbnailUploader
-                              videoId={r.id}
-                              currentUrl={r.thumbnail_url}
-                              onChange={(url) =>
-                                setRows((prev) =>
-                                  prev.map((x) => (x.id === r.id ? { ...x, thumbnail_url: url } : x)),
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
-                          <div>
-                            <label className="text-xs text-muted-foreground">수강반</label>
-                            <Select
-                              value={(value(r, "class_id") as string | null) ?? NO_CLASS}
-                              onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
-                            >
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={NO_CLASS}>미지정</SelectItem>
-                                {classes.map((c: any) => (
-                                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">순서</label>
-                            <Input
-                              type="number"
-                              value={value(r, "sort_order") as number}
-                              onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-6">
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={value(r, "is_published") as boolean}
-                              onCheckedChange={(v) => patch(r.id, { is_published: v })}
-                            />
-                            <span className="text-xs">공개</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch
-                              checked={value(r, "allow_seek") as boolean}
-                              onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
-                            />
-                            <span className="text-xs">건너뛰기 허용</span>
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="text-xs text-muted-foreground">최대 배속</label>
-                            <Select
-                              value={String(value(r, "max_playback_rate") as number)}
-                              onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
-                            >
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
-                                  <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <label className="text-xs text-muted-foreground">수강 완료 기준</label>
-                            <Select
-                              value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
-                              onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
-                            >
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {[50, 60, 70, 80, 90, 95, 100].map((v) => (
-                                  <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+                          {r.source === "vimeo" && (
+                            <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
+                            <Settings2 className="mr-1 h-4 w-4" /> 설정
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
                         </div>
                       </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
-                        <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
-                          <Save className="mr-1 h-4 w-4" /> 저장
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+
+                      <Dialog
+                        open={openId === r.id}
+                        onOpenChange={(o) => {
+                          if (!o && dirty(r.id)) {
+                            const confirmed = window.confirm("변경사항이 저장되지 않았습니다. 닫으시겠습니까?");
+                            if (!confirmed) return;
+                          }
+                          setOpenId(o ? r.id : null);
+                          if (!o) {
+                            setEdits((prev) => {
+                              const next = { ...prev };
+                              delete next[r.id];
+                              return next;
+                            });
+                          }
+                        }}
+                      >
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle className="truncate">{r.title}</DialogTitle>
+                            <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs text-muted-foreground">제목</label>
+                              <Input
+                                value={value(r, "title") as string}
+                                onChange={(e) => patch(r.id, { title: e.target.value })}
+                                placeholder="영상 제목"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground">썸네일</label>
+                              <div className="mt-1">
+                                <VideoThumbnailUploader
+                                  videoId={r.id}
+                                  currentUrl={r.thumbnail_url}
+                                  onChange={(url) =>
+                                    setRows((prev) =>
+                                      prev.map((x) => (x.id === r.id ? { ...x, thumbnail_url: url } : x)),
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
+                              <div>
+                                <label className="text-xs text-muted-foreground">수강반</label>
+                                <Select
+                                  value={(value(r, "class_id") as string | null) ?? NO_CLASS}
+                                  onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                                    {classes.map((c: any) => (
+                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">순서</label>
+                                <Input
+                                  type="number"
+                                  value={value(r, "sort_order") as number}
+                                  onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={value(r, "is_published") as boolean}
+                                  onCheckedChange={(v) => patch(r.id, { is_published: v })}
+                                />
+                                <span className="text-xs">공개</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={value(r, "allow_seek") as boolean}
+                                  onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
+                                />
+                                <span className="text-xs">건너뛰기 허용</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground">최대 배속</label>
+                                <Select
+                                  value={String(value(r, "max_playback_rate") as number)}
+                                  onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
+                                      <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">수강 완료 기준</label>
+                                <Select
+                                  value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
+                                  onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {[50, 60, 70, 80, 90, 95, 100].map((v) => (
+                                      <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
+                            <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
+                              <Save className="mr-1 h-4 w-4" /> 저장
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </RoleGate>
   );
 }
