@@ -220,7 +220,7 @@ function VideosPage() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_140px]">
+                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_140px_140px]">
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={value(r, "allow_seek") as boolean}
@@ -238,6 +238,20 @@ function VideosPage() {
                         <SelectContent>
                           {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
                             <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">수강 완료 기준</label>
+                      <Select
+                        value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
+                        onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[50, 60, 70, 80, 90, 95, 100].map((v) => (
+                            <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
