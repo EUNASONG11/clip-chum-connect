@@ -138,10 +138,11 @@ async function fetchUserLabels(userIds: string[]) {
   const map = new Map<string, { name: string; phone: string | null; email: string | null }>();
   const { data: ext } = await supabaseAdmin
     .from("external_students")
-    .select("user_id, name, phone")
-    .in("user_id", unique);
+    .select("auth_user_id, name, phone")
+    .in("auth_user_id", unique);
   for (const e of ext ?? []) {
-    if (e.user_id) map.set(e.user_id as string, { name: (e.name as string) ?? "", phone: (e.phone as string) ?? null, email: null });
+    const uid = (e as any).auth_user_id as string | null;
+    if (uid) map.set(uid, { name: ((e as any).name as string) ?? "", phone: ((e as any).phone as string) ?? null, email: null });
   }
   const missing = unique.filter((u) => !map.has(u));
   for (const uid of missing) {
