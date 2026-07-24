@@ -73,6 +73,7 @@ function VideosPage() {
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
