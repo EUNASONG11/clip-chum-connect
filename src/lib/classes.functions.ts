@@ -340,6 +340,8 @@ export const updateVideo = createServerFn({ method: "POST" })
         completion_ratio: z.number().min(0).max(1).optional(),
         allow_seek: z.boolean().optional(),
         max_playback_rate: z.number().min(0.5).max(4).optional(),
+        rewatch_allow_seek: z.boolean().nullable().optional(),
+        rewatch_max_playback_rate: z.number().min(0.5).max(4).nullable().optional(),
         thumbnail_url: z.string().max(1000).nullable().optional(),
       })
       .parse(i),
