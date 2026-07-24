@@ -183,14 +183,14 @@ function VideosPage() {
                         )}
                       </p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
-                      <Settings2 className="mr-1 h-4 w-4" /> 설정
-                    </Button>
                     {r.source === "vimeo" && (
                       <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     )}
+                    <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
+                      <Settings2 className="mr-1 h-4 w-4" /> 설정
+                    </Button>
                     <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
