@@ -409,7 +409,7 @@ function ClassDetailPage() {
                 <tbody>
                   {studentStats.map((s: any) => (
                     <tr key={s.user_id} className="border-t">
-                      <td className="py-2 truncate">{s.email}</td>
+                      <td className="py-2 truncate">{s.name || "-"}{s.phone ? ` (${s.phone})` : ""}</td>
                       <td className="py-2">
                         {s.completed} / {s.video_total}
                       </td>
