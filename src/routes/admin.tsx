@@ -44,7 +44,7 @@ const instructorNavItems = [
 
 function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
-  const { state, setOpen } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const isExpanded = state === "expanded";
   const { isAdmin, isInstructor } = useAdminRole();
   const items = isAdmin ? adminNavItems : instructorNavItems;
@@ -53,7 +53,7 @@ function AdminSidebar() {
 
   const handleNavClick = () => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
-      setOpen(false);
+      setOpenMobile(false);
     }
   };
 
