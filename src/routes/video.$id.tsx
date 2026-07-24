@@ -449,6 +449,7 @@ function VideoPage() {
           window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
           try { player.destroy?.(); } catch {}
+          try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
         };
       });
     }
