@@ -605,7 +605,7 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        url: z.string().url(),
+        url: z.string().trim().min(1),
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional().nullable(),
         class_id: z.string().uuid().nullable().optional(),
