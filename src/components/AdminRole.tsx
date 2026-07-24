@@ -40,3 +40,23 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
   }
   return <>{children}</>;
 }
+
+export function RoleGate({ children }: { children: React.ReactNode }) {
+  const { isAdmin, isInstructor, isLoading } = useAdminRole();
+  if (isLoading) return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
+  if (!isAdmin && !isInstructor) {
+    return (
+      <div className="mx-auto max-w-md p-10 text-center">
+        <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
+        <h2 className="mt-4 text-xl font-semibold">접근 권한이 없습니다.</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          이 메뉴는 관리자 또는 강사만 접근할 수 있습니다.
+        </p>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to="/admin/dashboard">대시보드로</Link>
+        </Button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}

@@ -13,6 +13,46 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
   if (!data) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
+async function assertAdminOrInstructor(context: { supabase: any; userId: string }) {
+  const [{ data: admin }, { data: instructor }] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "instructor" }),
+  ]);
+  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+}
+
+async function assertOwnClassOrAdmin(
+  context: { supabase: any; userId: string },
+  classId: string | null | undefined,
+) {
+  const admin = !!(await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "admin",
+  }).then((r: any) => r.data));
+  if (admin) return;
+  const instructor = !!(await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "instructor",
+  }).then((r: any) => r.data));
+  if (!instructor) throw new Error("해당 수강반에 대한 권한이 없습니다.");
+  if (!classId) throw new Error("수강반을 지정해야 합니다.");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: cls } = await supabaseAdmin
+    .from("classes")
+    .select("created_by")
+    .eq("id", classId)
+    .maybeSingle();
+  if (cls?.created_by === context.userId) return;
+  const { data: assigned } = await supabaseAdmin
+    .from("class_instructors")
+    .select("class_id")
+    .eq("class_id", classId)
+    .eq("instructor_user_id", context.userId)
+    .maybeSingle();
+  if (assigned) return;
+  throw new Error("해당 수강반에 대한 권한이 없습니다.");
+}
+
 async function vimeoFetch(path: string, init: RequestInit = {}) {
   const token = process.env.VIMEO_ACCESS_TOKEN;
   if (!token) throw new Error("VIMEO_ACCESS_TOKEN 이 설정되지 않았습니다.");
@@ -47,7 +87,7 @@ export const createVimeoUpload = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
 
     const body = await vimeoFetch("/me/videos", {
       method: "POST",
@@ -84,7 +124,8 @@ export const finalizeVideo = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.class_id);
     const videoId = data.uri.split("/").pop()!;
 
     // Vimeo 에서 메타 재조회
@@ -120,13 +161,14 @@ export const refreshVideoStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { data: existing, error: e1 } = await context.supabase
       .from("videos")
-      .select("vimeo_video_id")
+      .select("vimeo_video_id, class_id")
       .eq("id", data.id)
       .single();
     if (e1) throw new Error(e1.message);
+    await assertOwnClassOrAdmin(context, existing.class_id);
     const v = await vimeoFetch(`/videos/${existing.vimeo_video_id}`);
     const status: string = v?.upload?.status === "complete" ? "ready" : v?.status ?? "uploading";
     const thumb = v?.pictures?.sizes?.[v.pictures.sizes.length - 1]?.link ?? null;
@@ -148,13 +190,14 @@ export const deleteVideo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
     const { data: existing, error: e1 } = await context.supabase
       .from("videos")
-      .select("vimeo_video_id")
+      .select("vimeo_video_id, class_id")
       .eq("id", data.id)
       .single();
     if (e1) throw new Error(e1.message);
+    await assertOwnClassOrAdmin(context, existing.class_id);
 
     try {
       await vimeoFetch(`/videos/${existing.vimeo_video_id}`, { method: "DELETE" });
@@ -570,7 +613,8 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.class_id);
     const ytId = parseYoutubeId(data.url);
     if (!ytId) throw new Error("유효한 YouTube 링크가 아닙니다.");
 
