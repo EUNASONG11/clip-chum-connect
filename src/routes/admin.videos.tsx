@@ -8,12 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, RefreshCw, Save } from "lucide-react";
+import { Trash2, RefreshCw, Save, Settings2 } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
@@ -72,6 +73,7 @@ function VideosPage() {
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
+  const [openId, setOpenId] = useState<string | null>(null);
 
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
@@ -118,6 +120,7 @@ function VideosPage() {
         },
       });
       toast.success("저장되었습니다.");
+      setOpenId(null);
       load();
     } catch (err: any) {
       toast.error(err.message);
@@ -157,7 +160,7 @@ function VideosPage() {
           ) : (
             <ul className="divide-y">
               {rows.map((r) => (
-                <li key={r.id} className="space-y-3 py-4">
+                <li key={r.id} className="py-4">
                   <div className="flex items-center gap-4">
                     <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
                       {r.thumbnail_url && (
@@ -172,8 +175,17 @@ function VideosPage() {
                         <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
                           {statusLabel(r.status)}
                         </span>
+                        {r.class_id && (
+                          <>
+                            {" · "}
+                            {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                          </>
+                        )}
                       </p>
                     </div>
+                    <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
+                      <Settings2 className="mr-1 h-4 w-4" /> 설정
+                    </Button>
                     {r.source === "vimeo" && (
                       <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
                         <RefreshCw className="h-4 w-4" />
@@ -184,79 +196,107 @@ function VideosPage() {
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_100px_auto_auto]">
-                    <div>
-                      <label className="text-xs text-muted-foreground">수강반</label>
-                      <Select
-                        value={(value(r, "class_id") as string | null) ?? NO_CLASS}
-                        onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NO_CLASS}>미지정</SelectItem>
-                          {classes.map((c: any) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">순서</label>
-                      <Input
-                        type="number"
-                        value={value(r, "sort_order") as number}
-                        onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={value(r, "is_published") as boolean}
-                        onCheckedChange={(v) => patch(r.id, { is_published: v })}
-                      />
-                      <span className="text-xs">공개</span>
-                    </div>
-                    <Button size="sm" disabled={!dirty(r.id)} onClick={() => save(r)}>
-                      <Save className="mr-1 h-4 w-4" /> 저장
-                    </Button>
-                  </div>
+                  <Dialog
+                    open={openId === r.id}
+                    onOpenChange={(o) => {
+                      if (!o) {
+                        setOpenId(null);
+                        setEdits((prev) => {
+                          const next = { ...prev };
+                          delete next[r.id];
+                          return next;
+                        });
+                      }
+                    }}
+                  >
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle className="truncate">{r.title}</DialogTitle>
+                        <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
+                          <div>
+                            <label className="text-xs text-muted-foreground">수강반</label>
+                            <Select
+                              value={(value(r, "class_id") as string | null) ?? NO_CLASS}
+                              onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                                {classes.map((c: any) => (
+                                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">순서</label>
+                            <Input
+                              type="number"
+                              value={value(r, "sort_order") as number}
+                              onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
+                            />
+                          </div>
+                        </div>
 
-                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_140px_140px]">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={value(r, "allow_seek") as boolean}
-                        onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
-                      />
-                      <span className="text-xs">건너뛰기 허용</span>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">최대 배속</label>
-                      <Select
-                        value={String(value(r, "max_playback_rate") as number)}
-                        onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
-                            <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground">수강 완료 기준</label>
-                      <Select
-                        value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
-                        onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
-                      >
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[50, 60, 70, 80, 90, 95, 100].map((v) => (
-                            <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                        <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={value(r, "is_published") as boolean}
+                              onCheckedChange={(v) => patch(r.id, { is_published: v })}
+                            />
+                            <span className="text-xs">공개</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={value(r, "allow_seek") as boolean}
+                              onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
+                            />
+                            <span className="text-xs">건너뛰기 허용</span>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="text-xs text-muted-foreground">최대 배속</label>
+                            <Select
+                              value={String(value(r, "max_playback_rate") as number)}
+                              onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
+                                  <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-xs text-muted-foreground">수강 완료 기준</label>
+                            <Select
+                              value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
+                              onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {[50, 60, 70, 80, 90, 95, 100].map((v) => (
+                                  <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
+                        <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
+                          <Save className="mr-1 h-4 w-4" /> 저장
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </li>
               ))}
             </ul>
