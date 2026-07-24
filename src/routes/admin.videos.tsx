@@ -75,7 +75,7 @@ function VideosPage() {
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(edits, id));
+  const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(id));
 
   useBlocker({
     condition: hasUnsavedChanges,
