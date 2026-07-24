@@ -75,6 +75,8 @@ function VideosPage() {
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const dirty = (id: string) => !!edits[id] && Object.keys(edits[id]!).length > 0;
+
   const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(id));
 
   useBlocker({
@@ -120,7 +122,6 @@ function VideosPage() {
   const value = <K extends keyof Row>(r: Row, k: K): Row[K] =>
     (edits[r.id]?.[k] as Row[K]) ?? r[k];
 
-  const dirty = (id: string) => !!edits[id] && Object.keys(edits[id]!).length > 0;
 
   const save = async (r: Row) => {
     const e = edits[r.id];
