@@ -222,6 +222,6 @@ function VideosPage() {
           )}
         </CardContent>
       </Card>
-    </AdminOnly>
+    </RoleGate>
   );
 }
