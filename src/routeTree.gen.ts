@@ -23,6 +23,7 @@ import { Route as AdminUploadRouteImport } from './routes/admin.upload'
 import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.index'
+import { Route as AdminVideoIdRouteImport } from './routes/admin.video.$id'
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
@@ -96,6 +97,11 @@ const AdminClassesIndexRoute = AdminClassesIndexRouteImport.update({
   path: '/classes/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminVideoIdRoute = AdminVideoIdRouteImport.update({
+  id: '/video/$id',
+  path: '/video/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClassesIdRoute = AdminClassesIdRouteImport.update({
   id: '/classes/$id',
   path: '/classes/$id',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
+  '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/video/$id': typeof VideoIdRoute
   '/admin': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
+  '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes': typeof AdminClassesIndexRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
+  '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
@@ -179,6 +188,7 @@ export interface FileRouteTypes {
     | '/video/$id'
     | '/admin/'
     | '/admin/classes/$id'
+    | '/admin/video/$id'
     | '/admin/classes/'
     | '/api/public/webhooks/students-sync'
   fileRoutesByTo: FileRoutesByTo
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/video/$id'
     | '/admin'
     | '/admin/classes/$id'
+    | '/admin/video/$id'
     | '/admin/classes'
     | '/api/public/webhooks/students-sync'
   id:
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/video/$id'
     | '/admin/'
     | '/admin/classes/$id'
+    | '/admin/video/$id'
     | '/admin/classes/'
     | '/api/public/webhooks/students-sync'
   fileRoutesById: FileRoutesById
@@ -329,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClassesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/video/$id': {
+      id: '/admin/video/$id'
+      path: '/video/$id'
+      fullPath: '/admin/video/$id'
+      preLoaderRoute: typeof AdminVideoIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/classes/$id': {
       id: '/admin/classes/$id'
       path: '/classes/$id'
@@ -354,6 +373,7 @@ interface AdminRouteChildren {
   AdminVideosRoute: typeof AdminVideosRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminClassesIdRoute: typeof AdminClassesIdRoute
+  AdminVideoIdRoute: typeof AdminVideoIdRoute
   AdminClassesIndexRoute: typeof AdminClassesIndexRoute
 }
 
@@ -365,6 +385,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminVideosRoute: AdminVideosRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminClassesIdRoute: AdminClassesIdRoute,
+  AdminVideoIdRoute: AdminVideoIdRoute,
   AdminClassesIndexRoute: AdminClassesIndexRoute,
 }
 

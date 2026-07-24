@@ -38,6 +38,7 @@ import {
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
+import { VideoThumb } from "@/components/VideoThumb";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
@@ -516,10 +517,29 @@ function ClassDetailPage() {
                     ) : (
                       <ul className="divide-y">
                         {items.map((v: any, i: number) => (
-                          <li key={v.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
+                          <li key={v.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
                             <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
+                            <Link
+                              to="/admin/video/$id"
+                              params={{ id: v.id }}
+                              className="block h-12 w-20 shrink-0 overflow-hidden rounded bg-muted sm:h-14 sm:w-24"
+                            >
+                              {v.thumbnail_url ? (
+                                <VideoThumb src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                                  <Film className="h-4 w-4" />
+                                </div>
+                              )}
+                            </Link>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium">{v.title}</p>
+                              <Link
+                                to="/admin/video/$id"
+                                params={{ id: v.id }}
+                                className="block truncate text-sm font-medium hover:text-primary hover:underline"
+                              >
+                                {v.title}
+                              </Link>
                               <p className="truncate text-xs text-muted-foreground">
                                 {v.is_published ? "공개" : "비공개"} · {v.status}
                               </p>
