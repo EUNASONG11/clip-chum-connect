@@ -334,6 +334,7 @@ export const updateVideo = createServerFn({ method: "POST" })
         title: z.string().min(1).max(200).optional(),
         description: z.string().max(5000).optional().nullable(),
         class_id: z.string().uuid().nullable().optional(),
+        folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
         completion_ratio: z.number().min(0).max(1).optional(),
