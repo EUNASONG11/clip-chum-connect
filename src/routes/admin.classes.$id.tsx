@@ -63,11 +63,66 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "student-stats"],
     queryFn: () => getClassStudentStats({ data: { classId: id } }),
   });
+  const { data: folders = [] } = useQuery({
+    queryKey: ["admin", "class", id, "folders"],
+    queryFn: () => listClassFolders({ data: { classId: id } }),
+  });
 
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; school: string; grade: string }[]
-  >([]);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
+  const [editingFolderName, setEditingFolderName] = useState("");
+
+  const refreshVideosAndFolders = () => {
+    qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
+    qc.invalidateQueries({ queryKey: ["admin", "class", id, "folders"] });
+  };
+
+  const handleCreateFolder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFolderName.trim()) return;
+    try {
+      await createClassFolder({ data: { classId: id, name: newFolderName.trim() } });
+      setNewFolderName("");
+      setCreatingFolder(false);
+      refreshVideosAndFolders();
+      toast.success("폴더가 생성되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleRenameFolder = async (folderId: string) => {
+    if (!editingFolderName.trim()) return;
+    try {
+      await updateClassFolder({ data: { id: folderId, name: editingFolderName.trim() } });
+      setEditingFolderId(null);
+      setEditingFolderName("");
+      refreshVideosAndFolders();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (!confirm("이 폴더를 삭제하시겠습니까? 폴더 내 영상은 폴더 미지정 상태로 남습니다.")) return;
+    try {
+      await deleteClassFolder({ data: { id: folderId } });
+      refreshVideosAndFolders();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleAssignVideoToFolder = async (videoId: string, folderId: string | null) => {
+    try {
+      await setVideoFolder({ data: { videoId, folderId } });
+      refreshVideosAndFolders();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   const [searching, setSearching] = useState(false);
 
   const search = async (e: React.FormEvent) => {
