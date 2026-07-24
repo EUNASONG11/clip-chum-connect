@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClassThumb } from "@/components/ClassThumb";
-import { ArrowLeft, Play, Film, CheckCircle2 } from "lucide-react";
-import { getClass, listClassVideos } from "@/lib/classes.functions";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { ArrowLeft, Play, Film, CheckCircle2, Folder } from "lucide-react";
+import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
 
 export const Route = createFileRoute("/class/$id")({
   component: ClassPage,
@@ -40,6 +41,10 @@ function ClassPage() {
     queryKey: ["class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
+  const { data: folders = [] } = useQuery({
+    queryKey: ["class", id, "folders"],
+    queryFn: () => listClassFolders({ data: { classId: id } }),
+  });
 
   if (!loadingCls && !cls) throw notFound();
 
@@ -69,8 +74,8 @@ function ClassPage() {
             </Card>
           )}
 
-          <div className="flex flex-col gap-3">
-            {videos.map((v: any) => (
+          {(() => {
+            const renderVideoItem = (v: any) => (
               <Link
                 key={v.id}
                 to="/video/$id"
@@ -93,7 +98,6 @@ function ClassPage() {
                     <Play className="h-8 w-8 text-white opacity-0 transition group-hover:opacity-100" />
                   </div>
                 </div>
-
                 <div className="flex min-w-0 flex-1 flex-col justify-center">
                   <h3 className="line-clamp-1 font-semibold">{v.title}</h3>
                   <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -101,7 +105,6 @@ function ClassPage() {
                     <span>{formatDuration(v.duration)}</span>
                   </div>
                 </div>
-
                 <div className="shrink-0 pr-1">
                   {v.progress?.is_completed ? (
                     <CheckCircle2 className="h-6 w-6 text-green-500" />
@@ -110,8 +113,58 @@ function ClassPage() {
                   )}
                 </div>
               </Link>
-            ))}
-          </div>
+            );
+
+            if (folders.length === 0) {
+              return <div className="flex flex-col gap-3">{videos.map(renderVideoItem)}</div>;
+            }
+
+            const unassigned = videos.filter((v: any) => !v.folder_id);
+            const defaultOpen = folders.map((f: any) => `f-${f.id}`);
+            if (unassigned.length > 0) defaultOpen.push("f-none");
+
+            return (
+              <Accordion type="multiple" defaultValue={defaultOpen} className="flex flex-col gap-2">
+                {folders.map((f: any) => {
+                  const items = videos.filter((v: any) => v.folder_id === f.id);
+                  return (
+                    <AccordionItem key={f.id} value={`f-${f.id}`} className="rounded-xl border bg-card px-4">
+                      <AccordionTrigger className="hover:no-underline">
+                        <span className="flex items-center gap-2">
+                          <Folder className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-semibold">{f.name}</span>
+                          <span className="text-xs text-muted-foreground">({items.length})</span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="flex flex-col gap-3 pb-2">
+                          {items.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">영상이 없습니다.</p>
+                          ) : (
+                            items.map(renderVideoItem)
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+                {unassigned.length > 0 && (
+                  <AccordionItem value="f-none" className="rounded-xl border bg-card px-4">
+                    <AccordionTrigger className="hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        <Folder className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-semibold">기타</span>
+                        <span className="text-xs text-muted-foreground">({unassigned.length})</span>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="flex flex-col gap-3 pb-2">{unassigned.map(renderVideoItem)}</div>
+                    </AccordionContent>
+                  </AccordionItem>
+                )}
+              </Accordion>
+            );
+          })()}
         </div>
       </main>
     </div>
