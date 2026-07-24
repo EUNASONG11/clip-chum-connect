@@ -75,6 +75,24 @@ function VideosPage() {
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
 
+  const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(edits, id));
+
+  useBlocker({
+    condition: hasUnsavedChanges,
+    blockerFn: () => window.confirm("변경사항이 저장되지 않았습니다. 페이지를 나가시겠습니까?"),
+  });
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
