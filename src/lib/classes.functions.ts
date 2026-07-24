@@ -299,7 +299,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("videos")
-      .select("id, title, description, thumbnail_url, duration, status, is_published, sort_order, created_at")
+      .select("id, title, description, thumbnail_url, duration, status, is_published, sort_order, folder_id, created_at")
       .eq("class_id", data.classId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
