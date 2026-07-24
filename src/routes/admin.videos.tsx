@@ -28,6 +28,8 @@ type Row = {
   class_id: string | null;
   is_published: boolean;
   sort_order: number;
+  allow_seek: boolean;
+  max_playback_rate: number;
   created_at: string;
 };
 
