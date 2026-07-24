@@ -8,12 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, RefreshCw, Save } from "lucide-react";
+import { Trash2, RefreshCw, Save, Settings2 } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
