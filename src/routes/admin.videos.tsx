@@ -15,6 +15,9 @@ import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
 import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
+import { Upload as UploadIcon, Film } from "lucide-react";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
