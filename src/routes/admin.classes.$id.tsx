@@ -123,6 +123,10 @@ function ClassDetailPage() {
     }
   };
 
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<
+    { user_id: string; name: string; phone: string; school: string; grade: string }[]
+  >([]);
   const [searching, setSearching] = useState(false);
 
   const search = async (e: React.FormEvent) => {
