@@ -28,6 +28,8 @@ type Row = {
   class_id: string | null;
   is_published: boolean;
   sort_order: number;
+  allow_seek: boolean;
+  max_playback_rate: number;
   created_at: string;
 };
 
@@ -58,7 +60,7 @@ function VideosPage() {
   const load = async () => {
     const { data } = await supabase
       .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,created_at")
+      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     setRows((data as Row[] | null) ?? []);
@@ -84,6 +86,8 @@ function VideosPage() {
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
+          allow_seek: e.allow_seek,
+          max_playback_rate: e.max_playback_rate,
         },
       });
       toast.success("저장되었습니다.");
@@ -187,6 +191,30 @@ function VideosPage() {
                     <Button size="sm" disabled={!dirty(r.id)} onClick={() => save(r)}>
                       <Save className="mr-1 h-4 w-4" /> 저장
                     </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[auto_140px]">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={value(r, "allow_seek") as boolean}
+                        onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
+                      />
+                      <span className="text-xs">건너뛰기 허용</span>
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">최대 배속</label>
+                      <Select
+                        value={String(value(r, "max_playback_rate") as number)}
+                        onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
+                            <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </li>
               ))}

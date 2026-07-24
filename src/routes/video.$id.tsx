@@ -20,6 +20,8 @@ type Video = {
   player_embed_url: string | null;
   thumbnail_url: string | null;
   duration: number | null;
+  allow_seek: boolean;
+  max_playback_rate: number;
 };
 
 export const Route = createFileRoute("/video/$id")({
@@ -142,7 +144,7 @@ function VideoPage() {
   useEffect(() => {
     supabase
       .from("videos")
-      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration")
+      .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,allow_seek,max_playback_rate")
       .eq("id", id)
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
@@ -253,6 +255,18 @@ function VideoPage() {
           lastWallRef.current = Date.now();
         } catch {}
       });
+      const allowSeek = !!video.allow_seek;
+      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const enforceRate = async () => {
+        try {
+          const rate = await (player as any).getPlaybackRate?.();
+          if (typeof rate === "number" && rate > maxRate) {
+            await (player as any).setPlaybackRate?.(maxRate);
+          }
+        } catch {}
+      };
+      player.on("playbackratechange", enforceRate);
+      player.ready().then(() => { enforceRate(); });
       player.on("timeupdate", (d: any) => {
         const t = d.seconds;
         const nowMs = Date.now();
@@ -262,16 +276,16 @@ function VideoPage() {
         // 큰 점프(2초 초과)는 seek 로 간주 → maxAllowed 갱신/전송 금지
         if (jump > 2) {
           isSeekingRef.current = true;
-          if (t > maxAllowedRef.current + 2) {
+          if (!allowSeek && t > maxAllowedRef.current + 2) {
             player.setCurrentTime(maxAllowedRef.current).catch(() => {});
             lastTimeRef.current = maxAllowedRef.current;
             return;
           }
         }
         currentTimeRef.current = t;
-        // 재생속도 기반 검증: 실제 흐른 시간의 1.5배 이내 증분만 max 로 승격
+        // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
-          const allowedGrowth = Math.max(0, wallDelta * 1.5);
+          const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
           maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
         // current_seconds는 실제 마지막 위치를 저장 (이어보기용)
@@ -281,10 +295,11 @@ function VideoPage() {
       });
       player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
-        if (d.seconds > maxAllowedRef.current + 2) {
+        if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
           lastTimeRef.current = maxAllowedRef.current;
         } else {
+          if (allowSeek && d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
           lastTimeRef.current = d.seconds;
         }
         lastWallRef.current = Date.now();
@@ -325,11 +340,19 @@ function VideoPage() {
         player.destroy().catch(() => {});
       };
     } else if (video.source === "youtube") {
+      const allowSeek = !!video.allow_seek;
+      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
         const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
+        const enforceRate = () => {
+          try {
+            const r = player.getPlaybackRate?.();
+            if (typeof r === "number" && r > maxRate) player.setPlaybackRate?.(maxRate);
+          } catch {}
+        };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -339,8 +362,10 @@ function VideoPage() {
                 if (resumeAtRef.current > 5 && d && resumeAtRef.current < d - 3) {
                   player.seekTo(resumeAtRef.current, true);
                 }
+                enforceRate();
               } catch {}
             },
+            onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
@@ -349,12 +374,13 @@ function VideoPage() {
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
               // 앞으로 건너뛰기 방지
-              if (t > maxAllowedRef.current + 2) {
+              if (!allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 isSeekingRef.current = false;
                 return;
               }
-              if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
+              if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
+              else if (!isSeekingRef.current && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
@@ -387,11 +413,13 @@ function VideoPage() {
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
               if (jump > 4) isSeekingRef.current = true;
-              if (t > maxAllowedRef.current + 2) {
+              if (!allowSeek && t > maxAllowedRef.current + 2) {
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
               } else {
-                if (!isSeekingRef.current && t > maxAllowedRef.current) {
-                  const allowedGrowth = Math.max(0, wallDelta * 1.5);
+                if (allowSeek && t > maxAllowedRef.current) {
+                  maxAllowedRef.current = t;
+                } else if (!isSeekingRef.current && t > maxAllowedRef.current) {
+                  const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
                   maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
                 }
                 send(t, d);
