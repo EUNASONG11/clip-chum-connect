@@ -255,6 +255,18 @@ function VideoPage() {
           lastWallRef.current = Date.now();
         } catch {}
       });
+      const allowSeek = !!video.allow_seek;
+      const maxRate = Math.max(0.5, Math.min(4, Number(video.max_playback_rate ?? 2)));
+      const enforceRate = async () => {
+        try {
+          const rate = await (player as any).getPlaybackRate?.();
+          if (typeof rate === "number" && rate > maxRate) {
+            await (player as any).setPlaybackRate?.(maxRate);
+          }
+        } catch {}
+      };
+      player.on("playbackratechange", enforceRate);
+      player.ready().then(() => { enforceRate(); });
       player.on("timeupdate", (d: any) => {
         const t = d.seconds;
         const nowMs = Date.now();
@@ -264,16 +276,16 @@ function VideoPage() {
         // 큰 점프(2초 초과)는 seek 로 간주 → maxAllowed 갱신/전송 금지
         if (jump > 2) {
           isSeekingRef.current = true;
-          if (t > maxAllowedRef.current + 2) {
+          if (!allowSeek && t > maxAllowedRef.current + 2) {
             player.setCurrentTime(maxAllowedRef.current).catch(() => {});
             lastTimeRef.current = maxAllowedRef.current;
             return;
           }
         }
         currentTimeRef.current = t;
-        // 재생속도 기반 검증: 실제 흐른 시간의 1.5배 이내 증분만 max 로 승격
+        // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
-          const allowedGrowth = Math.max(0, wallDelta * 1.5);
+          const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
           maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
         }
         // current_seconds는 실제 마지막 위치를 저장 (이어보기용)
@@ -283,10 +295,11 @@ function VideoPage() {
       });
       player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
-        if (d.seconds > maxAllowedRef.current + 2) {
+        if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
           lastTimeRef.current = maxAllowedRef.current;
         } else {
+          if (allowSeek && d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
           lastTimeRef.current = d.seconds;
         }
         lastWallRef.current = Date.now();
