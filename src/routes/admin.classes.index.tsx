@@ -111,40 +111,50 @@ function ClassesPage() {
             ) : classes.length === 0 ? (
               <p className="text-sm text-muted-foreground">아직 등록된 수강반이 없습니다.</p>
             ) : (
-              <ul className="divide-y">
-                {classes.map((c: any) => (
-                  <li key={c.id} className="flex items-center gap-3 py-3">
-                    <div className="h-14 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
-                      {c.thumbnail_url ? (
-                        <ClassThumb src={c.thumbnail_url} className="h-full w-full object-cover" />
-                      ) : null}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {classes.map((c: any) => (
+                <div
+                  key={c.id}
+                  className="flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition hover:shadow-md"
+                >
+                  <div className="aspect-video w-full overflow-hidden bg-muted">
+                    {c.thumbnail_url ? (
+                      <ClassThumb src={c.thumbnail_url} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                        <ImagePlus className="h-8 w-8" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <div className="flex-1">
                       <p className="truncate font-medium">{c.name}</p>
                       {c.description && (
-                        <p className="truncate text-xs text-muted-foreground">{c.description}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
-                      <div className="mt-2">
-                        <ClassThumbnailUploader
-                          classId={c.id}
-                          currentUrl={c.thumbnail_url}
-                          size="sm"
-                          onChange={() => qc.invalidateQueries({ queryKey: ["admin", "classes"] })}
-                        />
-                      </div>
                     </div>
-                    <Button asChild size="sm" variant="outline">
-                      <Link to="/admin/classes/$id" params={{ id: c.id }}>
-                        <Users className="mr-1 h-4 w-4" /> 관리
-                      </Link>
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+                    <div className="mt-3">
+                      <ClassThumbnailUploader
+                        classId={c.id}
+                        currentUrl={c.thumbnail_url}
+                        size="sm"
+                        onChange={() => qc.invalidateQueries({ queryKey: ["admin", "classes"] })}
+                      />
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button asChild size="sm" variant="outline" className="flex-1">
+                        <Link to="/admin/classes/$id" params={{ id: c.id }}>
+                          <Users className="mr-1 h-4 w-4" /> 관리
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => remove(c.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
             )}
           </CardContent>
         </Card>
