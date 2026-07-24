@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -74,6 +74,24 @@ function VideosPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
+
+  const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(id));
+
+  useBlocker({
+    condition: hasUnsavedChanges,
+    blockerFn: () => window.confirm("변경사항이 저장되지 않았습니다. 페이지를 나가시겠습니까?"),
+  });
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
@@ -199,8 +217,12 @@ function VideosPage() {
                   <Dialog
                     open={openId === r.id}
                     onOpenChange={(o) => {
+                      if (!o && dirty(r.id)) {
+                        const confirmed = window.confirm("변경사항이 저장되지 않았습니다. 닫으시겠습니까?");
+                        if (!confirmed) return;
+                      }
+                      setOpenId(o ? r.id : null);
                       if (!o) {
-                        setOpenId(null);
                         setEdits((prev) => {
                           const next = { ...prev };
                           delete next[r.id];
