@@ -38,6 +38,7 @@ import {
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
+import { VideoThumb } from "@/components/VideoThumb";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
