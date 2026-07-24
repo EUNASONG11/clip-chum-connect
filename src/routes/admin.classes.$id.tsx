@@ -240,8 +240,10 @@ function ClassDetailPage() {
 
         </CardContent>
       </Card>
+        </TabsContent>
 
       {isAdmin && (
+        <TabsContent value="instructors">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
