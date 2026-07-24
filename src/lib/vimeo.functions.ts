@@ -272,19 +272,38 @@ export const listUsers = createServerFn({ method: "GET" })
       throw new Error(`${label} 실패: ${(lastErr as any)?.message ?? lastErr}`);
     };
 
-    // auth.users 전체 페이징 조회 (perPage 200 로 낮춰 응답 안정화)
+    // auth.users 전체 페이징 조회 — 1페이지로 total 확인 후 나머지 페이지 병렬 요청
     const allAuthUsers: any[] = [];
     {
-      const perPage = 200;
-      for (let page = 1; page < 200; page++) {
-        const { data, error: e } = await retry(
-          () => supabaseAdmin.auth.admin.listUsers({ page, perPage }),
-          `auth.listUsers page ${page}`,
-        );
-        if (e) throw new Error(e.message);
-        const chunk = data?.users ?? [];
-        allAuthUsers.push(...chunk);
-        if (chunk.length < perPage) break;
+      const perPage = 1000;
+      const first = await retry(
+        () => supabaseAdmin.auth.admin.listUsers({ page: 1, perPage }),
+        `auth.listUsers page 1`,
+      );
+      if ((first as any).error) throw new Error((first as any).error.message);
+      const firstUsers = first.data?.users ?? [];
+      allAuthUsers.push(...firstUsers);
+      const total = (first.data as any)?.total ?? firstUsers.length;
+      const totalPages = Math.max(1, Math.ceil(total / perPage));
+      if (totalPages > 1) {
+        const pages = Array.from({ length: totalPages - 1 }, (_, i) => i + 2);
+        // 병렬 처리 (동시 6개씩)
+        const concurrency = 6;
+        for (let i = 0; i < pages.length; i += concurrency) {
+          const batch = pages.slice(i, i + concurrency);
+          const results = await Promise.all(
+            batch.map((page) =>
+              retry(
+                () => supabaseAdmin.auth.admin.listUsers({ page, perPage }),
+                `auth.listUsers page ${page}`,
+              ),
+            ),
+          );
+          for (const r of results) {
+            if ((r as any).error) throw new Error((r as any).error.message);
+            allAuthUsers.push(...(r.data?.users ?? []));
+          }
+        }
       }
     }
 
