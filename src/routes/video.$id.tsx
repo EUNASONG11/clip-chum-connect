@@ -482,7 +482,7 @@ function VideoPage() {
     }
 
     return () => cleanup();
-  }, [video, id]);
+  }, [video, id, isAuthed, progressLoaded, initialCompleted]);
 
   if (video === undefined) {
     return (
