@@ -85,7 +85,7 @@ export function ClassThumbnailUploader({
         <ClassThumb
           src={currentUrl}
           alt="수강반 썸네일"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-contain"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-muted-foreground">
