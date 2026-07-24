@@ -213,37 +213,39 @@ function ClassDetailPage() {
 
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Button asChild variant="ghost" size="sm">
-          <Link to="/admin/classes">
-            <ArrowLeft className="mr-1 h-4 w-4" /> 수강반 목록
+    <div className="min-w-0 space-y-6">
+      <div className="min-w-0">
+        <Button asChild variant="ghost" size="sm" className="max-w-full">
+          <Link to="/admin/classes" className="min-w-0">
+            <ArrowLeft className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">수강반 목록</span>
           </Link>
         </Button>
-        <h1 className="mt-2 text-2xl font-bold">{cls?.name ?? "..."}</h1>
-        {cls?.description && (
-          <p className="mt-1 text-sm text-muted-foreground">{cls.description}</p>
-        )}
+        <div className="mt-2 flex min-w-0 items-baseline gap-2">
+          <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
+          {cls?.description && (
+            <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
+          )}
+        </div>
       </div>
 
-      <Tabs defaultValue="students" className="w-full">
-        <TabsList>
-          <TabsTrigger value="students">학생 배정</TabsTrigger>
-          {isAdmin && <TabsTrigger value="instructors">강사 배정</TabsTrigger>}
-          <TabsTrigger value="videos">영상</TabsTrigger>
-          <TabsTrigger value="stats">학습 현황</TabsTrigger>
+      <Tabs defaultValue="students" className="w-full min-w-0">
+        <TabsList className={isAdmin ? "grid w-full grid-cols-4" : "grid w-full grid-cols-3"}>
+          <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
+          {isAdmin && <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>}
+          <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
+          <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
         </TabsList>
 
         <TabsContent value="students">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <UserPlus className="h-5 w-5" /> 학생 배정 ({students.length})
+            <CardTitle className="flex min-w-0 items-center gap-2">
+              <UserPlus className="h-5 w-5 shrink-0" /> <span className="truncate">학생 배정 ({students.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={search} className="flex gap-2">
-            <div className="flex-1">
+          <form onSubmit={search} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <div className="min-w-0">
               <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
               <Input
                 id="query"
@@ -253,8 +255,8 @@ function ClassDetailPage() {
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <Button type="submit" disabled={searching}>
-              <Search className="mr-1 h-4 w-4" />
+            <Button type="submit" disabled={searching} className="shrink-0 whitespace-nowrap">
+              <Search className="mr-1 h-4 w-4 shrink-0" />
               {searching ? "검색 중..." : "검색"}
             </Button>
           </form>
@@ -325,15 +327,15 @@ function ClassDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5" /> 강사 배정 ({assignedInstructors.length})
+              <GraduationCap className="h-5 w-5 shrink-0" /> <span className="truncate">강사 배정 ({assignedInstructors.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
               배정된 강사는 이 수강반의 학생/영상/진도를 조회하고 관리할 수 있습니다.
             </p>
-            <form onSubmit={searchI} className="flex gap-2">
-              <div className="flex-1">
+            <form onSubmit={searchI} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <div className="min-w-0">
                 <Label htmlFor="iquery" className="sr-only">이름 또는 이메일</Label>
                 <Input
                   id="iquery"
@@ -343,8 +345,8 @@ function ClassDetailPage() {
                   onChange={(e) => setIq(e.target.value)}
                 />
               </div>
-              <Button type="submit" disabled={iSearching}>
-                <Search className="mr-1 h-4 w-4" />
+              <Button type="submit" disabled={iSearching} className="shrink-0 whitespace-nowrap">
+                <Search className="mr-1 h-4 w-4 shrink-0" />
                 {iSearching ? "검색 중..." : "검색"}
               </Button>
             </form>
@@ -409,18 +411,18 @@ function ClassDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Film className="h-5 w-5" /> 이 수강반의 영상 ({videos.length})
+            <Film className="h-5 w-5 shrink-0" /> <span className="truncate">이 수강반의 영상 ({videos.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 폴더 관리 */}
           {!creatingFolder && (
-            <Button size="sm" variant="outline" onClick={() => setCreatingFolder(true)}>
-              <FolderPlus className="mr-1 h-4 w-4" /> 폴더 추가
+            <Button size="sm" variant="outline" onClick={() => setCreatingFolder(true)} className="whitespace-nowrap">
+              <FolderPlus className="mr-1 h-4 w-4 shrink-0" /> 폴더 추가
             </Button>
           )}
           {creatingFolder && (
-            <form onSubmit={handleCreateFolder} className="flex items-center gap-2">
+            <form onSubmit={handleCreateFolder} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
               <Input
                 autoFocus
                 value={newFolderName}
@@ -428,7 +430,7 @@ function ClassDetailPage() {
                 placeholder="폴더 이름 (예: 1주차)"
                 disabled={isCreatingFolder}
               />
-              <Button type="submit" size="sm" disabled={isCreatingFolder}>
+              <Button type="submit" size="sm" disabled={isCreatingFolder} className="shrink-0 whitespace-nowrap">
                 {isCreatingFolder ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -440,6 +442,7 @@ function ClassDetailPage() {
                 size="sm"
                 variant="ghost"
                 disabled={isCreatingFolder}
+                className="shrink-0 whitespace-nowrap"
                 onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
               >취소</Button>
             </form>
@@ -461,7 +464,7 @@ function ClassDetailPage() {
                 if (items.length === 0 && group.id === null) return null;
                 return (
                   <div key={group.id ?? "none"} className="rounded-md border">
-                    <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                       {group.id && editingFolderId === group.id ? (
                         <>
                           <div className="flex flex-1 items-center gap-2">
@@ -480,9 +483,9 @@ function ClassDetailPage() {
                         </>
                       ) : (
                         <>
-                          <div className="flex items-center gap-2">
-                            <Folder className="h-4 w-4 text-muted-foreground" />
-                            {group.name}
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{group.name}</span>
                             <span className="text-xs text-muted-foreground">({items.length})</span>
                           </div>
                           {group.id && (
@@ -513,21 +516,22 @@ function ClassDetailPage() {
                     ) : (
                       <ul className="divide-y">
                         {items.map((v: any, i: number) => (
-                          <li key={v.id} className="flex items-center gap-3 px-3 py-2">
-                            <span className="w-6 text-xs text-muted-foreground">{i + 1}</span>
+                          <li key={v.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
+                            <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-sm font-medium">{v.title}</p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="truncate text-xs text-muted-foreground">
                                 {v.is_published ? "공개" : "비공개"} · {v.status}
                               </p>
                             </div>
+                            <div className="flex shrink-0 items-center gap-1">
                             <Select
                               value={v.folder_id ?? "__none__"}
                               onValueChange={(val) =>
                                 handleAssignVideoToFolder(v.id, val === "__none__" ? null : val)
                               }
                             >
-                              <SelectTrigger className="h-8 w-36 text-xs">
+                              <SelectTrigger className="h-8 w-24 text-xs sm:w-36">
                                 <SelectValue placeholder="폴더" />
                               </SelectTrigger>
                               <SelectContent>
@@ -540,6 +544,7 @@ function ClassDetailPage() {
                             <Button
                               size="icon"
                               variant="ghost"
+                              className="h-8 w-8 shrink-0"
                               disabled={i === 0}
                               onClick={async () => {
                                 try {
@@ -553,6 +558,7 @@ function ClassDetailPage() {
                             <Button
                               size="icon"
                               variant="ghost"
+                              className="h-8 w-8 shrink-0"
                               disabled={i === items.length - 1}
                               onClick={async () => {
                                 try {
@@ -563,6 +569,7 @@ function ClassDetailPage() {
                             >
                               <ArrowDown className="h-4 w-4" />
                             </Button>
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -580,7 +587,7 @@ function ClassDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" /> 학생별 학습 현황
+            <BarChart3 className="h-5 w-5 shrink-0" /> <span className="truncate">학생별 학습 현황</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
