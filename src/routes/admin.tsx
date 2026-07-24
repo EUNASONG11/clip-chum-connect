@@ -52,6 +52,7 @@ function AdminSidebar() {
   const badgeText = isAdmin ? "관리자" : isInstructor ? "강사" : "";
 
   const handleNavClick = () => {
+    console.log("handleNavClick fired, width:", window.innerWidth);
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setOpenMobile(false);
     }
