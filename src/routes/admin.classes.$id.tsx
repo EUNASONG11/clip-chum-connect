@@ -323,9 +323,9 @@ function ClassDetailPage() {
             )}
           </CardContent>
         </Card>
-      )}
         </TabsContent>
       )}
+
 
         <TabsContent value="videos">
       <Card>
