@@ -458,8 +458,7 @@ function ClassDetailPage() {
                 { id: null as string | null, name: "폴더 미지정" },
               ].map((group) => {
                 const items = videos.filter((v: any) => (v.folder_id ?? null) === group.id);
-                if (items.length === 0 && group.id !== null) return null;
-                if (items.length === 0 && group.id === null && folders.length === 0) return null;
+                if (items.length === 0 && group.id === null) return null;
                 return (
                   <div key={group.id ?? "none"} className="rounded-md border">
                     <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
