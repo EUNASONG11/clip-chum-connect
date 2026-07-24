@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
+import { VideoThumb } from "@/components/VideoThumb";
 
 type Video = {
   id: string;
