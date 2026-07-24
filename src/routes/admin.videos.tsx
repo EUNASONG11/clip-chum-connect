@@ -244,6 +244,20 @@ function VideosPage() {
                         <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground">썸네일</label>
+                          <div className="mt-1">
+                            <VideoThumbnailUploader
+                              videoId={r.id}
+                              currentUrl={r.thumbnail_url}
+                              onChange={(url) =>
+                                setRows((prev) =>
+                                  prev.map((x) => (x.id === r.id ? { ...x, thumbnail_url: url } : x)),
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
                           <div>
                             <label className="text-xs text-muted-foreground">수강반</label>
