@@ -9,6 +9,7 @@ import { GraduationCap, LogOut, Play, User } from "lucide-react";
 import { getMyDisplayName, getMyRole } from "@/lib/vimeo.functions";
 import { listClasses, listMyRecentProgress } from "@/lib/classes.functions";
 import { ClassThumb } from "@/components/ClassThumb";
+import { VideoThumb } from "@/components/VideoThumb";
 
 
 export const Route = createFileRoute("/mypage")({
@@ -163,7 +164,7 @@ function MyPage() {
                       >
                         <div className="h-12 w-20 flex-shrink-0 overflow-hidden rounded bg-muted">
                           {v.thumbnail_url && (
-                            <img src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                            <VideoThumb src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
                           )}
                         </div>
                         <div className="min-w-0 flex-1">

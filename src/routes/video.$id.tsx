@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
+import { VideoThumb } from "@/components/VideoThumb";
 
 type Video = {
   id: string;
@@ -543,7 +544,7 @@ function VideoPage() {
                     >
                       <div className="h-16 w-24 flex-shrink-0 overflow-hidden rounded bg-muted">
                         {r.thumbnail_url && (
-                          <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">

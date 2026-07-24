@@ -15,6 +15,8 @@ import { useAdminRole } from "@/components/AdminRole";
 import { ShieldCheck } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { VideoThumb } from "@/components/VideoThumb";
+import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
@@ -183,7 +185,7 @@ function VideosPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
                       {r.thumbnail_url && (
-                        <img src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -242,6 +244,20 @@ function VideosPage() {
                         <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground">썸네일</label>
+                          <div className="mt-1">
+                            <VideoThumbnailUploader
+                              videoId={r.id}
+                              currentUrl={r.thumbnail_url}
+                              onChange={(url) =>
+                                setRows((prev) =>
+                                  prev.map((x) => (x.id === r.id ? { ...x, thumbnail_url: url } : x)),
+                                )
+                              }
+                            />
+                          </div>
+                        </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
                           <div>
                             <label className="text-xs text-muted-foreground">수강반</label>
