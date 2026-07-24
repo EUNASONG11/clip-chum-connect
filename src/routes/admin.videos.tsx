@@ -114,6 +114,7 @@ function VideosPage() {
       await updateVideo({
         data: {
           id: r.id,
+          title: e.title,
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
@@ -226,6 +227,15 @@ function VideosPage() {
                         <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
+                        <div>
+                          <label className="text-xs text-muted-foreground">제목</label>
+                          <Input
+                            value={value(r, "title") as string}
+                            onChange={(e) => patch(r.id, { title: e.target.value })}
+                            placeholder="영상 제목"
+                            className="mt-1"
+                          />
+                        </div>
                         <div>
                           <label className="text-xs text-muted-foreground">썸네일</label>
                           <div className="mt-1">
