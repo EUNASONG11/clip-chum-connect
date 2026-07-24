@@ -59,11 +59,17 @@ export const getOverviewStats = createServerFn({ method: "GET" })
       const { data } = await supabaseAdmin.from("classes").select("id");
       classIds = (data ?? []).map((c: any) => c.id);
     } else {
-      const { data } = await supabaseAdmin
-        .from("classes")
-        .select("id")
-        .eq("created_by", context.userId);
-      classIds = (data ?? []).map((c: any) => c.id);
+      const [owned, assigned] = await Promise.all([
+        supabaseAdmin.from("classes").select("id").eq("created_by", context.userId),
+        supabaseAdmin
+          .from("class_instructors")
+          .select("class_id")
+          .eq("instructor_user_id", context.userId),
+      ]);
+      const set = new Set<string>();
+      (owned.data ?? []).forEach((c: any) => set.add(c.id));
+      (assigned.data ?? []).forEach((c: any) => set.add(c.class_id));
+      classIds = Array.from(set);
     }
 
     if (classIds.length === 0) {
