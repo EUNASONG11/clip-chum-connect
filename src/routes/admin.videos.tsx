@@ -228,6 +228,15 @@ function VideosPage() {
                       </DialogHeader>
                       <div className="space-y-4">
                         <div>
+                          <label className="text-xs text-muted-foreground">제목</label>
+                          <Input
+                            value={value(r, "title") as string}
+                            onChange={(e) => patch(r.id, { title: e.target.value })}
+                            placeholder="영상 제목"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
                           <label className="text-xs text-muted-foreground">썸네일</label>
                           <div className="mt-1">
                             <VideoThumbnailUploader
