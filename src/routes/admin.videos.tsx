@@ -50,7 +50,25 @@ const statusMap: Record<string, string> = {
 };
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
+function RoleGate({ children }: { children: React.ReactNode }) {
+  const { isAdmin, isInstructor, isLoading } = useAdminRole();
+  if (isLoading) return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
+  if (!isAdmin && !isInstructor) {
+    return (
+      <div className="mx-auto max-w-md p-10 text-center">
+        <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
+        <h2 className="mt-4 text-xl font-semibold">접근 권한이 없습니다.</h2>
+        <Button asChild variant="outline" className="mt-4">
+          <Link to="/admin/dashboard">대시보드로</Link>
+        </Button>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 function VideosPage() {
+  const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
 
