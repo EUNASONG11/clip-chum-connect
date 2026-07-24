@@ -478,16 +478,7 @@ function VideoPage() {
               }
             >
               <div ref={containerRef} className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}>
-                {video.source === "youtube" && (
-                  <iframe
-                    ref={iframeRef}
-                    src={`https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(typeof window !== "undefined" ? window.location.origin : "")}`}
-                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                    allowFullScreen
-                    className="absolute inset-0 h-full w-full"
-                    title={video.title}
-                  />
-                )}
+                {/* iframe은 useEffect에서 동적으로 삽입됩니다. */}
               </div>
               <button
                 type="button"
