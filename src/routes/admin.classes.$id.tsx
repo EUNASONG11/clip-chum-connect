@@ -436,42 +436,6 @@ function ClassDetailPage() {
                 >취소</Button>
               </form>
             )}
-            {folders.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {folders.map((f: any) => (
-                  <li key={f.id} className="flex items-center gap-2 rounded px-2 py-1 hover:bg-background">
-                    <Folder className="h-4 w-4 text-muted-foreground" />
-                    {editingFolderId === f.id ? (
-                      <>
-                        <Input
-                          autoFocus
-                          className="h-7 flex-1"
-                          value={editingFolderName}
-                          onChange={(e) => setEditingFolderName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") handleRenameFolder(f.id); }}
-                        />
-                        <Button size="sm" onClick={() => handleRenameFolder(f.id)}>저장</Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingFolderId(null)}>취소</Button>
-                      </>
-                    ) : (
-                      <>
-                        <span className="flex-1 text-sm">{f.name}</span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => { setEditingFolderId(f.id); setEditingFolderName(f.name); }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => handleDeleteFolder(f.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           {/* 영상 목록 (폴더별 그룹) */}
