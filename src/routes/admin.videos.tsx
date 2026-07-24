@@ -350,8 +350,60 @@ function VideosPage() {
                                     ))}
                                   </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="border-t pt-4">
+                              <div className="mb-2">
+                                <p className="text-sm font-medium">재시청 설정</p>
+                                <p className="text-xs text-muted-foreground">
+                                  수강 완료 이후 재시청 시 적용됩니다. 비워두면 처음 시청 설정과 동일하게 동작합니다.
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <Switch
+                                  checked={(value(r, "rewatch_allow_seek") as boolean | null) ?? (value(r, "allow_seek") as boolean)}
+                                  onCheckedChange={(v) => patch(r.id, { rewatch_allow_seek: v })}
+                                />
+                                <span className="text-xs">재시청 시 건너뛰기 허용</span>
+                                {(edits[r.id]?.rewatch_allow_seek !== undefined || r.rewatch_allow_seek !== null) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="ml-auto h-6 text-xs"
+                                    onClick={() => patch(r.id, { rewatch_allow_seek: null })}
+                                  >
+                                    처음 설정과 동일
+                                  </Button>
+                                )}
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">재시청 최대 배속</label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Select
+                                    value={String((value(r, "rewatch_max_playback_rate") as number | null) ?? (value(r, "max_playback_rate") as number))}
+                                    onValueChange={(v) => patch(r.id, { rewatch_max_playback_rate: Number(v) })}
+                                  >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {[1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4].map((v) => (
+                                        <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(edits[r.id]?.rewatch_max_playback_rate !== undefined || r.rewatch_max_playback_rate !== null) && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 text-xs shrink-0"
+                                      onClick={() => patch(r.id, { rewatch_max_playback_rate: null })}
+                                    >
+                                      처음 설정과 동일
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
+                          </div>
                           </div>
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
