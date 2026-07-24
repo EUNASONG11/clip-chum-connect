@@ -59,11 +59,17 @@ export const getOverviewStats = createServerFn({ method: "GET" })
       const { data } = await supabaseAdmin.from("classes").select("id");
       classIds = (data ?? []).map((c: any) => c.id);
     } else {
-      const { data } = await supabaseAdmin
-        .from("classes")
-        .select("id")
-        .eq("created_by", context.userId);
-      classIds = (data ?? []).map((c: any) => c.id);
+      const [owned, assigned] = await Promise.all([
+        supabaseAdmin.from("classes").select("id").eq("created_by", context.userId),
+        supabaseAdmin
+          .from("class_instructors")
+          .select("class_id")
+          .eq("instructor_user_id", context.userId),
+      ]);
+      const set = new Set<string>();
+      (owned.data ?? []).forEach((c: any) => set.add(c.id));
+      (assigned.data ?? []).forEach((c: any) => set.add(c.class_id));
+      classIds = Array.from(set);
     }
 
     if (classIds.length === 0) {
@@ -127,11 +133,27 @@ export const getClassStats = createServerFn({ method: "GET" })
     const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    let allowedIds: string[] | null = null;
+    if (!admin) {
+      const [owned, assigned] = await Promise.all([
+        supabaseAdmin.from("classes").select("id").eq("created_by", context.userId),
+        supabaseAdmin
+          .from("class_instructors")
+          .select("class_id")
+          .eq("instructor_user_id", context.userId),
+      ]);
+      const set = new Set<string>();
+      (owned.data ?? []).forEach((c: any) => set.add(c.id));
+      (assigned.data ?? []).forEach((c: any) => set.add(c.class_id));
+      allowedIds = Array.from(set);
+      if (allowedIds.length === 0) return [];
+    }
+
     let classQuery = supabaseAdmin
       .from("classes")
       .select("id, name")
       .order("created_at", { ascending: false });
-    if (!admin) classQuery = classQuery.eq("created_by", context.userId);
+    if (allowedIds) classQuery = classQuery.in("id", allowedIds);
     const { data: classes } = await classQuery;
     const classIds = (classes ?? []).map((c: any) => c.id);
 
