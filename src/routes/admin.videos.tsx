@@ -217,8 +217,12 @@ function VideosPage() {
                   <Dialog
                     open={openId === r.id}
                     onOpenChange={(o) => {
+                      if (!o && dirty(r.id)) {
+                        const confirmed = window.confirm("변경사항이 저장되지 않았습니다. 닫으시겠습니까?");
+                        if (!confirmed) return;
+                      }
+                      setOpenId(o ? r.id : null);
                       if (!o) {
-                        setOpenId(null);
                         setEdits((prev) => {
                           const next = { ...prev };
                           delete next[r.id];
