@@ -73,11 +73,13 @@ export function ClassThumbnailUploader({
     }
   };
 
+  const baseDims = className ? "" : dims;
+
   return (
     <div
       className={cn(
         "group relative overflow-hidden rounded-md bg-muted",
-        dims,
+        baseDims,
         className
       )}
     >
@@ -85,7 +87,7 @@ export function ClassThumbnailUploader({
         <ClassThumb
           src={currentUrl}
           alt="수강반 썸네일"
-          className="h-full w-full object-contain"
+          className="h-full w-full object-cover"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-muted-foreground">
