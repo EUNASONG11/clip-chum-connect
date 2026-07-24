@@ -49,6 +49,44 @@ export type Database = {
           },
         ]
       }
+      class_folders: {
+        Row: {
+          class_id: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_folders_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_instructors: {
         Row: {
           class_id: string
@@ -347,6 +385,7 @@ export type Database = {
           duration: number | null
           external_url: string | null
           external_video_id: string | null
+          folder_id: string | null
           id: string
           is_published: boolean
           max_playback_rate: number
@@ -370,6 +409,7 @@ export type Database = {
           duration?: number | null
           external_url?: string | null
           external_video_id?: string | null
+          folder_id?: string | null
           id?: string
           is_published?: boolean
           max_playback_rate?: number
@@ -393,6 +433,7 @@ export type Database = {
           duration?: number | null
           external_url?: string | null
           external_video_id?: string | null
+          folder_id?: string | null
           id?: string
           is_published?: boolean
           max_playback_rate?: number
@@ -412,6 +453,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "class_folders"
             referencedColumns: ["id"]
           },
         ]
