@@ -220,10 +220,12 @@ function ClassDetailPage() {
             <ArrowLeft className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">수강반 목록</span>
           </Link>
         </Button>
-        <h1 className="mt-2 truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
-        {cls?.description && (
-          <p className="mt-1 truncate text-sm text-muted-foreground">{cls.description}</p>
-        )}
+        <div className="mt-2 flex min-w-0 items-baseline gap-2">
+          <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
+          {cls?.description && (
+            <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="students" className="w-full min-w-0">
