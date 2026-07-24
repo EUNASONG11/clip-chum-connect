@@ -32,6 +32,7 @@ type Row = {
   sort_order: number;
   allow_seek: boolean;
   max_playback_rate: number;
+  completion_ratio: number;
   created_at: string;
 };
 
