@@ -111,7 +111,7 @@ function ClassesPage() {
             ) : classes.length === 0 ? (
               <p className="p-6 text-sm text-muted-foreground">아직 등록된 수강반이 없습니다.</p>
             ) : (
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
               {classes.map((c: any) => (
                 <div
                   key={c.id}
