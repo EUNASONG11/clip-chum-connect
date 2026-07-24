@@ -29,8 +29,7 @@ export const Route = createFileRoute("/admin")({
 
 const adminNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
-  { title: "영상 업로드", url: "/admin/upload", icon: UploadIcon },
-  { title: "등록된 영상", url: "/admin/videos", icon: Film },
+  { title: "영상 관리", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
   { title: "사용자 관리", url: "/admin/users", icon: Users },
   { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
@@ -38,8 +37,7 @@ const adminNavItems = [
 
 const instructorNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
-  { title: "영상 업로드", url: "/admin/upload", icon: UploadIcon },
-  { title: "등록된 영상", url: "/admin/videos", icon: Film },
+  { title: "영상 관리", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
 ];
 
