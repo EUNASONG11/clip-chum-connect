@@ -324,9 +324,10 @@ function ClassDetailPage() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      )}
 
-
-
+        <TabsContent value="videos">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
