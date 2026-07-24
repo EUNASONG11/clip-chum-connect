@@ -117,29 +117,18 @@ function ClassesPage() {
                   key={c.id}
                   className="flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition hover:shadow-md"
                 >
-                  <div className="aspect-video w-full overflow-hidden bg-muted">
-                    {c.thumbnail_url ? (
-                      <ClassThumb src={c.thumbnail_url} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                        <ImagePlus className="h-8 w-8" />
-                      </div>
-                    )}
-                  </div>
+                  <ClassThumbnailUploader
+                    classId={c.id}
+                    currentUrl={c.thumbnail_url}
+                    onChange={() => qc.invalidateQueries({ queryKey: ["admin", "classes"] })}
+                    className="aspect-video w-full"
+                  />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
                       <p className="truncate font-medium">{c.name}</p>
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
-                    </div>
-                    <div className="mt-3">
-                      <ClassThumbnailUploader
-                        classId={c.id}
-                        currentUrl={c.thumbnail_url}
-                        size="sm"
-                        onChange={() => qc.invalidateQueries({ queryKey: ["admin", "classes"] })}
-                      />
                     </div>
                     <div className="mt-4 flex items-center gap-2">
                       <Button asChild size="sm" variant="outline" className="flex-1">
