@@ -83,10 +83,15 @@ function VideosPage() {
       .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
-    setRows((data as Row[] | null) ?? []);
+    let list = (data as Row[] | null) ?? [];
+    if (!isAdmin) {
+      const allowed = new Set((classes as any[]).map((c) => c.id));
+      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    }
+    setRows(list);
     setEdits({});
   };
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [isAdmin, classes]);
 
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
