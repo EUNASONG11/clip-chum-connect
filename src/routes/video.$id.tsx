@@ -158,7 +158,13 @@ function VideoPage() {
   // 저장된 진도 상태 초기화
   const progressRef = useRef<{ current_seconds: number; max_seconds: number; watched_ratio: number; is_completed: boolean } | null>(null);
   useEffect(() => {
-    if (!isAuthed) return;
+    setProgressLoaded(false);
+    setInitialCompleted(false);
+    if (!isAuthed) {
+      progressRef.current = null;
+      setProgressLoaded(true);
+      return;
+    }
     getMyProgress({ data: { videoId: id } }).then((p) => {
       if (p) {
         progressRef.current = {
@@ -169,9 +175,14 @@ function VideoPage() {
         };
         setRatio(Number(p.watched_ratio));
         setCompleted(p.is_completed);
+        setInitialCompleted(p.is_completed);
+      } else {
+        progressRef.current = null;
       }
-    }).catch(() => {});
+      setProgressLoaded(true);
+    }).catch(() => setProgressLoaded(true));
   }, [id, isAuthed]);
+
 
 
   // 플레이어 초기화 + 이벤트 바인딩
