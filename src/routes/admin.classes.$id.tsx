@@ -158,6 +158,7 @@ function ClassDetailPage() {
     try {
       await assignStudent({ data: { classId: id, userId } });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
       setResults((r) => r.filter((s) => s.user_id !== userId));
       toast.success("배정되었습니다.");
     } catch (err: any) {
@@ -169,6 +170,7 @@ function ClassDetailPage() {
     try {
       await unassignStudent({ data: { classId: id, userId } });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
     } catch (err: any) {
       toast.error(err.message);
     }
