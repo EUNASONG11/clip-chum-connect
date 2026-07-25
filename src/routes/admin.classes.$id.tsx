@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History,
 } from "lucide-react";
 import {
   getClass,
