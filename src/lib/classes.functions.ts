@@ -290,6 +290,61 @@ export const unassignStudent = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// 수강반 배정 이력 조회 (추가/해제 히스토리)
+export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("class_enrollment_history")
+      .select("id, user_id, action, actor_id, created_at")
+      .eq("class_id", data.classId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) return [];
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id)));
+    const actorIds = Array.from(
+      new Set(rows.map((r: any) => r.actor_id).filter(Boolean)),
+    ) as string[];
+    const { data: ext } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone")
+      .in("auth_user_id", userIds);
+    const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
+    const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
+    const actorMap = new Map<string, string>();
+    if (actorIds.length > 0) {
+      const { data: instr } = await supabaseAdmin
+        .from("instructors")
+        .select("auth_user_id, name")
+        .in("auth_user_id", actorIds);
+      for (const i of instr ?? []) {
+        if ((i as any).auth_user_id) actorMap.set((i as any).auth_user_id, (i as any).name ?? "");
+      }
+      for (const id of actorIds) {
+        if (!actorMap.has(id)) actorMap.set(id, emailMap.get(id) ?? "");
+      }
+    }
+    return rows.map((r: any) => {
+      const e: any = extMap.get(r.user_id);
+      return {
+        id: r.id as string,
+        user_id: r.user_id as string,
+        action: r.action as "added" | "removed",
+        actor_id: r.actor_id as string | null,
+        actor_name: r.actor_id ? actorMap.get(r.actor_id) ?? "" : "",
+        student_name: e?.name ?? "",
+        student_phone: e?.phone ?? "",
+        student_email: emailMap.get(r.user_id) ?? "",
+        created_at: r.created_at as string,
+      };
+    });
+  });
+
 // 수강반의 영상 목록 (관리자: 전체, 강사: 본인 수강반)
 export const listClassVideos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
