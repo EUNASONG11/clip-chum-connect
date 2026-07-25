@@ -35,6 +35,7 @@ import {
   updateClassFolder,
   deleteClassFolder,
   setVideoFolder,
+  listClassEnrollmentHistory,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
