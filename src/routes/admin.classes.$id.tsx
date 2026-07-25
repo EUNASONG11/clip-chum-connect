@@ -69,6 +69,10 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
   });
+  const { data: history = [] } = useQuery({
+    queryKey: ["admin", "class", id, "history"],
+    queryFn: () => listClassEnrollmentHistory({ data: { classId: id } }),
+  });
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingFolder, setCreatingFolder] = useState(false);
