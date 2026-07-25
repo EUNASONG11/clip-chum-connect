@@ -16,7 +16,7 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History,
 } from "lucide-react";
 import {
   getClass,
@@ -35,6 +35,7 @@ import {
   updateClassFolder,
   deleteClassFolder,
   setVideoFolder,
+  listClassEnrollmentHistory,
 } from "@/lib/classes.functions";
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
@@ -67,6 +68,10 @@ function ClassDetailPage() {
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
+  });
+  const { data: history = [] } = useQuery({
+    queryKey: ["admin", "class", id, "history"],
+    queryFn: () => listClassEnrollmentHistory({ data: { classId: id } }),
   });
 
   const [newFolderName, setNewFolderName] = useState("");
@@ -153,6 +158,7 @@ function ClassDetailPage() {
     try {
       await assignStudent({ data: { classId: id, userId } });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
       setResults((r) => r.filter((s) => s.user_id !== userId));
       toast.success("배정되었습니다.");
     } catch (err: any) {
@@ -164,6 +170,7 @@ function ClassDetailPage() {
     try {
       await unassignStudent({ data: { classId: id, userId } });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+      qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -230,11 +237,12 @@ function ClassDetailPage() {
       </div>
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className={isAdmin ? "grid w-full grid-cols-4" : "grid w-full grid-cols-3"}>
+        <TabsList className={isAdmin ? "grid w-full grid-cols-5" : "grid w-full grid-cols-4"}>
           <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
           {isAdmin && <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>}
           <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
+          <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
         </TabsList>
 
         <TabsContent value="students">
@@ -643,6 +651,65 @@ function ClassDetailPage() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex min-w-0 items-center gap-2">
+                <History className="h-5 w-5 shrink-0" />
+                <span className="truncate">배정 이력 ({history.length})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {history.length === 0 ? (
+                <p className="text-sm text-muted-foreground">아직 이력이 없습니다.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left text-muted-foreground">
+                        <th className="whitespace-nowrap py-2 pr-4">일시</th>
+                        <th className="whitespace-nowrap py-2 pr-4">학생</th>
+                        <th className="whitespace-nowrap py-2 pr-4">연락처</th>
+                        <th className="whitespace-nowrap py-2 pr-4">동작</th>
+                        <th className="whitespace-nowrap py-2 pr-4">처리자</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.map((h: any) => (
+                        <tr key={h.id} className="border-b last:border-0">
+                          <td className="whitespace-nowrap py-2 pr-4">
+                            {new Date(h.created_at).toLocaleString("ko-KR")}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4">
+                            {h.student_name || h.student_email || h.user_id.slice(0, 8)}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                            {h.student_phone || "-"}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4">
+                            <span
+                              className={
+                                h.action === "added"
+                                  ? "rounded bg-green-500/15 px-2 py-0.5 text-xs text-green-700"
+                                  : "rounded bg-red-500/15 px-2 py-0.5 text-xs text-red-700"
+                              }
+                            >
+                              {h.action === "added" ? "배정" : "해제"}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                            {h.actor_name || (h.actor_id ? h.actor_id.slice(0, 8) : "시스템")}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
