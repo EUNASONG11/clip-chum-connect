@@ -36,7 +36,9 @@ import {
   deleteClassFolder,
   setVideoFolder,
   listClassEnrollmentHistory,
+  updateClass,
 } from "@/lib/classes.functions";
+
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
