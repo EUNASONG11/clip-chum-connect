@@ -114,8 +114,20 @@ export const listClasses = createServerFn({ method: "GET" })
       .or(orParts.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const rows = data ?? [];
+    // 강사 역할이면 기간 제한 없이 모두 반환, 순수 학생이면 활성 기간 내 것만
+    const instructor = await isInstructor(context);
+    if (instructor) return rows;
+    const enrolledSet = new Set((enrolled ?? []).map((r: any) => r.class_id as string));
+    return rows.filter((c: any) => {
+      const isEnrolledOnly =
+        enrolledSet.has(c.id) &&
+        c.created_by !== context.userId;
+      if (!isEnrolledOnly) return true;
+      return isClassActive(c.active_from, c.active_to);
+    });
   });
+
 
 // 단일 수강반 조회
 export const getClass = createServerFn({ method: "GET" })
