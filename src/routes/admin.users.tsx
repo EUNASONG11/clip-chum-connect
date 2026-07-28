@@ -198,6 +198,23 @@ function UsersPage() {
     }
   };
 
+  const doIssueTempPassword = async (u: UserRow) => {
+    if (!confirm(`${u.nickname || "학생"} 님에게 임시 비밀번호를 발급하시겠습니까?\n기존 비밀번호는 재설정되며, 새 임시코드로만 로그인할 수 있습니다.`)) return;
+    setBusyId(u.id);
+    try {
+      const res = await issueStudentTempPassword({ data: { userId: u.id } });
+      window.prompt(
+        `${res.name ?? u.nickname} 님의 임시 비밀번호입니다. 복사하여 학생에게 전달하세요.\n(로그인: 이름 + 아래 8자리 코드)`,
+        res.tempPassword,
+      );
+      toast.success("임시 비밀번호가 발급되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message ?? "발급에 실패했습니다.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const doBulkApprove = async (role: "student" | "admin" | "instructor") => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
