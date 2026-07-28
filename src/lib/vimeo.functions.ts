@@ -359,7 +359,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
-    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null }[] = [];
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }[] = [];
     {
       const size = 500;
       let from = 0;
@@ -369,7 +369,7 @@ export const listUsers = createServerFn({ method: "GET" })
           async () =>
             await supabaseAdmin
               .from("external_students")
-              .select("auth_user_id, name, phone, enrollment_status")
+              .select("auth_user_id, name, phone, enrollment_status, temp_password")
               .not("auth_user_id", "is", null)
               .range(from, from + size - 1),
           `external_students range ${from}`,
@@ -392,9 +392,9 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
-    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null }>();
+    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }>();
     extRows.forEach((r) => {
-      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status, temp_password: r.temp_password });
     });
 
     // instructors 테이블에서 강사 정보 조회
@@ -440,6 +440,7 @@ export const listUsers = createServerFn({ method: "GET" })
           isInstructor,
           isPending,
           class_count: classCount.get(u.id) ?? 0,
+          has_temp_password: !!ext?.temp_password,
         };
       })
       .filter((u: any) => {
@@ -775,7 +776,60 @@ export const issueStudentTempPassword = createServerFn({ method: "POST" })
       .eq("id", row.id);
     if (updExtErr) throw new Error(updExtErr.message);
 
+    await supabaseAdmin.from("student_temp_password_history").insert({
+      auth_user_id: data.userId,
+      external_student_id: row.id,
+      temp_password: tempPassword,
+      issued_by: context.userId,
+    });
+
     return { tempPassword, name: row.name };
+  });
+
+// 관리자: 학생의 현재 임시 비밀번호 + 발급 이력 조회
+export const getStudentTempPasswordInfo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: row } = await supabaseAdmin
+      .from("external_students")
+      .select("id, name, temp_password")
+      .eq("auth_user_id", data.userId)
+      .maybeSingle();
+
+    const { data: history } = await supabaseAdmin
+      .from("student_temp_password_history")
+      .select("id, temp_password, issued_by, created_at")
+      .eq("auth_user_id", data.userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const issuerIds = Array.from(
+      new Set((history ?? []).map((h) => h.issued_by).filter(Boolean) as string[]),
+    );
+    const issuerMap = new Map<string, string>();
+    if (issuerIds.length > 0) {
+      const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      users?.users.forEach((u) => {
+        if (issuerIds.includes(u.id)) issuerMap.set(u.id, u.email ?? u.id);
+      });
+    }
+
+    return {
+      name: row?.name ?? null,
+      currentTempPassword: row?.temp_password ?? null,
+      history: (history ?? []).map((h) => ({
+        id: h.id,
+        temp_password: h.temp_password,
+        created_at: h.created_at,
+        issued_by_email: h.issued_by ? issuerMap.get(h.issued_by) ?? null : null,
+      })),
+    };
   });
 
 
