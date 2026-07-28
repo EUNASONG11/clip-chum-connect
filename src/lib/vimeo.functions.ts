@@ -776,7 +776,60 @@ export const issueStudentTempPassword = createServerFn({ method: "POST" })
       .eq("id", row.id);
     if (updExtErr) throw new Error(updExtErr.message);
 
+    await supabaseAdmin.from("student_temp_password_history").insert({
+      auth_user_id: data.userId,
+      external_student_id: row.id,
+      temp_password: tempPassword,
+      issued_by: context.userId,
+    });
+
     return { tempPassword, name: row.name };
+  });
+
+// 관리자: 학생의 현재 임시 비밀번호 + 발급 이력 조회
+export const getStudentTempPasswordInfo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: row } = await supabaseAdmin
+      .from("external_students")
+      .select("id, name, temp_password")
+      .eq("auth_user_id", data.userId)
+      .maybeSingle();
+
+    const { data: history } = await supabaseAdmin
+      .from("student_temp_password_history")
+      .select("id, temp_password, issued_by, created_at")
+      .eq("auth_user_id", data.userId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const issuerIds = Array.from(
+      new Set((history ?? []).map((h) => h.issued_by).filter(Boolean) as string[]),
+    );
+    const issuerMap = new Map<string, string>();
+    if (issuerIds.length > 0) {
+      const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+      users?.users.forEach((u) => {
+        if (issuerIds.includes(u.id)) issuerMap.set(u.id, u.email ?? u.id);
+      });
+    }
+
+    return {
+      name: row?.name ?? null,
+      currentTempPassword: row?.temp_password ?? null,
+      history: (history ?? []).map((h) => ({
+        id: h.id,
+        temp_password: h.temp_password,
+        created_at: h.created_at,
+        issued_by_email: h.issued_by ? issuerMap.get(h.issued_by) ?? null : null,
+      })),
+    };
   });
 
 
