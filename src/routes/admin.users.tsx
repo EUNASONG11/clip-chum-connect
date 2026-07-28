@@ -25,6 +25,7 @@ import {
   bulkApproveUsers,
   revertToPending,
   bulkCreateInstructorAccounts,
+  issueStudentTempPassword,
 } from "@/lib/vimeo.functions";
 import { AdminOnly } from "@/components/AdminRole";
 
