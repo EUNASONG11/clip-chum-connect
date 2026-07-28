@@ -86,37 +86,59 @@ function Home() {
         )}
 
         <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-3">
-          {classes.map((c: any) => (
-            <Link
-              key={c.id}
-              to="/class/$id"
-              params={{ id: c.id }}
-              className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg"
-            >
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                {c.thumbnail_url ? (
-                  <ClassThumb
-                    src={c.thumbnail_url}
-                    alt={c.name}
-                    className="h-full w-full object-cover transition group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center">
-                    <Film className="h-10 w-10 text-muted-foreground/60" />
-                  </div>
-                )}
-
-              </div>
-              <div className="p-3">
-                <h3 className="truncate text-sm font-semibold group-hover:text-primary">{c.name}</h3>
-                {c.description && (
-                  <p className="line-clamp-2 mt-0.5 text-xs text-muted-foreground">
-                    {c.description}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
+          {classes.map((c: any) => {
+            const today = new Date().toISOString().slice(0, 10);
+            const isExpired = c.active_to && today > c.active_to;
+            const isUpcoming = c.active_from && today < c.active_from;
+            const isInactive = isExpired || isUpcoming;
+            return (
+              <Link
+                key={c.id}
+                to="/class/$id"
+                params={{ id: c.id }}
+                className={`group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg ${
+                  isInactive ? "opacity-60" : ""
+                }`}
+              >
+                <div className="relative aspect-video w-full overflow-hidden bg-muted">
+                  {c.thumbnail_url ? (
+                    <ClassThumb
+                      src={c.thumbnail_url}
+                      alt={c.name}
+                      className="h-full w-full object-cover transition group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Film className="h-10 w-10 text-muted-foreground/60" />
+                    </div>
+                  )}
+                  {isExpired && (
+                    <span className="absolute left-2 top-2 rounded bg-red-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                      종료됨
+                    </span>
+                  )}
+                  {isUpcoming && (
+                    <span className="absolute left-2 top-2 rounded bg-yellow-500 px-2 py-0.5 text-[10px] font-medium text-white">
+                      시작 예정
+                    </span>
+                  )}
+                </div>
+                <div className="p-3">
+                  <h3 className="truncate text-sm font-semibold group-hover:text-primary">{c.name}</h3>
+                  {c.description && (
+                    <p className="line-clamp-2 mt-0.5 text-xs text-muted-foreground">
+                      {c.description}
+                    </p>
+                  )}
+                  {(c.active_from || c.active_to) && (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </main>
     </div>

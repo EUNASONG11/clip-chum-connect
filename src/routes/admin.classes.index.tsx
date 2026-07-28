@@ -29,6 +29,7 @@ function ClassesPage() {
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [alwaysActive, setAlwaysActive] = useState(false);
   const [activeFrom, setActiveFrom] = useState("");
   const [activeTo, setActiveTo] = useState("");
   const [saving, setSaving] = useState(false);
@@ -52,16 +53,18 @@ function ClassesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
-    if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하세요.");
-    if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    if (!alwaysActive) {
+      if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하거나 상시 활성을 체크하세요.");
+      if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    }
     setSaving(true);
     try {
       const row: any = await createClass({
         data: {
           name: name.trim(),
           description: desc || null,
-          active_from: activeFrom,
-          active_to: activeTo,
+          active_from: alwaysActive ? null : activeFrom,
+          active_to: alwaysActive ? null : activeTo,
         },
       });
       if (thumbFile && row?.id) {
@@ -76,6 +79,7 @@ function ClassesPage() {
 
       setName("");
       setDesc("");
+      setAlwaysActive(false);
       setActiveFrom("");
       setActiveTo("");
       setThumbFile(null);
@@ -140,11 +144,28 @@ function ClassesPage() {
                   />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
-                      <p className="truncate font-medium">{c.name}</p>
-                      {(c.active_from || c.active_to) && (
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium">{c.name}</p>
+                        {(() => {
+                          const today = new Date().toISOString().slice(0, 10);
+                          if (!c.active_from && !c.active_to) {
+                            return <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-700">상시</span>;
+                          }
+                          if (c.active_to && today > c.active_to) {
+                            return <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-700">종료됨</span>;
+                          }
+                          if (c.active_from && today < c.active_from) {
+                            return <span className="rounded bg-yellow-500/15 px-1.5 py-0.5 text-[10px] text-yellow-700">예정</span>;
+                          }
+                          return <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-700">진행중</span>;
+                        })()}
+                      </div>
+                      {(c.active_from || c.active_to) ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           기간: {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
                         </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">기간: 상시 활성</p>
                       )}
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
@@ -187,16 +208,28 @@ function ClassesPage() {
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="active_from">활성 시작일</Label>
-                  <Input id="active_from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} required />
-                </div>
-                <div>
-                  <Label htmlFor="active_to">활성 종료일</Label>
-                  <Input id="active_to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} required />
-                </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="always_active"
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={alwaysActive}
+                  onChange={(e) => setAlwaysActive(e.target.checked)}
+                />
+                <Label htmlFor="always_active" className="cursor-pointer">상시 활성 (기간 제한 없음)</Label>
               </div>
+              {!alwaysActive && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="active_from">활성 시작일</Label>
+                    <Input id="active_from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} required={!alwaysActive} />
+                  </div>
+                  <div>
+                    <Label htmlFor="active_to">활성 종료일</Label>
+                    <Input id="active_to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} required={!alwaysActive} />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label>썸네일 (선택)</Label>
