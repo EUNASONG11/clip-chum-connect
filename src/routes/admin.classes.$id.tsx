@@ -83,11 +83,14 @@ function ClassDetailPage() {
   const [editingFolderName, setEditingFolderName] = useState("");
   const [settingsFrom, setSettingsFrom] = useState("");
   const [settingsTo, setSettingsTo] = useState("");
+  const [settingsAlways, setSettingsAlways] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
 
   const clsAny: any = cls;
   useEffect(() => {
     if (clsAny) {
+      const always = !clsAny.active_from && !clsAny.active_to;
+      setSettingsAlways(always);
       setSettingsFrom(clsAny.active_from ?? "");
       setSettingsTo(clsAny.active_to ?? "");
     }
@@ -95,11 +98,19 @@ function ClassDetailPage() {
 
 
   const saveSettings = async () => {
-    if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하세요.");
-    if (settingsFrom > settingsTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    if (!settingsAlways) {
+      if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하거나 상시 활성을 체크하세요.");
+      if (settingsFrom > settingsTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    }
     setSavingSettings(true);
     try {
-      await updateClass({ data: { id, active_from: settingsFrom, active_to: settingsTo } });
+      await updateClass({
+        data: {
+          id,
+          active_from: settingsAlways ? null : settingsFrom,
+          active_to: settingsAlways ? null : settingsTo,
+        },
+      });
       toast.success("저장되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
     } catch (err: any) {
