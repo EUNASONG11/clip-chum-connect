@@ -26,8 +26,16 @@ import {
   revertToPending,
   bulkCreateInstructorAccounts,
   issueStudentTempPassword,
+  getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
 import { AdminOnly } from "@/components/AdminRole";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
