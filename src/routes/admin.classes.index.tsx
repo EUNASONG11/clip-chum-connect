@@ -106,6 +106,7 @@ function ClassesPage() {
           description: desc || null,
           active_from: alwaysActive ? null : activeFrom,
           active_to: alwaysActive ? null : activeTo,
+          category_id: categoryId === "__none__" ? null : categoryId,
         },
       });
       if (thumbFile && row?.id) {
@@ -123,12 +124,14 @@ function ClassesPage() {
       setAlwaysActive(false);
       setActiveFrom("");
       setActiveTo("");
+      setCategoryId("__none__");
       setThumbFile(null);
       setThumbPreview(null);
       if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "classes"] });
       setTab("list");
+
     } catch (err: any) {
       toast.error(err.message);
     } finally {
