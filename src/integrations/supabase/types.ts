@@ -394,6 +394,33 @@ export type Database = {
         }
         Relationships: []
       }
+      student_temp_password_history: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          external_student_id: string | null
+          id: string
+          issued_by: string | null
+          temp_password: string
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          external_student_id?: string | null
+          id?: string
+          issued_by?: string | null
+          temp_password: string
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          external_student_id?: string | null
+          id?: string
+          issued_by?: string | null
+          temp_password?: string
+        }
+        Relationships: []
+      }
       team_members: {
         Row: {
           created_at: string
