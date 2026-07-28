@@ -141,12 +141,60 @@ function ClassesPage() {
   };
 
 
-  const remove = async (id: string) => {
-    if (!confirm("이 수강반을 삭제하시겠습니까? 배정된 학생 정보도 삭제됩니다.")) return;
+  const submitCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catName.trim()) return toast.error("카테고리 이름을 입력하세요.");
+    setCatSaving(true);
     try {
-      await deleteClass({ data: { id } });
+      await createClassCategory({
+        data: { name: catName.trim(), color: catColor || null },
+      });
+      setCatName("");
+      setCatColor("#22c55e");
+      toast.success("카테고리가 추가되었습니다.");
+      qc.invalidateQueries({ queryKey: ["admin", "class-categories"] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setCatSaving(false);
+    }
+  };
+
+  const saveCategoryEdit = async () => {
+    if (!editingCatId) return;
+    if (!editingCatName.trim()) return toast.error("이름을 입력하세요.");
+    try {
+      await updateClassCategory({
+        data: { id: editingCatId, name: editingCatName.trim(), color: editingCatColor || null },
+      });
+      setEditingCatId(null);
+      qc.invalidateQueries({ queryKey: ["admin", "class-categories"] });
+      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
+      toast.success("수정되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const removeCategory = async (id: string) => {
+    if (!confirm("이 카테고리를 삭제하시겠습니까? 소속된 수강반은 카테고리 미지정으로 변경됩니다.")) return;
+    try {
+      await deleteClassCategory({ data: { id } });
+      qc.invalidateQueries({ queryKey: ["admin", "class-categories"] });
       qc.invalidateQueries({ queryKey: ["admin", "classes"] });
       toast.success("삭제되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const changeClassCategory = async (classId: string, value: string) => {
+    try {
+      await updateClass({
+        data: { id: classId, category_id: value === "__none__" ? null : value },
+      });
+      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
+      toast.success("카테고리가 변경되었습니다.");
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -161,21 +209,42 @@ function ClassesPage() {
         <TabsTrigger value="create" className="gap-1">
           <Plus className="h-4 w-4" /> 수강반 생성
         </TabsTrigger>
+        <TabsTrigger value="categories" className="gap-1">
+          <Tag className="h-4 w-4" /> 카테고리
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="list">
         <Card>
-          <CardHeader>
-            <CardTitle>수강반 목록 ({classes.length})</CardTitle>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>수강반 목록 ({filteredClasses.length}/{classes.length})</CardTitle>
+            <div className="w-full sm:w-56">
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="카테고리 필터" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">전체 카테고리</SelectItem>
+                  <SelectItem value="__none__">미지정</SelectItem>
+                  {(categories as any[]).map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {isLoading ? (
               <p className="p-6 text-sm text-muted-foreground">불러오는 중...</p>
-            ) : classes.length === 0 ? (
-              <p className="p-6 text-sm text-muted-foreground">아직 등록된 수강반이 없습니다.</p>
+            ) : filteredClasses.length === 0 ? (
+              <p className="p-6 text-sm text-muted-foreground">해당 조건의 수강반이 없습니다.</p>
             ) : (
             <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
-              {classes.map((c: any) => (
+              {filteredClasses.map((c: any) => {
+                const cat = c.category_id ? categoryMap.get(c.category_id) : null;
+                return (
                 <div
                   key={c.id}
                   className="flex flex-col overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition hover:shadow-md"
@@ -188,7 +257,7 @@ function ClassesPage() {
                   />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-medium">{c.name}</p>
                         {(() => {
                           const today = new Date().toISOString().slice(0, 10);
@@ -203,6 +272,18 @@ function ClassesPage() {
                           }
                           return <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-700">진행중</span>;
                         })()}
+                        {cat && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                            style={{
+                              backgroundColor: `${cat.color ?? "#64748b"}22`,
+                              color: cat.color ?? "#334155",
+                            }}
+                          >
+                            <Tag className="h-3 w-3" />
+                            {cat.name}
+                          </span>
+                        )}
                       </div>
                       {(c.active_from || c.active_to) ? (
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -214,6 +295,24 @@ function ClassesPage() {
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
+                      <div className="mt-2">
+                        <Select
+                          value={c.category_id ?? "__none__"}
+                          onValueChange={(v) => changeClassCategory(c.id, v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="카테고리 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">미지정</SelectItem>
+                            {(categories as any[]).map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="mt-4 flex items-center gap-2">
@@ -228,7 +327,8 @@ function ClassesPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             )}
           </CardContent>
@@ -251,6 +351,27 @@ function ClassesPage() {
               <div>
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
+              </div>
+              <div>
+                <Label>카테고리</Label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="카테고리 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">미지정</SelectItem>
+                    {(categories as any[]).map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {(categories as any[]).length === 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    카테고리가 없습니다. "카테고리" 탭에서 먼저 추가하세요.
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -317,6 +438,101 @@ function ClassesPage() {
           </CardContent>
         </Card>
       </TabsContent>
+
+      <TabsContent value="categories">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Tag className="h-5 w-5" /> 카테고리 관리
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <form onSubmit={submitCategory} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <Label htmlFor="cat_name">이름</Label>
+                <Input
+                  id="cat_name"
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  placeholder="예: 초등, 중등, 고등, 특강"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cat_color">색상</Label>
+                <Input
+                  id="cat_color"
+                  type="color"
+                  value={catColor}
+                  onChange={(e) => setCatColor(e.target.value)}
+                  className="h-10 w-16 p-1"
+                />
+              </div>
+              <Button type="submit" disabled={catSaving}>
+                {catSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />}
+                추가
+              </Button>
+            </form>
+
+            <div className="divide-y rounded-md border">
+              {(categories as any[]).length === 0 ? (
+                <p className="p-4 text-sm text-muted-foreground">등록된 카테고리가 없습니다.</p>
+              ) : (
+                (categories as any[]).map((cat) => {
+                  const count = (classes as any[]).filter((c) => c.category_id === cat.id).length;
+                  const isEditing = editingCatId === cat.id;
+                  return (
+                    <div key={cat.id} className="flex items-center gap-3 p-3">
+                      {isEditing ? (
+                        <>
+                          <Input
+                            type="color"
+                            value={editingCatColor}
+                            onChange={(e) => setEditingCatColor(e.target.value)}
+                            className="h-9 w-14 p-1"
+                          />
+                          <Input
+                            value={editingCatName}
+                            onChange={(e) => setEditingCatName(e.target.value)}
+                            className="h-9 flex-1"
+                          />
+                          <Button size="sm" onClick={saveCategoryEdit}>저장</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingCatId(null)}>
+                            취소
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            className="inline-block h-4 w-4 flex-shrink-0 rounded"
+                            style={{ backgroundColor: cat.color ?? "#94a3b8" }}
+                          />
+                          <span className="flex-1 truncate font-medium">{cat.name}</span>
+                          <span className="text-xs text-muted-foreground">{count}개 수강반</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingCatId(cat.id);
+                              setEditingCatName(cat.name);
+                              setEditingCatColor(cat.color ?? "#22c55e");
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => removeCategory(cat.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
     </Tabs>
   );
 }
+
