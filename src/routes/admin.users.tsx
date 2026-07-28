@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import {
   listUsers,
-  grantAdminByEmail,
   revokeAdmin,
   approveUser,
   rejectUser,
