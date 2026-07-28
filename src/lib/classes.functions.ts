@@ -182,6 +182,7 @@ export const updateClass = createServerFn({ method: "POST" })
         thumbnail_url: z.string().max(1000).nullable().optional(),
         active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        category_id: z.string().uuid().nullable().optional(),
       })
       .parse(i),
   )
@@ -194,6 +195,8 @@ export const updateClass = createServerFn({ method: "POST" })
     if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
     if (data.active_from !== undefined) patch.active_from = data.active_from;
     if (data.active_to !== undefined) patch.active_to = data.active_to;
+    if (data.category_id !== undefined) patch.category_id = data.category_id;
+
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("classes")
