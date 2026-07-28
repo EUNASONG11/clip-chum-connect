@@ -181,19 +181,6 @@ function UsersPage() {
     }
   };
 
-  const doGrantAdminRow = async (u: UserRow) => {
-    setBusyId(u.id);
-    try {
-      await grantAdminByEmail({ data: { email: u.email } });
-      toast.success("관리자로 지정했습니다.");
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const doRevertToPending = async (u: UserRow) => {
     if (!confirm(`${u.nickname || u.email} 을(를) 승인 대기 상태로 되돌리시겠습니까?`)) return;
     setBusyId(u.id);
