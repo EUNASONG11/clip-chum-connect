@@ -284,3 +284,45 @@ export const listAllClassesForAdmin = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return data ?? [];
   });
+
+// 승인된 학생만 검색 (팀 멤버 추가용)
+export const searchApprovedStudents = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const q = data.query.trim();
+    const digits = q.replace(/[^0-9]/g, "");
+    let builder = supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone, school, grade")
+      .not("auth_user_id", "is", null)
+      .eq("is_deleted", false)
+      .limit(50);
+    if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
+      builder = builder.ilike("phone", `%${digits}%`);
+    } else {
+      builder = builder.ilike("name", `%${q}%`);
+    }
+    const { data: rows, error } = await builder;
+    if (error) throw new Error(error.message);
+    const ids = (rows ?? []).map((r: any) => r.auth_user_id).filter(Boolean);
+    if (ids.length === 0) return [];
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "student")
+      .in("user_id", ids);
+    const approved = new Set((roles ?? []).map((r: any) => r.user_id));
+    return (rows ?? [])
+      .filter((r: any) => approved.has(r.auth_user_id))
+      .slice(0, 20)
+      .map((r: any) => ({
+        user_id: r.auth_user_id as string,
+        name: r.name as string,
+        phone: (r.phone as string) ?? "",
+        school: (r.school as string) ?? "",
+        grade: (r.grade as string) ?? "",
+      }));
+  });
