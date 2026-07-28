@@ -141,6 +141,8 @@ export const createClass = createServerFn({ method: "POST" })
       .object({
         name: z.string().min(1).max(100),
         description: z.string().max(2000).optional().nullable(),
+        active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .parse(i),
   )
@@ -151,6 +153,8 @@ export const createClass = createServerFn({ method: "POST" })
       .insert({
         name: data.name,
         description: data.description ?? null,
+        active_from: data.active_from ?? null,
+        active_to: data.active_to ?? null,
         created_by: context.userId,
       })
       .select("*")
@@ -169,6 +173,8 @@ export const updateClass = createServerFn({ method: "POST" })
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(2000).optional().nullable(),
         thumbnail_url: z.string().max(1000).nullable().optional(),
+        active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .parse(i),
   )
@@ -179,6 +185,8 @@ export const updateClass = createServerFn({ method: "POST" })
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
     if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
+    if (data.active_from !== undefined) patch.active_from = data.active_from;
+    if (data.active_to !== undefined) patch.active_to = data.active_to;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("classes")
@@ -187,6 +195,7 @@ export const updateClass = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 수강반 삭제
 export const deleteClass = createServerFn({ method: "POST" })
