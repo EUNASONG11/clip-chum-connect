@@ -85,7 +85,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (admin) {
       const { data, error } = await supabaseAdmin
         .from("classes")
-        .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
+        .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -110,13 +110,14 @@ export const listClasses = createServerFn({ method: "GET" })
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const { data, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
       .or(orParts.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
     return data ?? [];
   });
+
 
 
 // 단일 수강반 조회
