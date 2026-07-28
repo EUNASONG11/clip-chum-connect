@@ -43,16 +43,40 @@ function ClassesPage() {
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
   });
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin", "class-categories"],
+    queryFn: () => listClassCategories(),
+  });
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [alwaysActive, setAlwaysActive] = useState(false);
   const [activeFrom, setActiveFrom] = useState("");
   const [activeTo, setActiveTo] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("__none__");
+  const [filterCategory, setFilterCategory] = useState<string>("__all__");
   const [saving, setSaving] = useState(false);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // 카테고리 관리 폼 상태
+  const [catName, setCatName] = useState("");
+  const [catColor, setCatColor] = useState("#22c55e");
+  const [catSaving, setCatSaving] = useState(false);
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editingCatName, setEditingCatName] = useState("");
+  const [editingCatColor, setEditingCatColor] = useState("#22c55e");
+
+  const categoryMap = new Map<string, any>(
+    (categories as any[]).map((c) => [c.id as string, c]),
+  );
+  const filteredClasses = (classes as any[]).filter((c) => {
+    if (filterCategory === "__all__") return true;
+    if (filterCategory === "__none__") return !c.category_id;
+    return c.category_id === filterCategory;
+  });
+
 
 
   const pickThumb = (file: File | null) => {
