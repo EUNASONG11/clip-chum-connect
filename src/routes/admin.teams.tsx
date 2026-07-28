@@ -281,7 +281,7 @@ function TeamDetailDialog({ teamId, onClose }: { teamId: string; onClose: () => 
     if (!query.trim()) return;
     setSearching(true);
     try {
-      const rows = await searchStudentsByNameOrPhone({ data: { query: query.trim() } });
+      const rows = await searchApprovedStudents({ data: { query: query.trim() } });
       const memberIds = new Set((team?.members ?? []).map((m: any) => m.user_id));
       setResults(rows.filter((r: any) => !memberIds.has(r.user_id)));
     } catch (e: any) {
