@@ -245,8 +245,8 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: videos }, { data: students }, { data: progress }] = await Promise.all([
-      supabaseAdmin.from("videos").select("id, title").eq("class_id", data.classId),
+    const [{ data: videos }, { data: students }, { data: progress }, { data: history }] = await Promise.all([
+      supabaseAdmin.from("videos").select("id, title, created_at").eq("class_id", data.classId),
       supabaseAdmin.from("class_students").select("user_id").eq("class_id", data.classId),
       supabaseAdmin
         .from("videos")
@@ -260,21 +260,39 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
             .select("video_id, user_id, watched_ratio, is_completed, updated_at")
             .in("video_id", ids);
         }),
+      supabaseAdmin
+        .from("class_enrollment_history")
+        .select("user_id, action, created_at")
+        .eq("class_id", data.classId)
+        .eq("action", "added"),
     ]);
-    const videoIds = new Set((videos ?? []).map((v: any) => v.id));
-    const studentIds = (students ?? []).map((s: any) => s.user_id);
+    const videoList = (videos ?? []) as { id: string; created_at: string }[];
+    const videoIds = new Set(videoList.map((v) => v.id));
+    const studentIds = ((students ?? []) as any[]).map((s: any) => s.user_id);
     const { data: ext } = await supabaseAdmin
       .from("external_students")
       .select("auth_user_id, name, phone")
       .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
-    const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
+    const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
 
-    const rel = (progress ?? []).filter((p: any) => videoIds.has(p.video_id));
+    // 학생별 현재 배정 시작일
+    const enrollStart = new Map<string, string>();
+    ((history ?? []) as any[]).forEach((h: any) => {
+      const prev = enrollStart.get(h.user_id);
+      if (!prev || h.created_at > prev) enrollStart.set(h.user_id, h.created_at);
+    });
+
+    const rel = ((progress ?? []) as any[]).filter((p: any) => videoIds.has(p.video_id));
     return studentIds.map((uid) => {
-      const mine = rel.filter((p: any) => p.user_id === uid);
+      const start = enrollStart.get(uid);
+      const eligibleVideoIds = new Set(
+        start ? videoList.filter((v) => v.created_at >= start).map((v) => v.id) : videoList.map((v) => v.id),
+      );
+      const eligibleTotal = eligibleVideoIds.size;
+      const mine = rel.filter((p: any) => p.user_id === uid && eligibleVideoIds.has(p.video_id));
       const completed = mine.filter((p: any) => p.is_completed).length;
-      const avg = mine.length > 0
-        ? mine.reduce((s: number, p: any) => s + Number(p.watched_ratio ?? 0), 0) / videoIds.size
+      const avg = eligibleTotal > 0
+        ? mine.reduce((s: number, p: any) => s + Number(p.watched_ratio ?? 0), 0) / eligibleTotal
         : 0;
       const lastActivity = mine.reduce(
         (max: string | null, p: any) => (!max || p.updated_at > max ? p.updated_at : max),
@@ -285,10 +303,12 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         user_id: uid,
         name: e?.name ?? "",
         phone: e?.phone ?? "",
-        video_total: videoIds.size,
+        video_total: eligibleTotal,
         completed,
         avg_watched_ratio: Math.min(1, avg),
         last_activity: lastActivity,
+        enrolled_at: start ?? null,
       };
     });
   });
+
