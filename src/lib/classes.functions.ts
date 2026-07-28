@@ -147,6 +147,7 @@ export const createClass = createServerFn({ method: "POST" })
         description: z.string().max(2000).optional().nullable(),
         active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        category_id: z.string().uuid().nullable().optional(),
       })
       .parse(i),
   )
@@ -159,6 +160,7 @@ export const createClass = createServerFn({ method: "POST" })
         description: data.description ?? null,
         active_from: data.active_from ?? null,
         active_to: data.active_to ?? null,
+        category_id: data.category_id ?? null,
         created_by: context.userId,
       })
       .select("*")
@@ -166,6 +168,7 @@ export const createClass = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return row;
   });
+
 
 // 수강반 수정
 export const updateClass = createServerFn({ method: "POST" })
