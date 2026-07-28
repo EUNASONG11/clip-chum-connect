@@ -129,12 +129,13 @@ export const getClass = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row;
   });
+
 
 // 수강반 생성
 export const createClass = createServerFn({ method: "POST" })
