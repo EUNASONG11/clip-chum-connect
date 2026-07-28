@@ -85,7 +85,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (admin) {
       const { data, error } = await supabaseAdmin
         .from("classes")
-        .select("id, name, description, thumbnail_url, created_at, created_by")
+        .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -110,7 +110,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const { data, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
       .or(orParts.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -126,7 +126,7 @@ export const getClass = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
