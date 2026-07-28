@@ -369,7 +369,7 @@ export const listUsers = createServerFn({ method: "GET" })
           async () =>
             await supabaseAdmin
               .from("external_students")
-              .select("auth_user_id, name, phone, enrollment_status")
+              .select("auth_user_id, name, phone, enrollment_status, temp_password")
               .not("auth_user_id", "is", null)
               .range(from, from + size - 1),
           `external_students range ${from}`,
