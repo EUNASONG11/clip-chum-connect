@@ -25,6 +25,7 @@ import {
   bulkApproveUsers,
   revertToPending,
   bulkCreateInstructorAccounts,
+  issueStudentTempPassword,
 } from "@/lib/vimeo.functions";
 import { AdminOnly } from "@/components/AdminRole";
 
@@ -192,6 +193,23 @@ function UsersPage() {
       refetch();
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doIssueTempPassword = async (u: UserRow) => {
+    if (!confirm(`${u.nickname || "학생"} 님에게 임시 비밀번호를 발급하시겠습니까?\n기존 비밀번호는 재설정되며, 새 임시코드로만 로그인할 수 있습니다.`)) return;
+    setBusyId(u.id);
+    try {
+      const res = await issueStudentTempPassword({ data: { userId: u.id } });
+      window.prompt(
+        `${res.name ?? u.nickname} 님의 임시 비밀번호입니다. 복사하여 학생에게 전달하세요.\n(로그인: 이름 + 아래 8자리 코드)`,
+        res.tempPassword,
+      );
+      toast.success("임시 비밀번호가 발급되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message ?? "발급에 실패했습니다.");
     } finally {
       setBusyId(null);
     }
@@ -492,6 +510,18 @@ function UsersPage() {
                               className="gap-1"
                             >
                               <Clock className="h-3.5 w-3.5" /> 승인 대기로
+                            </Button>
+                          )}
+                          {u.isStudent && !u.phone && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doIssueTempPassword(u)}
+                              className="gap-1"
+                              title="전화번호가 없는 학생에게 임시 비밀번호를 발급합니다"
+                            >
+                              임시 비밀번호 발급
                             </Button>
                           )}
 

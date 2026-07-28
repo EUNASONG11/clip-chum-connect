@@ -303,6 +303,7 @@ export type Database = {
           phone: string | null
           school: string | null
           synced_at: string
+          temp_password: string | null
           updated_at: string
         }
         Insert: {
@@ -318,6 +319,7 @@ export type Database = {
           phone?: string | null
           school?: string | null
           synced_at?: string
+          temp_password?: string | null
           updated_at?: string
         }
         Update: {
@@ -333,6 +335,7 @@ export type Database = {
           phone?: string | null
           school?: string | null
           synced_at?: string
+          temp_password?: string | null
           updated_at?: string
         }
         Relationships: []

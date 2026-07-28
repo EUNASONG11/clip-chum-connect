@@ -673,15 +673,44 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const phoneDigits = data.phone.replace(/[^0-9]/g, "");
+    const raw = data.phone.trim();
+    const phoneDigits = raw.replace(/[^0-9]/g, "");
+    const name = data.name.trim();
+
+    // 1) 임시 비밀번호 경로: 이름 + temp_password 정확히 일치하는 학생 우선 조회.
+    //    관리자가 발급한 임시 코드는 전화번호 없는 학생용이므로 phone 필터 없음.
+    {
+      const { data: tempRows, error: tempErr } = await supabaseAdmin
+        .from("external_students")
+        .select("name, auth_user_id, is_deleted, temp_password")
+        .eq("name", name)
+        .eq("temp_password", raw)
+        .limit(2);
+      if (tempErr) throw new Error(tempErr.message);
+      const activeTemp = (tempRows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+      if (activeTemp.length > 1) {
+        throw new Error("동일 이름의 임시 코드가 중복됩니다. 관리자에게 문의하세요.");
+      }
+      if (activeTemp.length === 1) {
+        const row = activeTemp[0];
+        const { data: userRes, error: userErr } =
+          await supabaseAdmin.auth.admin.getUserById(row.auth_user_id!);
+        if (userErr || !userRes?.user?.email) {
+          throw new Error("계정 정보를 불러올 수 없습니다.");
+        }
+        return { email: userRes.user.email, initialPassword: raw };
+      }
+    }
+
+    // 2) 기존 전화번호 경로.
     if (phoneDigits.length < 8) {
-      throw new Error("전화번호는 숫자 8자리 이상이어야 합니다.");
+      throw new Error("전화번호(또는 임시 비밀번호)가 올바르지 않습니다.");
     }
 
     const { data: rows, error } = await supabaseAdmin
       .from("external_students")
       .select("name, phone, auth_user_id, is_deleted")
-      .eq("name", data.name.trim())
+      .eq("name", name)
       .eq("phone", phoneDigits)
       .limit(2);
     if (error) throw new Error(error.message);
@@ -708,6 +737,45 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
     }
 
     throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
+  });
+
+// 관리자: 전화번호 없는 학생에게 8자리 랜덤 숫자 임시 비밀번호 발급.
+// 발급값을 auth 비밀번호 및 external_students.temp_password 에 저장 → 이름+임시코드로 로그인.
+export const issueStudentTempPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: row, error: rowErr } = await supabaseAdmin
+      .from("external_students")
+      .select("id, name, auth_user_id, is_deleted")
+      .eq("auth_user_id", data.userId)
+      .maybeSingle();
+    if (rowErr) throw new Error(rowErr.message);
+    if (!row) throw new Error("해당 학생의 미러 정보를 찾을 수 없습니다.");
+    if (row.is_deleted) throw new Error("삭제된 학생입니다.");
+
+    const tempPassword = Array.from({ length: 8 }, () =>
+      Math.floor(Math.random() * 10).toString(),
+    ).join("");
+
+    const { error: updAuthErr } = await supabaseAdmin.auth.admin.updateUserById(
+      data.userId,
+      { password: tempPassword },
+    );
+    if (updAuthErr) throw new Error(updAuthErr.message);
+
+    const { error: updExtErr } = await supabaseAdmin
+      .from("external_students")
+      .update({ temp_password: tempPassword })
+      .eq("id", row.id);
+    if (updExtErr) throw new Error(updExtErr.message);
+
+    return { tempPassword, name: row.name };
   });
 
 

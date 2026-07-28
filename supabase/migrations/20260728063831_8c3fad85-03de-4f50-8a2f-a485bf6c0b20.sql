@@ -1,0 +1,2 @@
+ALTER TABLE public.external_students ADD COLUMN IF NOT EXISTS temp_password text;
+CREATE INDEX IF NOT EXISTS idx_external_students_temp_password ON public.external_students (temp_password) WHERE temp_password IS NOT NULL;
