@@ -136,23 +136,6 @@ function UsersPage() {
 
   const refetch = () => qc.refetchQueries({ queryKey: ["admin", "users"] });
 
-  const grantAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = grantEmail.trim();
-    if (!email) return;
-    setGranting(true);
-    try {
-      await grantAdminByEmail({ data: { email } });
-      toast.success("관리자 권한을 부여했습니다.");
-      setGrantEmail("");
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setGranting(false);
-    }
-  };
-
   const roleName = (r: "student" | "admin" | "instructor") =>
     r === "admin" ? "관리자" : r === "instructor" ? "강사" : "학생";
 
