@@ -310,20 +310,6 @@ function UsersPage() {
             />
 
           </div>
-          {tab === "instructor" && (
-            <form onSubmit={grantAdmin} className="flex flex-1 gap-2 sm:max-w-md">
-              <Input
-                type="email"
-                placeholder="이메일로 관리자 지정"
-                value={grantEmail}
-                onChange={(e) => setGrantEmail(e.target.value)}
-                required
-              />
-              <Button type="submit" disabled={granting} className="gap-1 whitespace-nowrap">
-                <UserPlus className="h-4 w-4" /> {granting ? "처리 중..." : "관리자 부여"}
-              </Button>
-            </form>
-          )}
         </div>
 
         {tab === "pending" && filtered.length > 0 && (
