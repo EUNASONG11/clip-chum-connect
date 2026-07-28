@@ -1,0 +1,3 @@
+ALTER TABLE public.classes
+  ADD COLUMN IF NOT EXISTS active_from DATE,
+  ADD COLUMN IF NOT EXISTS active_to DATE;
