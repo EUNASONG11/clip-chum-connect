@@ -392,9 +392,9 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
-    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null }>();
+    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }>();
     extRows.forEach((r) => {
-      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status });
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status, temp_password: r.temp_password });
     });
 
     // instructors 테이블에서 강사 정보 조회
