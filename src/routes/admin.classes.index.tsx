@@ -141,10 +141,16 @@ function ClassesPage() {
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
                       <p className="truncate font-medium">{c.name}</p>
+                      {(c.active_from || c.active_to) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          기간: {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
+                        </p>
+                      )}
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
                     </div>
+
                     <div className="mt-4 flex items-center gap-2">
                       <Button asChild size="sm" variant="outline" className="flex-1">
                         <Link to="/admin/classes/$id" params={{ id: c.id }}>
