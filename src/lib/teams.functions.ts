@@ -89,7 +89,7 @@ export const updateTeam = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, any> = {};
+    const patch: { name?: string; description?: string | null } = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description;
     const { error } = await supabaseAdmin.from("teams").update(patch).eq("id", data.id);
