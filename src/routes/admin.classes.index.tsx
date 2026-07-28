@@ -140,6 +140,17 @@ function ClassesPage() {
 
   };
 
+  const remove = async (id: string) => {
+    if (!confirm("이 수강반을 삭제하시겠습니까? 배정된 학생 정보도 삭제됩니다.")) return;
+    try {
+      await deleteClass({ data: { id } });
+      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
+      toast.success("삭제되었습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
 
   const submitCategory = async (e: React.FormEvent) => {
     e.preventDefault();
