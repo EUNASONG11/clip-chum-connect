@@ -53,16 +53,18 @@ function ClassesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
-    if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하세요.");
-    if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    if (!alwaysActive) {
+      if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하거나 상시 활성을 체크하세요.");
+      if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    }
     setSaving(true);
     try {
       const row: any = await createClass({
         data: {
           name: name.trim(),
           description: desc || null,
-          active_from: activeFrom,
-          active_to: activeTo,
+          active_from: alwaysActive ? null : activeFrom,
+          active_to: alwaysActive ? null : activeTo,
         },
       });
       if (thumbFile && row?.id) {
