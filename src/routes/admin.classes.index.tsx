@@ -144,11 +144,28 @@ function ClassesPage() {
                   />
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
-                      <p className="truncate font-medium">{c.name}</p>
-                      {(c.active_from || c.active_to) && (
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium">{c.name}</p>
+                        {(() => {
+                          const today = new Date().toISOString().slice(0, 10);
+                          if (!c.active_from && !c.active_to) {
+                            return <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-[10px] text-blue-700">상시</span>;
+                          }
+                          if (c.active_to && today > c.active_to) {
+                            return <span className="rounded bg-red-500/15 px-1.5 py-0.5 text-[10px] text-red-700">종료됨</span>;
+                          }
+                          if (c.active_from && today < c.active_from) {
+                            return <span className="rounded bg-yellow-500/15 px-1.5 py-0.5 text-[10px] text-yellow-700">예정</span>;
+                          }
+                          return <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-700">진행중</span>;
+                        })()}
+                      </div>
+                      {(c.active_from || c.active_to) ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           기간: {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
                         </p>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">기간: 상시 활성</p>
                       )}
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
