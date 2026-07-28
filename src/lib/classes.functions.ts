@@ -756,3 +756,90 @@ export const setVideoFolder = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+
+// ================= 카테고리 관리 =================
+
+// 카테고리 목록 (로그인 사용자 전체)
+export const listClassCategories = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data, error } = await context.supabase
+      .from("class_categories")
+      .select("id, name, color, sort_order, created_at")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+// 카테고리 생성 (관리자/강사)
+export const createClassCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      name: z.string().min(1).max(100),
+      color: z.string().max(20).nullable().optional(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: existing } = await supabaseAdmin
+      .from("class_categories")
+      .select("sort_order")
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
+    const { data: row, error } = await supabaseAdmin
+      .from("class_categories")
+      .insert({
+        name: data.name,
+        color: data.color ?? null,
+        sort_order: nextOrder,
+        created_by: context.userId,
+      })
+      .select("id, name, color, sort_order")
+      .single();
+    if (error) throw new Error(error.message);
+    return row;
+  });
+
+// 카테고리 수정
+export const updateClassCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      id: z.string().uuid(),
+      name: z.string().min(1).max(100).optional(),
+      color: z.string().max(20).nullable().optional(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const patch: Record<string, unknown> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.color !== undefined) patch.color = data.color;
+    if (Object.keys(patch).length === 0) return { ok: true };
+    const { error } = await supabaseAdmin
+      .from("class_categories")
+      .update(patch as any)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// 카테고리 삭제 (해당 카테고리의 수강반은 category_id가 NULL로 변경)
+export const deleteClassCategory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("class_categories")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
