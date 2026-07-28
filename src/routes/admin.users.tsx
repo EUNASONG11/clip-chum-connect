@@ -118,14 +118,16 @@ function UsersPage() {
 
   const filtered = useMemo(() => {
     const rows = buckets[tab];
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
-      (u) =>
-        u.email.toLowerCase().includes(q) ||
-        u.nickname.toLowerCase().includes(q) ||
-        (u.phone ?? "").toLowerCase().includes(q),
-    );
+    const terms = search
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 0);
+    if (terms.length === 0) return rows;
+    return rows.filter((u) => {
+      const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
+      return terms.some((term) => haystack.includes(term));
+    });
   }, [buckets, tab, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
