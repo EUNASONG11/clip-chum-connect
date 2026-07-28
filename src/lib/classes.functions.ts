@@ -25,6 +25,13 @@ async function assertAdminOrInstructor(context: { supabase: any; userId: string 
   if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
 }
 
+function isClassActive(active_from: string | null, active_to: string | null) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (active_from && today < active_from) return false;
+  if (active_to && today > active_to) return false;
+  return true;
+}
+
 async function assertOwnClassOrAdmin(
   context: { supabase: any; userId: string },
   classId: string,
@@ -34,7 +41,7 @@ async function assertOwnClassOrAdmin(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
-    .select("created_by")
+    .select("created_by, active_from, active_to")
     .eq("id", classId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -48,7 +55,7 @@ async function assertOwnClassOrAdmin(
     .eq("instructor_user_id", context.userId)
     .maybeSingle();
   if (assigned) return;
-  // 배정된 학생도 접근 허용
+  // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
     .select("class_id")
@@ -58,8 +65,11 @@ async function assertOwnClassOrAdmin(
   if (!enrolled) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
-
+  if (!isClassActive((data as any).active_from, (data as any).active_to)) {
+    throw new Error("수강 가능 기간이 아닙니다.");
+  }
 }
+
 
 async function assertAdminOnly(context: { supabase: any; userId: string }) {
   const admin = await isAdmin(context);
