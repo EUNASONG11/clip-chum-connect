@@ -91,15 +91,8 @@ function Home() {
             const isExpired = c.active_to && today > c.active_to;
             const isUpcoming = c.active_from && today < c.active_from;
             const isInactive = isExpired || isUpcoming;
-            return (
-              <Link
-                key={c.id}
-                to="/class/$id"
-                params={{ id: c.id }}
-                className={`group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg ${
-                  isInactive ? "opacity-60" : ""
-                }`}
-              >
+            const commonInner = (
+              <>
                 <div className="relative aspect-video w-full overflow-hidden bg-muted">
                   {c.thumbnail_url ? (
                     <ClassThumb
@@ -136,6 +129,27 @@ function Home() {
                     </p>
                   )}
                 </div>
+              </>
+            );
+            if (isInactive) {
+              return (
+                <div
+                  key={c.id}
+                  className="group overflow-hidden rounded-xl border bg-card opacity-60 cursor-not-allowed"
+                  title={isExpired ? "수강 기간이 종료된 수강반입니다." : "아직 시작되지 않은 수강반입니다."}
+                >
+                  {commonInner}
+                </div>
+              );
+            }
+            return (
+              <Link
+                key={c.id}
+                to="/class/$id"
+                params={{ id: c.id }}
+                className="group overflow-hidden rounded-xl border bg-card transition hover:shadow-lg"
+              >
+                {commonInner}
               </Link>
             );
           })}
