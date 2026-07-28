@@ -87,8 +87,6 @@ function UsersPage() {
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
-  const [grantEmail, setGrantEmail] = useState("");
-  const [granting, setGranting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
