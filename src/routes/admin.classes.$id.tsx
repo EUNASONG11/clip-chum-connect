@@ -766,16 +766,28 @@ function ClassDetailPage() {
                 <p className="mb-3 text-xs text-muted-foreground">
                   이 기간 동안만 학생이 수강반에 접근할 수 있습니다. (관리자/강사는 항상 접근 가능)
                 </p>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <Label htmlFor="s_from" className="text-xs">시작일</Label>
-                    <Input id="s_from" type="date" value={settingsFrom} onChange={(e) => setSettingsFrom(e.target.value)} />
-                  </div>
-                  <div>
-                    <Label htmlFor="s_to" className="text-xs">종료일</Label>
-                    <Input id="s_to" type="date" value={settingsTo} onChange={(e) => setSettingsTo(e.target.value)} />
-                  </div>
+                <div className="mb-3 flex items-center gap-2">
+                  <input
+                    id="s_always"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={settingsAlways}
+                    onChange={(e) => setSettingsAlways(e.target.checked)}
+                  />
+                  <Label htmlFor="s_always" className="cursor-pointer">상시 활성 (기간 제한 없음)</Label>
                 </div>
+                {!settingsAlways && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label htmlFor="s_from" className="text-xs">시작일</Label>
+                      <Input id="s_from" type="date" value={settingsFrom} onChange={(e) => setSettingsFrom(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label htmlFor="s_to" className="text-xs">종료일</Label>
+                      <Input id="s_to" type="date" value={settingsTo} onChange={(e) => setSettingsTo(e.target.value)} />
+                    </div>
+                  </div>
+                )}
               </div>
               <Button onClick={saveSettings} disabled={savingSettings}>
                 {savingSettings ? "저장 중..." : "저장"}
