@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  UserPlus,
   UserMinus,
   Loader2,
   Users,
@@ -20,7 +19,6 @@ import {
 } from "lucide-react";
 import {
   listUsers,
-  grantAdminByEmail,
   revokeAdmin,
   approveUser,
   rejectUser,
@@ -89,8 +87,6 @@ function UsersPage() {
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
-  const [grantEmail, setGrantEmail] = useState("");
-  const [granting, setGranting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -140,23 +136,6 @@ function UsersPage() {
 
   const refetch = () => qc.refetchQueries({ queryKey: ["admin", "users"] });
 
-  const grantAdmin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = grantEmail.trim();
-    if (!email) return;
-    setGranting(true);
-    try {
-      await grantAdminByEmail({ data: { email } });
-      toast.success("관리자 권한을 부여했습니다.");
-      setGrantEmail("");
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setGranting(false);
-    }
-  };
-
   const roleName = (r: "student" | "admin" | "instructor") =>
     r === "admin" ? "관리자" : r === "instructor" ? "강사" : "학생";
 
@@ -194,19 +173,6 @@ function UsersPage() {
     try {
       await revokeAdmin({ data: { userId: u.id } });
       toast.success("관리자 권한을 회수했습니다.");
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const doGrantAdminRow = async (u: UserRow) => {
-    setBusyId(u.id);
-    try {
-      await grantAdminByEmail({ data: { email: u.email } });
-      toast.success("관리자로 지정했습니다.");
       refetch();
     } catch (err: any) {
       toast.error(err.message);
@@ -344,20 +310,6 @@ function UsersPage() {
             />
 
           </div>
-          {tab === "instructor" && (
-            <form onSubmit={grantAdmin} className="flex flex-1 gap-2 sm:max-w-md">
-              <Input
-                type="email"
-                placeholder="이메일로 관리자 지정"
-                value={grantEmail}
-                onChange={(e) => setGrantEmail(e.target.value)}
-                required
-              />
-              <Button type="submit" disabled={granting} className="gap-1 whitespace-nowrap">
-                <UserPlus className="h-4 w-4" /> {granting ? "처리 중..." : "관리자 부여"}
-              </Button>
-            </form>
-          )}
         </div>
 
         {tab === "pending" && filtered.length > 0 && (
@@ -517,18 +469,6 @@ function UsersPage() {
                               </Button>
                             </>
                           )}
-                          {(u.isStudent || u.isInstructor) && !u.isAdmin && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => doGrantAdminRow(u)}
-                              className="gap-1"
-                            >
-                              <UserPlus className="h-3.5 w-3.5" /> 관리자로
-                            </Button>
-                          )}
-
                           {u.isAdmin && (
                             <Button
                               size="sm"
