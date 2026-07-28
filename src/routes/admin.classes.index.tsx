@@ -79,6 +79,7 @@ function ClassesPage() {
 
       setName("");
       setDesc("");
+      setAlwaysActive(false);
       setActiveFrom("");
       setActiveTo("");
       setThumbFile(null);
