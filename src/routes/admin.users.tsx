@@ -551,13 +551,13 @@ function UsersPage() {
                           {u.isStudent && !u.phone && (
                             <Button
                               size="sm"
-                              variant="outline"
+                              variant={u.has_temp_password ? "secondary" : "outline"}
                               disabled={busy}
-                              onClick={() => doIssueTempPassword(u)}
+                              onClick={() => openTempPwDialog(u)}
                               className="gap-1"
-                              title="전화번호가 없는 학생에게 임시 비밀번호를 발급합니다"
+                              title="전화번호가 없는 학생의 임시 비밀번호를 조회하거나 발급합니다"
                             >
-                              임시 비밀번호 발급
+                              {u.has_temp_password ? "임시 비밀번호 발급됨" : "임시 비밀번호 미발급"}
                             </Button>
                           )}
 
