@@ -7,9 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List, ImagePlus, X } from "lucide-react";
-import { listClasses, createClass, deleteClass, updateClass } from "@/lib/classes.functions";
+import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil } from "lucide-react";
+import {
+  listClasses,
+  createClass,
+  deleteClass,
+  updateClass,
+  listClassCategories,
+  createClassCategory,
+  updateClassCategory,
+  deleteClassCategory,
+} from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
 
 
@@ -19,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/admin/classes/")({
   component: ClassesPage,
 });
+
 
 function ClassesPage() {
   const qc = useQueryClient();
