@@ -359,7 +359,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
-    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null }[] = [];
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }[] = [];
     {
       const size = 500;
       let from = 0;
