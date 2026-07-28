@@ -512,6 +512,18 @@ function UsersPage() {
                               <Clock className="h-3.5 w-3.5" /> 승인 대기로
                             </Button>
                           )}
+                          {u.isStudent && !u.phone && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busy}
+                              onClick={() => doIssueTempPassword(u)}
+                              className="gap-1"
+                              title="전화번호가 없는 학생에게 임시 비밀번호를 발급합니다"
+                            >
+                              임시 비밀번호 발급
+                            </Button>
+                          )}
 
                         </div>
                       </td>
