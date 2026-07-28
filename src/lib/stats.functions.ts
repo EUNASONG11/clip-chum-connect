@@ -159,8 +159,8 @@ export const getClassStats = createServerFn({ method: "GET" })
 
     if (classIds.length === 0) return [];
 
-    const [{ data: videos }, { data: students }, { data: progress }] = await Promise.all([
-      supabaseAdmin.from("videos").select("id, class_id").in("class_id", classIds),
+    const [{ data: videos }, { data: students }, { data: progress }, { data: history }] = await Promise.all([
+      supabaseAdmin.from("videos").select("id, class_id, created_at").in("class_id", classIds),
       supabaseAdmin.from("class_students").select("class_id, user_id").in("class_id", classIds),
       supabaseAdmin
         .from("videos")
@@ -174,18 +174,30 @@ export const getClassStats = createServerFn({ method: "GET" })
             .select("video_id, user_id, watched_ratio, is_completed")
             .in("video_id", videoIds);
         }),
+      supabaseAdmin
+        .from("class_enrollment_history")
+        .select("class_id, user_id, action, created_at")
+        .in("class_id", classIds)
+        .eq("action", "added"),
     ]);
 
-    const videosByClass = new Map<string, string[]>();
+    const videosByClass = new Map<string, { id: string; created_at: string }[]>();
     (videos ?? []).forEach((v: any) => {
       if (!v.class_id) return;
       if (!videosByClass.has(v.class_id)) videosByClass.set(v.class_id, []);
-      videosByClass.get(v.class_id)!.push(v.id);
+      videosByClass.get(v.class_id)!.push({ id: v.id, created_at: v.created_at });
     });
     const studentsByClass = new Map<string, string[]>();
     (students ?? []).forEach((s: any) => {
       if (!studentsByClass.has(s.class_id)) studentsByClass.set(s.class_id, []);
       studentsByClass.get(s.class_id)!.push(s.user_id);
+    });
+    // 학생별 현재 배정 시작일 = 마지막 added 이벤트 시각
+    const enrollStart = new Map<string, string>();
+    (history ?? []).forEach((h: any) => {
+      const key = `${h.class_id}:${h.user_id}`;
+      const prev = enrollStart.get(key);
+      if (!prev || h.created_at > prev) enrollStart.set(key, h.created_at);
     });
     const progressByVideoUser = new Map<string, any>();
     (progress ?? []).forEach((p: any) => {
@@ -195,13 +207,16 @@ export const getClassStats = createServerFn({ method: "GET" })
     return (classes ?? []).map((c: any) => {
       const vids = videosByClass.get(c.id) ?? [];
       const studs = studentsByClass.get(c.id) ?? [];
-      const totalCells = vids.length * studs.length;
+      let totalCells = 0;
       let completedCells = 0;
       let sumRatio = 0;
       let cellsWithProgress = 0;
-      vids.forEach((vid: string) => {
-        studs.forEach((uid: string) => {
-          const p = progressByVideoUser.get(`${vid}:${uid}`);
+      studs.forEach((uid: string) => {
+        const start = enrollStart.get(`${c.id}:${uid}`);
+        const eligible = start ? vids.filter((v) => v.created_at >= start) : vids;
+        totalCells += eligible.length;
+        eligible.forEach((v) => {
+          const p = progressByVideoUser.get(`${v.id}:${uid}`);
           if (p) {
             cellsWithProgress += 1;
             sumRatio += Number(p.watched_ratio ?? 0);
@@ -217,10 +232,11 @@ export const getClassStats = createServerFn({ method: "GET" })
         total_cells: totalCells,
         completed_cells: completedCells,
         completion_rate: totalCells > 0 ? completedCells / totalCells : 0,
-        avg_watched_ratio: cellsWithProgress > 0 ? sumRatio / cellsWithProgress : 0,
+        avg_watched_ratio: totalCells > 0 ? sumRatio / totalCells : 0,
       };
     });
   });
+
 
 // 특정 수강반 학생별 상세 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStudentStats = createServerFn({ method: "GET" })
@@ -229,8 +245,8 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: videos }, { data: students }, { data: progress }] = await Promise.all([
-      supabaseAdmin.from("videos").select("id, title").eq("class_id", data.classId),
+    const [{ data: videos }, { data: students }, { data: progress }, { data: history }] = await Promise.all([
+      supabaseAdmin.from("videos").select("id, title, created_at").eq("class_id", data.classId),
       supabaseAdmin.from("class_students").select("user_id").eq("class_id", data.classId),
       supabaseAdmin
         .from("videos")
@@ -244,21 +260,39 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
             .select("video_id, user_id, watched_ratio, is_completed, updated_at")
             .in("video_id", ids);
         }),
+      supabaseAdmin
+        .from("class_enrollment_history")
+        .select("user_id, action, created_at")
+        .eq("class_id", data.classId)
+        .eq("action", "added"),
     ]);
-    const videoIds = new Set((videos ?? []).map((v: any) => v.id));
-    const studentIds = (students ?? []).map((s: any) => s.user_id);
+    const videoList = (videos ?? []) as { id: string; created_at: string }[];
+    const videoIds = new Set(videoList.map((v) => v.id));
+    const studentIds = ((students ?? []) as any[]).map((s: any) => s.user_id);
     const { data: ext } = await supabaseAdmin
       .from("external_students")
       .select("auth_user_id, name, phone")
       .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
-    const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
+    const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
 
-    const rel = (progress ?? []).filter((p: any) => videoIds.has(p.video_id));
+    // 학생별 현재 배정 시작일
+    const enrollStart = new Map<string, string>();
+    ((history ?? []) as any[]).forEach((h: any) => {
+      const prev = enrollStart.get(h.user_id);
+      if (!prev || h.created_at > prev) enrollStart.set(h.user_id, h.created_at);
+    });
+
+    const rel = ((progress ?? []) as any[]).filter((p: any) => videoIds.has(p.video_id));
     return studentIds.map((uid) => {
-      const mine = rel.filter((p: any) => p.user_id === uid);
+      const start = enrollStart.get(uid);
+      const eligibleVideoIds = new Set(
+        start ? videoList.filter((v) => v.created_at >= start).map((v) => v.id) : videoList.map((v) => v.id),
+      );
+      const eligibleTotal = eligibleVideoIds.size;
+      const mine = rel.filter((p: any) => p.user_id === uid && eligibleVideoIds.has(p.video_id));
       const completed = mine.filter((p: any) => p.is_completed).length;
-      const avg = mine.length > 0
-        ? mine.reduce((s: number, p: any) => s + Number(p.watched_ratio ?? 0), 0) / videoIds.size
+      const avg = eligibleTotal > 0
+        ? mine.reduce((s: number, p: any) => s + Number(p.watched_ratio ?? 0), 0) / eligibleTotal
         : 0;
       const lastActivity = mine.reduce(
         (max: string | null, p: any) => (!max || p.updated_at > max ? p.updated_at : max),
@@ -269,10 +303,12 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         user_id: uid,
         name: e?.name ?? "",
         phone: e?.phone ?? "",
-        video_total: videoIds.size,
+        video_total: eligibleTotal,
         completed,
         avg_watched_ratio: Math.min(1, avg),
         last_activity: lastActivity,
+        enrolled_at: start ?? null,
       };
     });
   });
+
