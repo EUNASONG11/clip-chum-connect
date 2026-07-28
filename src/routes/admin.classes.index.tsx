@@ -29,10 +29,13 @@ function ClassesPage() {
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [activeFrom, setActiveFrom] = useState("");
+  const [activeTo, setActiveTo] = useState("");
   const [saving, setSaving] = useState(false);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const pickThumb = (file: File | null) => {
     if (!file) {
