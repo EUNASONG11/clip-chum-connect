@@ -469,18 +469,6 @@ function UsersPage() {
                               </Button>
                             </>
                           )}
-                          {(u.isStudent || u.isInstructor) && !u.isAdmin && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={busy}
-                              onClick={() => doGrantAdminRow(u)}
-                              className="gap-1"
-                            >
-                              <UserPlus className="h-3.5 w-3.5" /> 관리자로
-                            </Button>
-                          )}
-
                           {u.isAdmin && (
                             <Button
                               size="sm"
