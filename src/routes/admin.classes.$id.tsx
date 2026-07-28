@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,9 @@ import {
   deleteClassFolder,
   setVideoFolder,
   listClassEnrollmentHistory,
+  updateClass,
 } from "@/lib/classes.functions";
+
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -79,6 +81,34 @@ function ClassDetailPage() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
+  const [settingsFrom, setSettingsFrom] = useState("");
+  const [settingsTo, setSettingsTo] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  const clsAny: any = cls;
+  useEffect(() => {
+    if (clsAny) {
+      setSettingsFrom(clsAny.active_from ?? "");
+      setSettingsTo(clsAny.active_to ?? "");
+    }
+  }, [clsAny?.active_from, clsAny?.active_to]);
+
+
+  const saveSettings = async () => {
+    if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하세요.");
+    if (settingsFrom > settingsTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    setSavingSettings(true);
+    try {
+      await updateClass({ data: { id, active_from: settingsFrom, active_to: settingsTo } });
+      toast.success("저장되었습니다.");
+      qc.invalidateQueries({ queryKey: ["admin", "class", id] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
 
   const refreshVideosAndFolders = () => {
     qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
@@ -237,13 +267,15 @@ function ClassDetailPage() {
       </div>
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className={isAdmin ? "grid w-full grid-cols-5" : "grid w-full grid-cols-4"}>
+        <TabsList className={isAdmin ? "grid w-full grid-cols-6" : "grid w-full grid-cols-5"}>
           <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
           {isAdmin && <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>}
           <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
+          <TabsTrigger value="settings" className="whitespace-nowrap px-2 text-xs sm:text-sm">설정</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="students">
       <Card>
@@ -711,7 +743,37 @@ function ClassDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="settings">
+          <Card>
+            <CardHeader>
+              <CardTitle>수강반 설정</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="mb-2 block">활성 기간</Label>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  이 기간 동안만 학생이 수강반에 접근할 수 있습니다. (관리자/강사는 항상 접근 가능)
+                </p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="s_from" className="text-xs">시작일</Label>
+                    <Input id="s_from" type="date" value={settingsFrom} onChange={(e) => setSettingsFrom(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="s_to" className="text-xs">종료일</Label>
+                    <Input id="s_to" type="date" value={settingsTo} onChange={(e) => setSettingsTo(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+              <Button onClick={saveSettings} disabled={savingSettings}>
+                {savingSettings ? "저장 중..." : "저장"}
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }

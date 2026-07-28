@@ -29,10 +29,13 @@ function ClassesPage() {
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [activeFrom, setActiveFrom] = useState("");
+  const [activeTo, setActiveTo] = useState("");
   const [saving, setSaving] = useState(false);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
 
   const pickThumb = (file: File | null) => {
     if (!file) {
@@ -49,9 +52,18 @@ function ClassesPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
+    if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하세요.");
+    if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
     setSaving(true);
     try {
-      const row: any = await createClass({ data: { name: name.trim(), description: desc || null } });
+      const row: any = await createClass({
+        data: {
+          name: name.trim(),
+          description: desc || null,
+          active_from: activeFrom,
+          active_to: activeTo,
+        },
+      });
       if (thumbFile && row?.id) {
         const ext = thumbFile.name.split(".").pop() || "jpg";
         const path = `${row.id}/${Date.now()}.${ext}`;
@@ -64,6 +76,8 @@ function ClassesPage() {
 
       setName("");
       setDesc("");
+      setActiveFrom("");
+      setActiveTo("");
       setThumbFile(null);
       setThumbPreview(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -75,6 +89,7 @@ function ClassesPage() {
     } finally {
       setSaving(false);
     }
+
   };
 
 
@@ -126,10 +141,16 @@ function ClassesPage() {
                   <div className="flex flex-1 flex-col p-4">
                     <div className="flex-1">
                       <p className="truncate font-medium">{c.name}</p>
+                      {(c.active_from || c.active_to) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          기간: {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
+                        </p>
+                      )}
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
                     </div>
+
                     <div className="mt-4 flex items-center gap-2">
                       <Button asChild size="sm" variant="outline" className="flex-1">
                         <Link to="/admin/classes/$id" params={{ id: c.id }}>
@@ -166,6 +187,17 @@ function ClassesPage() {
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="active_from">활성 시작일</Label>
+                  <Input id="active_from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="active_to">활성 종료일</Label>
+                  <Input id="active_to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} required />
+                </div>
+              </div>
+
               <div>
                 <Label>썸네일 (선택)</Label>
                 <div className="mt-2 flex items-center gap-3">

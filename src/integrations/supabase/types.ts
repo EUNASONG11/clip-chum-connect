@@ -179,6 +179,8 @@ export type Database = {
       }
       classes: {
         Row: {
+          active_from: string | null
+          active_to: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -188,6 +190,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          active_from?: string | null
+          active_to?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -197,6 +201,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          active_from?: string | null
+          active_to?: string | null
           created_at?: string
           created_by?: string
           description?: string | null

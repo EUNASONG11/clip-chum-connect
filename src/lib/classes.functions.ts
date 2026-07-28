@@ -25,6 +25,13 @@ async function assertAdminOrInstructor(context: { supabase: any; userId: string 
   if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
 }
 
+function isClassActive(active_from: string | null, active_to: string | null) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (active_from && today < active_from) return false;
+  if (active_to && today > active_to) return false;
+  return true;
+}
+
 async function assertOwnClassOrAdmin(
   context: { supabase: any; userId: string },
   classId: string,
@@ -34,7 +41,7 @@ async function assertOwnClassOrAdmin(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
-    .select("created_by")
+    .select("created_by, active_from, active_to")
     .eq("id", classId)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -48,7 +55,7 @@ async function assertOwnClassOrAdmin(
     .eq("instructor_user_id", context.userId)
     .maybeSingle();
   if (assigned) return;
-  // 배정된 학생도 접근 허용
+  // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
     .select("class_id")
@@ -58,8 +65,11 @@ async function assertOwnClassOrAdmin(
   if (!enrolled) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
-
+  if (!isClassActive((data as any).active_from, (data as any).active_to)) {
+    throw new Error("수강 가능 기간이 아닙니다.");
+  }
 }
+
 
 async function assertAdminOnly(context: { supabase: any; userId: string }) {
   const admin = await isAdmin(context);
@@ -75,7 +85,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (admin) {
       const { data, error } = await supabaseAdmin
         .from("classes")
-        .select("id, name, description, thumbnail_url, created_at, created_by")
+        .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -100,12 +110,24 @@ export const listClasses = createServerFn({ method: "GET" })
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const { data, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
       .or(orParts.join(","))
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    const rows = data ?? [];
+    // 강사 역할이면 기간 제한 없이 모두 반환, 순수 학생이면 활성 기간 내 것만
+    const instructor = await isInstructor(context);
+    if (instructor) return rows;
+    const enrolledSet = new Set((enrolled ?? []).map((r: any) => r.class_id as string));
+    return rows.filter((c: any) => {
+      const isEnrolledOnly =
+        enrolledSet.has(c.id) &&
+        c.created_by !== context.userId;
+      if (!isEnrolledOnly) return true;
+      return isClassActive(c.active_from, c.active_to);
+    });
   });
+
 
 // 단일 수강반 조회
 export const getClass = createServerFn({ method: "GET" })
@@ -116,7 +138,7 @@ export const getClass = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, created_at, created_by")
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -131,6 +153,8 @@ export const createClass = createServerFn({ method: "POST" })
       .object({
         name: z.string().min(1).max(100),
         description: z.string().max(2000).optional().nullable(),
+        active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .parse(i),
   )
@@ -141,6 +165,8 @@ export const createClass = createServerFn({ method: "POST" })
       .insert({
         name: data.name,
         description: data.description ?? null,
+        active_from: data.active_from ?? null,
+        active_to: data.active_to ?? null,
         created_by: context.userId,
       })
       .select("*")
@@ -159,6 +185,8 @@ export const updateClass = createServerFn({ method: "POST" })
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(2000).optional().nullable(),
         thumbnail_url: z.string().max(1000).nullable().optional(),
+        active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+        active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
       })
       .parse(i),
   )
@@ -169,6 +197,8 @@ export const updateClass = createServerFn({ method: "POST" })
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
     if (data.thumbnail_url !== undefined) patch.thumbnail_url = data.thumbnail_url;
+    if (data.active_from !== undefined) patch.active_from = data.active_from;
+    if (data.active_to !== undefined) patch.active_to = data.active_to;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("classes")
@@ -177,6 +207,7 @@ export const updateClass = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 수강반 삭제
 export const deleteClass = createServerFn({ method: "POST" })
