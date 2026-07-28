@@ -81,6 +81,38 @@ function ClassDetailPage() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
+  const [settingsFrom, setSettingsFrom] = useState("");
+  const [settingsTo, setSettingsTo] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // 수강반 로드 시 설정값 초기화
+  const clsAny: any = cls;
+  if (clsAny && settingsFrom === "" && settingsTo === "" && (clsAny.active_from || clsAny.active_to)) {
+    // no-op guard; use effect below
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffectSync(() => {
+    if (clsAny) {
+      setSettingsFrom(clsAny.active_from ?? "");
+      setSettingsTo(clsAny.active_to ?? "");
+    }
+  }, [clsAny?.active_from, clsAny?.active_to]);
+
+  const saveSettings = async () => {
+    if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하세요.");
+    if (settingsFrom > settingsTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
+    setSavingSettings(true);
+    try {
+      await updateClass({ data: { id, active_from: settingsFrom, active_to: settingsTo } });
+      toast.success("저장되었습니다.");
+      qc.invalidateQueries({ queryKey: ["admin", "class", id] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
 
   const refreshVideosAndFolders = () => {
     qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
