@@ -49,6 +49,36 @@ export type Database = {
           },
         ]
       }
+      class_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       class_enrollment_history: {
         Row: {
           action: string
@@ -181,6 +211,7 @@ export type Database = {
         Row: {
           active_from: string | null
           active_to: string | null
+          category_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -192,6 +223,7 @@ export type Database = {
         Insert: {
           active_from?: string | null
           active_to?: string | null
+          category_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -203,6 +235,7 @@ export type Database = {
         Update: {
           active_from?: string | null
           active_to?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -211,7 +244,15 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "class_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comments: {
         Row: {
