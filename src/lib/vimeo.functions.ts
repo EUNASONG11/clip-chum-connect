@@ -440,6 +440,7 @@ export const listUsers = createServerFn({ method: "GET" })
           isInstructor,
           isPending,
           class_count: classCount.get(u.id) ?? 0,
+          has_temp_password: !!ext?.temp_password,
         };
       })
       .filter((u: any) => {
