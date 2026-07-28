@@ -40,7 +40,7 @@ import {
   sendTeamMessage,
   updateTeam,
 } from "@/lib/teams.functions";
-import { searchStudentsByNameOrPhone } from "@/lib/classes.functions";
+import { searchApprovedStudents } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/admin/teams")({
   head: () => ({ meta: [{ title: "팀 관리 — VimStream" }] }),
