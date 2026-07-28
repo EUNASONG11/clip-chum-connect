@@ -29,6 +29,7 @@ function ClassesPage() {
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
+  const [alwaysActive, setAlwaysActive] = useState(false);
   const [activeFrom, setActiveFrom] = useState("");
   const [activeTo, setActiveTo] = useState("");
   const [saving, setSaving] = useState(false);
