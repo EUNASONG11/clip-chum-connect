@@ -85,18 +85,14 @@ function ClassDetailPage() {
   const [settingsTo, setSettingsTo] = useState("");
   const [savingSettings, setSavingSettings] = useState(false);
 
-  // 수강반 로드 시 설정값 초기화
   const clsAny: any = cls;
-  if (clsAny && settingsFrom === "" && settingsTo === "" && (clsAny.active_from || clsAny.active_to)) {
-    // no-op guard; use effect below
-  }
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffectSync(() => {
+  useEffect(() => {
     if (clsAny) {
       setSettingsFrom(clsAny.active_from ?? "");
       setSettingsTo(clsAny.active_to ?? "");
     }
   }, [clsAny?.active_from, clsAny?.active_to]);
+
 
   const saveSettings = async () => {
     if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하세요.");
