@@ -208,16 +208,28 @@ function ClassesPage() {
                 <Label htmlFor="desc">설명</Label>
                 <Textarea id="desc" rows={2} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="active_from">활성 시작일</Label>
-                  <Input id="active_from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} required />
-                </div>
-                <div>
-                  <Label htmlFor="active_to">활성 종료일</Label>
-                  <Input id="active_to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} required />
-                </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="always_active"
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={alwaysActive}
+                  onChange={(e) => setAlwaysActive(e.target.checked)}
+                />
+                <Label htmlFor="always_active" className="cursor-pointer">상시 활성 (기간 제한 없음)</Label>
               </div>
+              {!alwaysActive && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="active_from">활성 시작일</Label>
+                    <Input id="active_from" type="date" value={activeFrom} onChange={(e) => setActiveFrom(e.target.value)} required={!alwaysActive} />
+                  </div>
+                  <div>
+                    <Label htmlFor="active_to">활성 종료일</Label>
+                    <Input id="active_to" type="date" value={activeTo} onChange={(e) => setActiveTo(e.target.value)} required={!alwaysActive} />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <Label>썸네일 (선택)</Label>
