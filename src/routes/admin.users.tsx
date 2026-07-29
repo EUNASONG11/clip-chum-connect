@@ -35,6 +35,7 @@ import {
   issueStudentTempPassword,
   getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
+import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { AdminOnly } from "@/components/AdminRole";
 import {
   Dialog,
