@@ -549,15 +549,17 @@ function VideoPage() {
               <p className="mt-3 whitespace-pre-wrap text-muted-foreground">{video.description}</p>
             )}
 
-            <CommentsSection videoId={id} />
+            {isAuthed && <CommentsSection videoId={id} />}
           </div>
 
           <aside className="space-y-4">
-            <BookmarksPanel
-              videoId={id}
-              getCurrentTime={() => currentTimeRef.current}
-              onSeek={(sec) => seekRef.current?.(sec)}
-            />
+            {isAuthed && (
+              <BookmarksPanel
+                videoId={id}
+                getCurrentTime={() => currentTimeRef.current}
+                onSeek={(sec) => seekRef.current?.(sec)}
+              />
+            )}
 
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground">최근 본 영상</h2>
