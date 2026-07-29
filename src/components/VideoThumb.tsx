@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { getSignedThumbUrl } from "@/lib/signed-url-cache";
 
 const BUCKET = "video-thumbnails";
 
@@ -27,24 +27,32 @@ export function VideoThumb({
 
   useEffect(() => {
     let cancelled = false;
-    setUrl(null);
-    if (!src) return;
+    if (!src) {
+      setUrl(null);
+      return;
+    }
     const path = extractPath(src);
     if (!path) {
       if (src.startsWith("http")) setUrl(src);
+      else setUrl(null);
       return;
     }
-    supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(path, 60 * 60)
-      .then(({ data }) => {
-        if (!cancelled) setUrl(data?.signedUrl ?? null);
-      });
+    getSignedThumbUrl(BUCKET, path).then((u) => {
+      if (!cancelled) setUrl(u);
+    });
     return () => {
       cancelled = true;
     };
   }, [src]);
 
   if (!src || !url) return null;
-  return <img src={url} alt={alt} className={className} />;
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+    />
+  );
 }
