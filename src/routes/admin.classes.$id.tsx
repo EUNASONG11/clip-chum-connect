@@ -175,17 +175,28 @@ function ClassDetailPage() {
   };
 
   const [query, setQuery] = useState("");
+  const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; school: string; grade: string }[]
+    { user_id: string; name: string; phone: string; school: string; grade: string; branch: string }[]
   >([]);
   const [searching, setSearching] = useState(false);
+  const { data: branchList = [] } = useQuery({
+    queryKey: ["student-branches"],
+    queryFn: () => listStudentBranches(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
     setSearching(true);
     try {
-      const rows = await searchStudentsByNameOrPhone({ data: { query: query.trim() } });
+      const rows = await searchStudentsByNameOrPhone({
+        data: {
+          query: query.trim(),
+          ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
+        },
+      });
       setResults(rows);
       if (rows.length === 0) toast.info("일치하는 학생이 없습니다.");
     } catch (err: any) {
