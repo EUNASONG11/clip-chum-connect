@@ -689,7 +689,7 @@ export const listClassFolders = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_folders")
-      .select("id, name, sort_order, created_at")
+      .select("id, name, sort_order, parent_folder_id, created_at")
       .eq("class_id", data.classId)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -706,20 +706,37 @@ export const createClassFolder = createServerFn({ method: "POST" })
     z.object({
       classId: z.string().uuid(),
       name: z.string().min(1).max(100),
+      parentFolderId: z.string().uuid().nullable().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // 다음 sort_order 계산
-    const { data: existing } = await supabaseAdmin
+    // 부모 폴더가 같은 수강반 소속인지 검증
+    if (data.parentFolderId) {
+      const { data: parent } = await supabaseAdmin
+        .from("class_folders")
+        .select("class_id")
+        .eq("id", data.parentFolderId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (!parent || (parent as any).class_id !== data.classId) {
+        throw new Error("잘못된 상위 폴더입니다.");
+      }
+    }
+    // 다음 sort_order 계산 (같은 부모 내에서)
+    let sortBuilder = supabaseAdmin
       .from("class_folders")
       .select("sort_order")
       .eq("class_id", data.classId)
       .is("deleted_at", null)
       .order("sort_order", { ascending: false })
       .limit(1);
+    sortBuilder = data.parentFolderId
+      ? sortBuilder.eq("parent_folder_id", data.parentFolderId)
+      : sortBuilder.is("parent_folder_id", null);
+    const { data: existing } = await sortBuilder;
 
     const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
     const { data: inserted, error } = await supabaseAdmin
@@ -728,9 +745,10 @@ export const createClassFolder = createServerFn({ method: "POST" })
         class_id: data.classId,
         name: data.name,
         sort_order: nextOrder,
+        parent_folder_id: data.parentFolderId ?? null,
         created_by: context.userId,
       })
-      .select("id, name, sort_order")
+      .select("id, name, sort_order, parent_folder_id")
       .single();
     if (error) throw new Error(error.message);
     return inserted;

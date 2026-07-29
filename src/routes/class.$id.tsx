@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -119,35 +120,56 @@ function ClassPage() {
               return <div className="flex flex-col gap-3">{videos.map(renderVideoItem)}</div>;
             }
 
+            const childrenByParent = new Map<string | null, any[]>();
+            folders.forEach((f: any) => {
+              const key = (f.parent_folder_id ?? null) as string | null;
+              const arr = childrenByParent.get(key) ?? [];
+              arr.push(f);
+              childrenByParent.set(key, arr);
+            });
             const unassigned = videos.filter((v: any) => !v.folder_id);
             const defaultOpen = folders.map((f: any) => `f-${f.id}`);
             if (unassigned.length > 0) defaultOpen.push("f-none");
 
+            const renderFolderNode = (f: any): React.ReactElement => {
+              const items = videos.filter((v: any) => v.folder_id === f.id);
+              const children = childrenByParent.get(f.id) ?? [];
+              return (
+                <AccordionItem key={f.id} value={`f-${f.id}`} className="rounded-xl border bg-card px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="flex items-center gap-2">
+                      <Folder className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-semibold">{f.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({items.length}{children.length > 0 ? ` · 폴더 ${children.length}` : ""})
+                      </span>
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="flex flex-col gap-3 pb-2">
+                      {items.length === 0 && children.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">영상이 없습니다.</p>
+                      ) : (
+                        <>
+                          {items.map(renderVideoItem)}
+                          {children.length > 0 && (
+                            <Accordion type="multiple" defaultValue={children.map((c: any) => `f-${c.id}`)} className="flex flex-col gap-2">
+                              {children.map(renderFolderNode)}
+                            </Accordion>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            };
+
+            const rootFolders = childrenByParent.get(null) ?? [];
+
             return (
               <Accordion type="multiple" defaultValue={defaultOpen} className="flex flex-col gap-2">
-                {folders.map((f: any) => {
-                  const items = videos.filter((v: any) => v.folder_id === f.id);
-                  return (
-                    <AccordionItem key={f.id} value={`f-${f.id}`} className="rounded-xl border bg-card px-4">
-                      <AccordionTrigger className="hover:no-underline">
-                        <span className="flex items-center gap-2">
-                          <Folder className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-semibold">{f.name}</span>
-                          <span className="text-xs text-muted-foreground">({items.length})</span>
-                        </span>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="flex flex-col gap-3 pb-2">
-                          {items.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">영상이 없습니다.</p>
-                          ) : (
-                            items.map(renderVideoItem)
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
+                {rootFolders.map(renderFolderNode)}
                 {unassigned.length > 0 && (
                   <AccordionItem value="f-none" className="rounded-xl border bg-card px-4">
                     <AccordionTrigger className="hover:no-underline">
