@@ -137,10 +137,12 @@ export const listNonWatchers = createServerFn({ method: "POST" })
           0,
         );
         if (incompleteCount === 0) return null;
-        const phone = normalizePhone(e.phone) ?? normalizePhone(e.parent_phone);
-        const phoneSource: "self" | "parent" | null = normalizePhone(e.phone)
+        const studentPhone = normalizePhone(e.phone);
+        const parentPhone = normalizePhone(e.parent_phone);
+        const phone = studentPhone ?? parentPhone;
+        const phoneSource: "self" | "parent" | null = studentPhone
           ? "self"
-          : normalizePhone(e.parent_phone)
+          : parentPhone
             ? "parent"
             : null;
         return {
@@ -148,6 +150,8 @@ export const listNonWatchers = createServerFn({ method: "POST" })
           name: (e.name as string) ?? "",
           phone: phone ?? "",
           phone_source: phoneSource,
+          student_phone: studentPhone ?? "",
+          parent_phone: parentPhone ?? "",
           branch: (e.branch as string) ?? "",
           incomplete_count: incompleteCount,
           eligible_total: eligible.length,
@@ -158,6 +162,8 @@ export const listNonWatchers = createServerFn({ method: "POST" })
       name: string;
       phone: string;
       phone_source: "self" | "parent" | null;
+      student_phone: string;
+      parent_phone: string;
       branch: string;
       incomplete_count: number;
       eligible_total: number;
