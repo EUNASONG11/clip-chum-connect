@@ -31,7 +31,7 @@ const adminNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
   { title: "영상 관리", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
-  { title: "팀 관리", url: "/admin/teams", icon: UsersRound },
+  
   { title: "사용자 관리", url: "/admin/users", icon: Users },
   { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
   { title: "휴지통", url: "/admin/trash", icon: Trash2 },
