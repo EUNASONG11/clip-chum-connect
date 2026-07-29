@@ -716,11 +716,11 @@ function ClassDetailPage() {
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="outline"
                               className="h-7 whitespace-nowrap px-2 text-xs"
                               onClick={() => { setCreatingUnder(f.id); setNewFolderName(""); }}
                             >
-                              <FolderPlus className="mr-1 h-3.5 w-3.5" /> 하위 폴더
+                              <FolderPlus className="mr-1 h-3.5 w-3.5" /> 하위 폴더 추가
                             </Button>
                             <Button
                               size="icon"
