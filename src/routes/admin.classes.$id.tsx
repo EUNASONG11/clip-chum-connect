@@ -16,8 +16,9 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
+import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import {
   getClass,
   listClassStudents,
