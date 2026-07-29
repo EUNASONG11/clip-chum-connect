@@ -135,6 +135,7 @@ export type Database = {
           deleted_by: string | null
           id: string
           name: string
+          parent_folder_id: string | null
           sort_order: number
           updated_at: string
         }
@@ -146,6 +147,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           name: string
+          parent_folder_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -157,6 +159,7 @@ export type Database = {
           deleted_by?: string | null
           id?: string
           name?: string
+          parent_folder_id?: string | null
           sort_order?: number
           updated_at?: string
         }
@@ -166,6 +169,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_folders_parent_folder_id_fkey"
+            columns: ["parent_folder_id"]
+            isOneToOne: false
+            referencedRelation: "class_folders"
             referencedColumns: ["id"]
           },
         ]

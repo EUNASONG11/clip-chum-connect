@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,7 +79,7 @@ function ClassDetailPage() {
   });
 
   const [newFolderName, setNewFolderName] = useState("");
-  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [creatingUnder, setCreatingUnder] = useState<string | null | undefined>(undefined);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
@@ -134,9 +134,15 @@ function ClassDetailPage() {
     if (!newFolderName.trim() || isCreatingFolder) return;
     setIsCreatingFolder(true);
     try {
-      await createClassFolder({ data: { classId: id, name: newFolderName.trim() } });
+      await createClassFolder({
+        data: {
+          classId: id,
+          name: newFolderName.trim(),
+          ...(creatingUnder ? { parentFolderId: creatingUnder } : {}),
+        },
+      });
       setNewFolderName("");
-      setCreatingFolder(false);
+      setCreatingUnder(undefined);
       refreshVideosAndFolders();
       toast.success("폴더가 생성되었습니다.");
     } catch (err: any) {
@@ -521,12 +527,11 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 폴더 관리 */}
-          {!creatingFolder && (
-            <Button size="sm" variant="outline" onClick={() => setCreatingFolder(true)} className="whitespace-nowrap">
+          {creatingUnder === undefined ? (
+            <Button size="sm" variant="outline" onClick={() => setCreatingUnder(null)} className="whitespace-nowrap">
               <FolderPlus className="mr-1 h-4 w-4 shrink-0" /> 폴더 추가
             </Button>
-          )}
-          {creatingFolder && (
+          ) : creatingUnder === null ? (
             <form onSubmit={handleCreateFolder} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
               <Input
                 autoFocus
@@ -536,11 +541,7 @@ function ClassDetailPage() {
                 disabled={isCreatingFolder}
               />
               <Button type="submit" size="sm" disabled={isCreatingFolder} className="shrink-0 whitespace-nowrap">
-                {isCreatingFolder ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  "추가"
-                )}
+                {isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : "추가"}
               </Button>
               <Button
                 type="button"
@@ -548,29 +549,146 @@ function ClassDetailPage() {
                 variant="ghost"
                 disabled={isCreatingFolder}
                 className="shrink-0 whitespace-nowrap"
-                onClick={() => { setCreatingFolder(false); setNewFolderName(""); }}
+                onClick={() => { setCreatingUnder(undefined); setNewFolderName(""); }}
               >취소</Button>
             </form>
-          )}
+          ) : null}
 
-          {/* 영상 목록 (폴더별 그룹) */}
-          {videos.length === 0 ? (
+          {/* 영상 목록 (폴더별 그룹 - 중첩 지원) */}
+          {videos.length === 0 && folders.length === 0 ? (
             <p className="text-sm text-muted-foreground">
               아직 영상이 없습니다. <Link to="/admin/upload" className="text-primary underline">업로드</Link>{" "}
               또는 <Link to="/admin/videos" className="text-primary underline">등록된 영상</Link>에서 이 수강반으로 지정하세요.
             </p>
           ) : (
-            <div className="space-y-4">
-              {[
-                ...folders.map((f: any) => ({ id: f.id, name: f.name })),
-                { id: null as string | null, name: "폴더 미지정" },
-              ].map((group) => {
-                const items = videos.filter((v: any) => (v.folder_id ?? null) === group.id);
-                if (items.length === 0 && group.id === null) return null;
+            (() => {
+              const childrenByParent = new Map<string | null, any[]>();
+              folders.forEach((f: any) => {
+                const key = (f.parent_folder_id ?? null) as string | null;
+                const arr = childrenByParent.get(key) ?? [];
+                arr.push(f);
+                childrenByParent.set(key, arr);
+              });
+              const videosByFolder = new Map<string | null, any[]>();
+              videos.forEach((v: any) => {
+                const key = (v.folder_id ?? null) as string | null;
+                const arr = videosByFolder.get(key) ?? [];
+                arr.push(v);
+                videosByFolder.set(key, arr);
+              });
+              // 폴더 경로 문자열 (Select 표시용)
+              const folderById = new Map<string, any>(folders.map((f: any) => [f.id, f]));
+              const pathOf = (fid: string): string => {
+                const parts: string[] = [];
+                let cur: any = folderById.get(fid);
+                let guard = 0;
+                while (cur && guard++ < 20) {
+                  parts.unshift(cur.name);
+                  cur = cur.parent_folder_id ? folderById.get(cur.parent_folder_id) : null;
+                }
+                return parts.join(" / ");
+              };
+              // 순환 방지: folder의 조상들
+              const ancestorsOf = (fid: string): Set<string> => {
+                const out = new Set<string>();
+                let cur: any = folderById.get(fid);
+                let guard = 0;
+                while (cur?.parent_folder_id && guard++ < 20) {
+                  out.add(cur.parent_folder_id);
+                  cur = folderById.get(cur.parent_folder_id);
+                }
+                return out;
+              };
+
+              const renderVideoList = (items: any[]) => (
+                <ul className="divide-y">
+                  {items.map((v: any, i: number) => (
+                    <li key={v.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
+                      <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
+                      <Link
+                        to="/admin/video/$id"
+                        params={{ id: v.id }}
+                        className="block h-12 w-20 shrink-0 overflow-hidden rounded bg-muted sm:h-14 sm:w-24"
+                      >
+                        {v.thumbnail_url ? (
+                          <VideoThumb src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                            <Film className="h-4 w-4" />
+                          </div>
+                        )}
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          to="/admin/video/$id"
+                          params={{ id: v.id }}
+                          className="block truncate text-sm font-medium hover:text-primary hover:underline"
+                        >
+                          {v.title}
+                        </Link>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {v.is_published ? "공개" : "비공개"} · {v.status}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Select
+                          value={v.folder_id ?? "__none__"}
+                          onValueChange={(val) =>
+                            handleAssignVideoToFolder(v.id, val === "__none__" ? null : val)
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-24 text-xs sm:w-40">
+                            <SelectValue placeholder="폴더" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">폴더 미지정</SelectItem>
+                            {folders.map((f: any) => (
+                              <SelectItem key={f.id} value={f.id}>{pathOf(f.id)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 shrink-0"
+                          disabled={i === 0}
+                          onClick={async () => {
+                            try {
+                              await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "up" } });
+                              qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
+                            } catch (e: any) { toast.error(e.message); }
+                          }}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 shrink-0"
+                          disabled={i === items.length - 1}
+                          onClick={async () => {
+                            try {
+                              await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "down" } });
+                              qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
+                            } catch (e: any) { toast.error(e.message); }
+                          }}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              );
+
+              const renderFolder = (f: any, depth: number): React.ReactElement => {
+                const childFolders = childrenByParent.get(f.id) ?? [];
+                const items = videosByFolder.get(f.id) ?? [];
+                const isEditing = editingFolderId === f.id;
                 return (
-                  <div key={group.id ?? "none"} className="rounded-md border">
+                  <div key={f.id} className="rounded-md border" style={{ marginLeft: depth > 0 ? 16 : 0 }}>
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
-                      {group.id && editingFolderId === group.id ? (
+                      {isEditing ? (
                         <>
                           <div className="flex flex-1 items-center gap-2">
                             <Input
@@ -578,11 +696,11 @@ function ClassDetailPage() {
                               className="h-7 flex-1"
                               value={editingFolderName}
                               onChange={(e) => setEditingFolderName(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter") handleRenameFolder(group.id!); }}
+                              onKeyDown={(e) => { if (e.key === "Enter") handleRenameFolder(f.id); }}
                             />
                           </div>
                           <div className="flex items-center gap-1">
-                            <Button size="sm" onClick={() => handleRenameFolder(group.id!)}>저장</Button>
+                            <Button size="sm" onClick={() => handleRenameFolder(f.id)}>저장</Button>
                             <Button size="sm" variant="ghost" onClick={() => setEditingFolderId(null)}>취소</Button>
                           </div>
                         </>
@@ -590,118 +708,93 @@ function ClassDetailPage() {
                         <>
                           <div className="flex min-w-0 items-center gap-2">
                             <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{group.name}</span>
-                            <span className="text-xs text-muted-foreground">({items.length})</span>
+                            <span className="truncate">{f.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              (폴더 {childFolders.length} · 영상 {items.length})
+                            </span>
                           </div>
-                          {group.id && (
-                            <div className="flex items-center gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                onClick={() => { setEditingFolderId(group.id!); setEditingFolderName(group.name); }}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
-                                onClick={() => handleDeleteFolder(group.id!)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 whitespace-nowrap px-2 text-xs"
+                              onClick={() => { setCreatingUnder(f.id); setNewFolderName(""); }}
+                            >
+                              <FolderPlus className="mr-1 h-3.5 w-3.5" /> 하위 폴더
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => { setEditingFolderId(f.id); setEditingFolderName(f.name); }}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => handleDeleteFolder(f.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
                         </>
                       )}
                     </div>
-                    {items.length === 0 ? (
-                      <p className="px-3 py-3 text-xs text-muted-foreground">이 폴더에 영상이 없습니다.</p>
-                    ) : (
-                      <ul className="divide-y">
-                        {items.map((v: any, i: number) => (
-                          <li key={v.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
-                            <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
-                            <Link
-                              to="/admin/video/$id"
-                              params={{ id: v.id }}
-                              className="block h-12 w-20 shrink-0 overflow-hidden rounded bg-muted sm:h-14 sm:w-24"
-                            >
-                              {v.thumbnail_url ? (
-                                <VideoThumb src={v.thumbnail_url} alt="" className="h-full w-full object-cover" />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                  <Film className="h-4 w-4" />
-                                </div>
-                              )}
-                            </Link>
-                            <div className="min-w-0 flex-1">
-                              <Link
-                                to="/admin/video/$id"
-                                params={{ id: v.id }}
-                                className="block truncate text-sm font-medium hover:text-primary hover:underline"
-                              >
-                                {v.title}
-                              </Link>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {v.is_published ? "공개" : "비공개"} · {v.status}
-                              </p>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                            <Select
-                              value={v.folder_id ?? "__none__"}
-                              onValueChange={(val) =>
-                                handleAssignVideoToFolder(v.id, val === "__none__" ? null : val)
-                              }
-                            >
-                              <SelectTrigger className="h-8 w-24 text-xs sm:w-36">
-                                <SelectValue placeholder="폴더" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">폴더 미지정</SelectItem>
-                                {folders.map((f: any) => (
-                                  <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 shrink-0"
-                              disabled={i === 0}
-                              onClick={async () => {
-                                try {
-                                  await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "up" } });
-                                  qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
-                                } catch (e: any) { toast.error(e.message); }
-                              }}
-                            >
-                              <ArrowUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 shrink-0"
-                              disabled={i === items.length - 1}
-                              onClick={async () => {
-                                try {
-                                  await swapVideoOrder({ data: { classId: id, videoId: v.id, direction: "down" } });
-                                  qc.invalidateQueries({ queryKey: ["admin", "class", id, "videos"] });
-                                } catch (e: any) { toast.error(e.message); }
-                              }}
-                            >
-                              <ArrowDown className="h-4 w-4" />
-                            </Button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
+                    {creatingUnder === f.id && (
+                      <form onSubmit={handleCreateFolder} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border-b bg-muted/20 px-3 py-2">
+                        <Input
+                          autoFocus
+                          value={newFolderName}
+                          onChange={(e) => setNewFolderName(e.target.value)}
+                          placeholder={`${f.name} 안에 만들 폴더 이름`}
+                          disabled={isCreatingFolder}
+                        />
+                        <Button type="submit" size="sm" disabled={isCreatingFolder} className="shrink-0 whitespace-nowrap">
+                          {isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : "추가"}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          disabled={isCreatingFolder}
+                          className="shrink-0 whitespace-nowrap"
+                          onClick={() => { setCreatingUnder(undefined); setNewFolderName(""); }}
+                        >취소</Button>
+                      </form>
                     )}
+                    <div className="space-y-2 p-2">
+                      {items.length > 0 && renderVideoList(items)}
+                      {childFolders.map((cf: any) => renderFolder(cf, depth + 1))}
+                      {items.length === 0 && childFolders.length === 0 && (
+                        <p className="px-2 py-3 text-xs text-muted-foreground">비어 있습니다.</p>
+                      )}
+                    </div>
                   </div>
                 );
-              })}
-            </div>
+              };
+
+              const rootFolders = childrenByParent.get(null) ?? [];
+              const unassignedVideos = videosByFolder.get(null) ?? [];
+              // 참조 방지 경고 억제
+              void ancestorsOf;
+              return (
+                <div className="space-y-4">
+                  {rootFolders.map((f: any) => renderFolder(f, 0))}
+                  {unassignedVideos.length > 0 && (
+                    <div className="rounded-md border">
+                      <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
+                        <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">폴더 미지정</span>
+                        <span className="text-xs text-muted-foreground">({unassignedVideos.length})</span>
+                      </div>
+                      {renderVideoList(unassignedVideos)}
+                    </div>
+                  )}
+                </div>
+              );
+            })()
           )}
         </CardContent>
       </Card>
