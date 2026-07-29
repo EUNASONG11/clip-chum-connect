@@ -257,60 +257,62 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         </form>
       </TabsContent>
 
-      <TabsContent value="youtube" className="pt-4">
-        <form onSubmit={addYt} className="space-y-4">
-          <div>
-            <Label htmlFor="yt-url">YouTube 링크</Label>
-            <Input
-              id="yt-url"
-              placeholder="https://www.youtube.com/watch?v=..."
-              value={ytUrl}
-              onChange={(e) => setYtUrl(e.target.value)}
-              required
-            />
-            <p className="mt-1 text-xs text-muted-foreground">
-              youtube.com/watch, youtu.be, /embed, /shorts 링크 지원
-            </p>
-          </div>
-          <div>
-            <Label htmlFor="yt-title">제목</Label>
-            <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
-          </div>
-          <div>
-            <Label htmlFor="yt-desc">설명</Label>
-            <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {isAdmin && (
+        <TabsContent value="youtube" className="pt-4">
+          <form onSubmit={addYt} className="space-y-4">
             <div>
-              <Label>수강반</Label>
-              {classSelect(ytClassId, (v) => {
-                setYtClassId(v);
-                setYtFolderId(NO_FOLDER);
-              })}
-            </div>
-            <div>
-              <Label>폴더</Label>
-              {folderSelect(ytFolderId, setYtFolderId, ytFolders, ytClassId === NO_CLASS)}
-            </div>
-            <div>
-              <Label htmlFor="yt-order">노출 순서</Label>
+              <Label htmlFor="yt-url">YouTube 링크</Label>
               <Input
-                id="yt-order"
-                type="number"
-                value={ytSort}
-                onChange={(e) => setYtSort(Number(e.target.value))}
+                id="yt-url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={ytUrl}
+                onChange={(e) => setYtUrl(e.target.value)}
+                required
               />
+              <p className="mt-1 text-xs text-muted-foreground">
+                youtube.com/watch, youtu.be, /embed, /shorts 링크 지원
+              </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
-            <Label htmlFor="yt-pub">학생에게 공개</Label>
-          </div>
-          <Button type="submit" disabled={ytSaving}>
-            {ytSaving ? "추가 중..." : "추가"}
-          </Button>
-        </form>
-      </TabsContent>
+            <div>
+              <Label htmlFor="yt-title">제목</Label>
+              <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
+            </div>
+            <div>
+              <Label htmlFor="yt-desc">설명</Label>
+              <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <Label>수강반</Label>
+                {classSelect(ytClassId, (v) => {
+                  setYtClassId(v);
+                  setYtFolderId(NO_FOLDER);
+                })}
+              </div>
+              <div>
+                <Label>폴더</Label>
+                {folderSelect(ytFolderId, setYtFolderId, ytFolders, ytClassId === NO_CLASS)}
+              </div>
+              <div>
+                <Label htmlFor="yt-order">노출 순서</Label>
+                <Input
+                  id="yt-order"
+                  type="number"
+                  value={ytSort}
+                  onChange={(e) => setYtSort(Number(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
+              <Label htmlFor="yt-pub">학생에게 공개</Label>
+            </div>
+            <Button type="submit" disabled={ytSaving}>
+              {ytSaving ? "추가 중..." : "추가"}
+            </Button>
+          </form>
+        </TabsContent>
+      )}
     </Tabs>
   );
 }
