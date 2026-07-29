@@ -359,7 +359,7 @@ export const listUsers = createServerFn({ method: "GET" })
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
-    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }[] = [];
+    const extRows: { auth_user_id: string | null; name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null; branch: string | null }[] = [];
     {
       const size = 500;
       let from = 0;
@@ -369,7 +369,7 @@ export const listUsers = createServerFn({ method: "GET" })
           async () =>
             await supabaseAdmin
               .from("external_students")
-              .select("auth_user_id, name, phone, enrollment_status, temp_password")
+              .select("auth_user_id, name, phone, enrollment_status, temp_password, branch")
               .not("auth_user_id", "is", null)
               .range(from, from + size - 1),
           `external_students range ${from}`,
@@ -392,9 +392,9 @@ export const listUsers = createServerFn({ method: "GET" })
     (csRes.data ?? []).forEach((r: any) => {
       classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1);
     });
-    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null }>();
+    const extMap = new Map<string, { name: string | null; phone: string | null; enrollment_status: string | null; temp_password: string | null; branch: string | null }>();
     extRows.forEach((r) => {
-      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status, temp_password: r.temp_password });
+      if (r.auth_user_id) extMap.set(r.auth_user_id, { name: r.name, phone: r.phone, enrollment_status: r.enrollment_status, temp_password: r.temp_password, branch: r.branch });
     });
 
     // instructors 테이블에서 강사 정보 조회
