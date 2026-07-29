@@ -142,6 +142,15 @@ function UsersPage() {
   }, [users]);
 
 
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => {
+      const b = (u.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [users]);
+
   const filtered = useMemo(() => {
     const rows = buckets[tab];
     const terms = search
@@ -149,12 +158,16 @@ function UsersPage() {
       .toLowerCase()
       .split(/\s+/)
       .filter((t) => t.length > 0);
-    if (terms.length === 0) return rows;
-    return rows.filter((u) => {
+    const byBranch =
+      branchFilter === "__all__"
+        ? rows
+        : rows.filter((u) => (u.branch ?? "") === branchFilter);
+    if (terms.length === 0) return byBranch;
+    return byBranch.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search]);
+  }, [buckets, tab, search, branchFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
