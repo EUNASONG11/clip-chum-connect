@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { listNonWatchers, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
+import { listNonWatchers, sendClassSms } from "@/lib/sms.functions";
 import { listClassVideos } from "@/lib/classes.functions";
 
 type Props = {
@@ -35,7 +35,7 @@ type Props = {
 export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
   const [videoId, setVideoId] = useState<string>("");
-  const [channel, setChannel] = useState<"sms" | "brandtalk">("sms");
+  
   const [message, setMessage] = useState("");
   
   const [selected, setSelected] = useState<Record<string, boolean>>({});
@@ -107,17 +107,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         phone: n.phone,
         branch: n.branch,
       }));
-      const res =
-        channel === "sms"
-          ? await sendClassSms({ data: { classId, recipients, message: message.trim() } })
-          : await sendClassBrandTalk({
-              data: {
-                classId,
-                recipients,
-                message: message.trim(),
-                fallbackToSms: true,
-              },
-            });
+      const res = await sendClassSms({ data: { classId, recipients, message: message.trim() } });
       const okBranches = res.groups.filter((g: any) => g.ok);
       const failBranches = res.groups.filter((g: any) => !g.ok);
       const okCount = okBranches.reduce((n: number, g: any) => n + g.count, 0);
@@ -266,27 +256,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm">채널</Label>
-            <RadioGroup
-              value={channel}
-              onValueChange={(v) => setChannel(v as "sms" | "brandtalk")}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="sms" id="ch-sms" />
-                <Label htmlFor="ch-sms" className="cursor-pointer text-sm">
-                  SMS/LMS
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="brandtalk" id="ch-bt" />
-                <Label htmlFor="ch-bt" className="cursor-pointer text-sm">
-                  카카오 브랜드톡
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
 
 
           <div className="space-y-2">
