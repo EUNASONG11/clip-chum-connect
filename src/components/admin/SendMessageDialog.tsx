@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { listNonWatchers, sendClassSms } from "@/lib/sms.functions";
+import { listNonWatchers, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos } from "@/lib/classes.functions";
 
 type Props = {
