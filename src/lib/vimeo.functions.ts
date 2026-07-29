@@ -399,12 +399,12 @@ export const listUsers = createServerFn({ method: "GET" })
 
     // instructors 테이블에서 강사 정보 조회
     const { data: instRows } = await retry(
-      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone").not("auth_user_id", "is", null),
+      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone, branch").not("auth_user_id", "is", null),
       "instructors",
     );
-    const instMap = new Map<string, { name: string | null; phone: string | null }>();
+    const instMap = new Map<string, { name: string | null; phone: string | null; branch: string | null }>();
     (instRows ?? []).forEach((r: any) => {
-      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone });
+      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone, branch: r.branch });
     });
 
     const formatPhone = (p: string | null | undefined) => {
@@ -441,6 +441,7 @@ export const listUsers = createServerFn({ method: "GET" })
           isPending,
           class_count: classCount.get(u.id) ?? 0,
           has_temp_password: !!ext?.temp_password,
+          branch: inst?.branch ?? ext?.branch ?? null,
         };
       })
       .filter((u: any) => {
