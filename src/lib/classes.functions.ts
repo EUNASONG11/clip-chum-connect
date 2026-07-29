@@ -256,7 +256,14 @@ export const listClassStudents = createServerFn({ method: "GET" })
 // 이름 또는 전화번호로 학생 검색 (미러링된 external_students에서 조회)
 export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        query: z.string().min(1).max(100),
+        branch: z.string().trim().min(1).max(100).optional(),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -264,10 +271,11 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     const digits = q.replace(/[^0-9]/g, "");
     let builder = supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone, school, grade")
+      .select("auth_user_id, name, phone, school, grade, branch")
       .not("auth_user_id", "is", null)
       .eq("is_deleted", false)
       .limit(20);
+    if (data.branch) builder = builder.eq("branch", data.branch);
     if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
       builder = builder.ilike("phone", `%${digits}%`);
     } else {
@@ -281,7 +289,28 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       phone: (r.phone as string) ?? "",
       school: (r.school as string) ?? "",
       grade: (r.grade as string) ?? "",
+      branch: (r.branch as string) ?? "",
     }));
+  });
+
+// 교육원(branch) 목록 조회 - 학생 배정 필터 등에 사용
+export const listStudentBranches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("external_students")
+      .select("branch")
+      .not("branch", "is", null)
+      .eq("is_deleted", false);
+    if (error) throw new Error(error.message);
+    const set = new Set<string>();
+    (data ?? []).forEach((r: any) => {
+      const b = (r.branch ?? "").toString().trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   });
 
 // 학생 배정 (user_id 기반)
