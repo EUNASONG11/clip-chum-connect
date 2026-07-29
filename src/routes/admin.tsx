@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { ShieldCheck, Upload as UploadIcon, Film, Users, GraduationCap, BarChart3, UsersRound } from "lucide-react";
+import { ShieldCheck, Upload as UploadIcon, Film, Users, GraduationCap, BarChart3, UsersRound, Trash2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +34,7 @@ const adminNavItems = [
   { title: "팀 관리", url: "/admin/teams", icon: UsersRound },
   { title: "사용자 관리", url: "/admin/users", icon: Users },
   { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
+  { title: "휴지통", url: "/admin/trash", icon: Trash2 },
 ];
 
 const instructorNavItems = [
