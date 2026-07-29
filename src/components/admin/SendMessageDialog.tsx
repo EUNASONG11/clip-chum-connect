@@ -37,7 +37,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [videoId, setVideoId] = useState<string>("");
   const [channel, setChannel] = useState<"sms" | "brandtalk">("sms");
   const [message, setMessage] = useState("");
-  const [templateCode, setTemplateCode] = useState("");
+  
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sending, setSending] = useState(false);
 
@@ -98,8 +98,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const submit = async () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
     if (selectedList.length === 0) return toast.error("수신자를 선택하세요.");
-    if (channel === "brandtalk" && !templateCode.trim())
-      return toast.error("브랜드톡 템플릿 코드를 입력하세요.");
 
     setSending(true);
     try {
@@ -116,7 +114,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
               data: {
                 classId,
                 recipients,
-                templateCode: templateCode.trim(),
                 message: message.trim(),
                 fallbackToSms: true,
               },
@@ -291,22 +288,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
             </RadioGroup>
           </div>
 
-          {channel === "brandtalk" && (
-            <div className="space-y-2">
-              <Label htmlFor="tpl" className="text-sm">
-                템플릿 코드
-              </Label>
-              <Input
-                id="tpl"
-                value={templateCode}
-                onChange={(e) => setTemplateCode(e.target.value)}
-                placeholder="사전 승인된 브랜드톡 템플릿 코드"
-              />
-              <p className="text-xs text-muted-foreground">
-                실패 시 SMS로 자동 대체 발송됩니다.
-              </p>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="msg" className="text-sm">
