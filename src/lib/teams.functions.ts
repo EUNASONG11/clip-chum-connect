@@ -27,7 +27,8 @@ export const listTeams = createServerFn({ method: "GET" })
       const { data: myMem } = await supabaseAdmin
         .from("team_members")
         .select("team_id")
-        .eq("user_id", context.userId);
+        .eq("user_id", context.userId)
+        .is("deleted_at", null);
       teamIds = (myMem ?? []).map((r: any) => r.team_id);
       if (teamIds.length === 0) return [];
     }
@@ -35,6 +36,7 @@ export const listTeams = createServerFn({ method: "GET" })
     let q = supabaseAdmin
       .from("teams")
       .select("id, name, description, created_by, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (teamIds) q = q.in("id", teamIds);
     const { data: teams, error } = await q;
@@ -47,11 +49,13 @@ export const listTeams = createServerFn({ method: "GET" })
       const { data: mems } = await supabaseAdmin
         .from("team_members")
         .select("team_id")
-        .in("team_id", ids);
+        .in("team_id", ids)
+        .is("deleted_at", null);
       (mems ?? []).forEach((m: any) => {
         counts.set(m.team_id, (counts.get(m.team_id) ?? 0) + 1);
       });
     }
+
     return (teams ?? []).map((t: any) => ({
       ...t,
       member_count: counts.get(t.id) ?? 0,
