@@ -806,6 +806,7 @@ export const setVideoFolder = createServerFn({ method: "POST" })
       .from("videos")
       .select("class_id")
       .eq("id", data.videoId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (ve) throw new Error(ve.message);
     if (!v || !(v as any).class_id) throw new Error("영상을 찾을 수 없습니다.");
@@ -815,11 +816,13 @@ export const setVideoFolder = createServerFn({ method: "POST" })
         .from("class_folders")
         .select("class_id")
         .eq("id", data.folderId)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!f || (f as any).class_id !== (v as any).class_id) {
         throw new Error("잘못된 폴더입니다.");
       }
     }
+
     const { error } = await supabaseAdmin
       .from("videos")
       .update({ folder_id: data.folderId })
