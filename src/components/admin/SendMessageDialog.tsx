@@ -98,8 +98,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const submit = async () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
     if (selectedList.length === 0) return toast.error("수신자를 선택하세요.");
-    if (channel === "brandtalk" && !templateCode.trim())
-      return toast.error("브랜드톡 템플릿 코드를 입력하세요.");
 
     setSending(true);
     try {
@@ -116,7 +114,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
               data: {
                 classId,
                 recipients,
-                templateCode: templateCode.trim(),
                 message: message.trim(),
                 fallbackToSms: true,
               },
