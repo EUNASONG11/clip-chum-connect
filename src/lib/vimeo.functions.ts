@@ -41,6 +41,7 @@ async function assertOwnClassOrAdmin(
     .from("classes")
     .select("created_by")
     .eq("id", classId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (cls?.created_by === context.userId) return;
   const { data: assigned } = await supabaseAdmin
@@ -48,7 +49,9 @@ async function assertOwnClassOrAdmin(
     .select("class_id")
     .eq("class_id", classId)
     .eq("instructor_user_id", context.userId)
+    .is("deleted_at", null)
     .maybeSingle();
+
   if (assigned) return;
   throw new Error("해당 수강반에 대한 권한이 없습니다.");
 }
