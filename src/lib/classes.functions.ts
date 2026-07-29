@@ -43,6 +43,7 @@ async function assertOwnClassOrAdmin(
     .from("classes")
     .select("created_by, active_from, active_to")
     .eq("id", classId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("수강반을 찾을 수 없습니다.");
@@ -53,6 +54,7 @@ async function assertOwnClassOrAdmin(
     .select("class_id")
     .eq("class_id", classId)
     .eq("instructor_user_id", context.userId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (assigned) return;
   // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
@@ -61,10 +63,12 @@ async function assertOwnClassOrAdmin(
     .select("class_id")
     .eq("class_id", classId)
     .eq("user_id", context.userId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (!enrolled) {
     throw new Error("해당 수강반에 대한 권한이 없습니다.");
   }
+
   if (!isClassActive((data as any).active_from, (data as any).active_to)) {
     throw new Error("수강 가능 기간이 아닙니다.");
   }
@@ -86,6 +90,7 @@ export const listClasses = createServerFn({ method: "GET" })
       const { data, error } = await supabaseAdmin
         .from("classes")
         .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return data ?? [];
@@ -95,11 +100,13 @@ export const listClasses = createServerFn({ method: "GET" })
       supabaseAdmin
         .from("class_instructors")
         .select("class_id")
-        .eq("instructor_user_id", context.userId),
+        .eq("instructor_user_id", context.userId)
+        .is("deleted_at", null),
       supabaseAdmin
         .from("class_students")
         .select("class_id")
-        .eq("user_id", context.userId),
+        .eq("user_id", context.userId)
+        .is("deleted_at", null),
     ]);
     const idSet = new Set<string>([
       ...(assigned ?? []).map((r: any) => r.class_id as string),
@@ -112,11 +119,13 @@ export const listClasses = createServerFn({ method: "GET" })
       .from("classes")
       .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
       .or(orParts.join(","))
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
     return data ?? [];
   });
+
 
 
 
@@ -131,9 +140,11 @@ export const getClass = createServerFn({ method: "GET" })
       .from("classes")
       .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row;
+
   });
 
 
@@ -214,7 +225,7 @@ export const deleteClass = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("classes").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from("classes").update({ deleted_at: new Date().toISOString(), deleted_by: context.userId }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -229,7 +240,9 @@ export const listClassStudents = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabaseAdmin
       .from("class_students")
       .select("user_id, created_at")
-      .eq("class_id", data.classId);
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) return [];
     const userIds = rows.map((r: any) => r.user_id);
@@ -322,12 +335,17 @@ export const assignStudent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 소프트 삭제된 기존 배정이 있으면 복원, 없으면 신규 삽입
     const { error } = await supabaseAdmin
       .from("class_students")
-      .insert({ class_id: data.classId, user_id: data.userId });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+      .upsert(
+        { class_id: data.classId, user_id: data.userId, deleted_at: null, deleted_by: null },
+        { onConflict: "class_id,user_id" },
+      );
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 
 // 학생 배정 해제
@@ -341,12 +359,15 @@ export const unassignStudent = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_students")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("class_id", data.classId)
-      .eq("user_id", data.userId);
+      .eq("user_id", data.userId)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+
 
 // 수강반 배정 이력 조회 (추가/해제 히스토리)
 export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
@@ -414,9 +435,11 @@ export const listClassVideos = createServerFn({ method: "GET" })
       .from("videos")
       .select("id, title, description, thumbnail_url, duration, status, is_published, sort_order, folder_id, created_at")
       .eq("class_id", data.classId)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
     const videos = rows ?? [];
     const videoIds = videos.map((r: any) => r.id);
     const progressMap = new Map<string, any>();
@@ -468,20 +491,22 @@ export const updateVideo = createServerFn({ method: "POST" })
         .from("videos")
         .select("class_id")
         .eq("id", data.id)
+        .is("deleted_at", null)
         .maybeSingle();
       if (ve) throw new Error(ve.message);
       if (!v) throw new Error("영상을 찾을 수 없습니다.");
       const check = async (cid: string | null | undefined) => {
         if (!cid) throw new Error("해당 영상에 대한 권한이 없습니다.");
         const { data: cls } = await supabaseAdmin
-          .from("classes").select("created_by").eq("id", cid).maybeSingle();
+          .from("classes").select("created_by").eq("id", cid).is("deleted_at", null).maybeSingle();
         if (cls?.created_by === context.userId) return;
         const { data: assigned } = await supabaseAdmin
           .from("class_instructors").select("class_id")
-          .eq("class_id", cid).eq("instructor_user_id", context.userId).maybeSingle();
+          .eq("class_id", cid).eq("instructor_user_id", context.userId).is("deleted_at", null).maybeSingle();
         if (!assigned) throw new Error("해당 영상에 대한 권한이 없습니다.");
       };
       await check(v.class_id);
+
       // 다른 수강반으로 옮기려면 대상 수강반에도 권한 필요
       if (data.class_id !== undefined && data.class_id !== v.class_id) {
         await check(data.class_id);
@@ -515,9 +540,11 @@ export const swapVideoOrder = createServerFn({ method: "POST" })
       .from("videos")
       .select("id, sort_order")
       .eq("class_id", data.classId)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
     const rows = (list ?? []) as { id: string; sort_order: number | null }[];
     // 정규화된 순서 확보
     const normalized = rows.map((r, i) => ({ ...r, sort_order: i }));
@@ -566,7 +593,9 @@ export const listClassInstructors = createServerFn({ method: "GET" })
     const { data: rows, error } = await supabaseAdmin
       .from("class_instructors")
       .select("instructor_user_id, created_at")
-      .eq("class_id", data.classId);
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+
     if (error) throw new Error(error.message);
     const ids = (rows ?? []).map((r: any) => r.instructor_user_id);
     if (ids.length === 0) return [];
@@ -619,8 +648,11 @@ export const assignInstructor = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
-      .insert({ class_id: data.classId, instructor_user_id: data.userId });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+      .upsert(
+        { class_id: data.classId, instructor_user_id: data.userId, deleted_at: null, deleted_by: null },
+        { onConflict: "class_id,instructor_user_id" },
+      );
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
@@ -635,9 +667,11 @@ export const unassignInstructor = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("class_id", data.classId)
-      .eq("instructor_user_id", data.userId);
+      .eq("instructor_user_id", data.userId)
+      .is("deleted_at", null);
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -655,8 +689,10 @@ export const listClassFolders = createServerFn({ method: "GET" })
       .from("class_folders")
       .select("id, name, sort_order, created_at")
       .eq("class_id", data.classId)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
+
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
@@ -679,8 +715,10 @@ export const createClassFolder = createServerFn({ method: "POST" })
       .from("class_folders")
       .select("sort_order")
       .eq("class_id", data.classId)
+      .is("deleted_at", null)
       .order("sort_order", { ascending: false })
       .limit(1);
+
     const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
     const { data: inserted, error } = await supabaseAdmin
       .from("class_folders")
@@ -712,7 +750,9 @@ export const updateClassFolder = createServerFn({ method: "POST" })
       .from("class_folders")
       .select("class_id")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
+
     if (fe) throw new Error(fe.message);
     if (!f) throw new Error("폴더를 찾을 수 없습니다.");
     await assertOwnClassOrAdmin(context, (f as any).class_id);
@@ -735,14 +775,17 @@ export const deleteClassFolder = createServerFn({ method: "POST" })
       .from("class_folders")
       .select("class_id")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
+
     if (fe) throw new Error(fe.message);
     if (!f) throw new Error("폴더를 찾을 수 없습니다.");
     await assertOwnClassOrAdmin(context, (f as any).class_id);
     const { error } = await supabaseAdmin
       .from("class_folders")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("id", data.id);
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -763,6 +806,7 @@ export const setVideoFolder = createServerFn({ method: "POST" })
       .from("videos")
       .select("class_id")
       .eq("id", data.videoId)
+      .is("deleted_at", null)
       .maybeSingle();
     if (ve) throw new Error(ve.message);
     if (!v || !(v as any).class_id) throw new Error("영상을 찾을 수 없습니다.");
@@ -772,11 +816,13 @@ export const setVideoFolder = createServerFn({ method: "POST" })
         .from("class_folders")
         .select("class_id")
         .eq("id", data.folderId)
+        .is("deleted_at", null)
         .maybeSingle();
       if (!f || (f as any).class_id !== (v as any).class_id) {
         throw new Error("잘못된 폴더입니다.");
       }
     }
+
     const { error } = await supabaseAdmin
       .from("videos")
       .update({ folder_id: data.folderId })
@@ -816,8 +862,10 @@ export const createClassCategory = createServerFn({ method: "POST" })
     const { data: existing } = await supabaseAdmin
       .from("class_categories")
       .select("sort_order")
+      .is("deleted_at", null)
       .order("sort_order", { ascending: false })
       .limit(1);
+
     const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
     const { data: row, error } = await supabaseAdmin
       .from("class_categories")
@@ -867,8 +915,9 @@ export const deleteClassCategory = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_categories")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("id", data.id);
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });

@@ -27,7 +27,8 @@ export const listTeams = createServerFn({ method: "GET" })
       const { data: myMem } = await supabaseAdmin
         .from("team_members")
         .select("team_id")
-        .eq("user_id", context.userId);
+        .eq("user_id", context.userId)
+        .is("deleted_at", null);
       teamIds = (myMem ?? []).map((r: any) => r.team_id);
       if (teamIds.length === 0) return [];
     }
@@ -35,6 +36,7 @@ export const listTeams = createServerFn({ method: "GET" })
     let q = supabaseAdmin
       .from("teams")
       .select("id, name, description, created_by, created_at")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (teamIds) q = q.in("id", teamIds);
     const { data: teams, error } = await q;
@@ -47,11 +49,13 @@ export const listTeams = createServerFn({ method: "GET" })
       const { data: mems } = await supabaseAdmin
         .from("team_members")
         .select("team_id")
-        .in("team_id", ids);
+        .in("team_id", ids)
+        .is("deleted_at", null);
       (mems ?? []).forEach((m: any) => {
         counts.set(m.team_id, (counts.get(m.team_id) ?? 0) + 1);
       });
     }
+
     return (teams ?? []).map((t: any) => ({
       ...t,
       member_count: counts.get(t.id) ?? 0,
@@ -103,10 +107,11 @@ export const deleteTeam = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("teams").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from("teams").update({ deleted_at: new Date().toISOString(), deleted_by: context.userId }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 팀 상세 (멤버 포함)
 export const getTeam = createServerFn({ method: "POST" })
@@ -119,13 +124,16 @@ export const getTeam = createServerFn({ method: "POST" })
       .from("teams")
       .select("id, name, description, created_at")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!team) throw new Error("팀을 찾을 수 없습니다.");
     const { data: mems } = await supabaseAdmin
       .from("team_members")
       .select("user_id, created_at")
-      .eq("team_id", data.id);
+      .eq("team_id", data.id)
+      .is("deleted_at", null);
+
     const userIds = (mems ?? []).map((m: any) => m.user_id);
     let members: any[] = [];
     if (userIds.length > 0) {
@@ -159,8 +167,11 @@ export const addTeamMember = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("team_members")
-      .insert({ team_id: data.teamId, user_id: data.userId });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+      .upsert(
+        { team_id: data.teamId, user_id: data.userId, deleted_at: null, deleted_by: null },
+        { onConflict: "team_id,user_id" },
+      );
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
@@ -174,12 +185,14 @@ export const removeTeamMember = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("team_members")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("team_id", data.teamId)
-      .eq("user_id", data.userId);
+      .eq("user_id", data.userId)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 팀 전원을 특정 수강반에 일괄 배정
 export const assignTeamToClass = createServerFn({ method: "POST" })
@@ -193,17 +206,19 @@ export const assignTeamToClass = createServerFn({ method: "POST" })
     const { data: mems, error: e1 } = await supabaseAdmin
       .from("team_members")
       .select("user_id")
-      .eq("team_id", data.teamId);
+      .eq("team_id", data.teamId)
+      .is("deleted_at", null);
     if (e1) throw new Error(e1.message);
     const userIds = (mems ?? []).map((m: any) => m.user_id);
     if (userIds.length === 0) return { assigned: 0 };
-    const rows = userIds.map((uid) => ({ class_id: data.classId, user_id: uid }));
+    const rows = userIds.map((uid) => ({ class_id: data.classId, user_id: uid, deleted_at: null, deleted_by: null }));
     const { error } = await supabaseAdmin
       .from("class_students")
-      .upsert(rows, { onConflict: "class_id,user_id", ignoreDuplicates: true });
+      .upsert(rows, { onConflict: "class_id,user_id" });
     if (error) throw new Error(error.message);
     return { assigned: userIds.length };
   });
+
 
 // 팀 대상 메시지 발송
 export const sendTeamMessage = createServerFn({ method: "POST" })
@@ -254,7 +269,8 @@ export const listMyMessages = createServerFn({ method: "GET" })
     const { data: mems } = await supabaseAdmin
       .from("team_members")
       .select("team_id")
-      .eq("user_id", context.userId);
+      .eq("user_id", context.userId)
+      .is("deleted_at", null);
     const teamIds = (mems ?? []).map((r: any) => r.team_id);
     if (teamIds.length === 0) return [];
     const { data: msgs } = await supabaseAdmin
@@ -266,7 +282,9 @@ export const listMyMessages = createServerFn({ method: "GET" })
     const { data: teams } = await supabaseAdmin
       .from("teams")
       .select("id, name")
-      .in("id", teamIds);
+      .in("id", teamIds)
+      .is("deleted_at", null);
+
     const nameMap = new Map((teams ?? []).map((t: any) => [t.id, t.name]));
     return (msgs ?? []).map((m: any) => ({ ...m, team_name: nameMap.get(m.team_id) ?? "" }));
   });
@@ -280,7 +298,9 @@ export const listAllClassesForAdmin = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name")
+      .is("deleted_at", null)
       .order("name");
+
     if (error) throw new Error(error.message);
     return data ?? [];
   });
