@@ -92,18 +92,6 @@ function MyPage() {
                 <p className="text-base">{email}</p>
               </div>
             )}
-            <div className="pt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                  navigate({ to: "/login", replace: true });
-                }}
-              >
-                <LogOut className="mr-1 h-4 w-4" /> 로그아웃
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
