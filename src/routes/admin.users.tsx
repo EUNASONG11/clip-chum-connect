@@ -426,7 +426,7 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               className="h-9"
@@ -438,7 +438,7 @@ function UsersPage() {
               ) : (
                 "교육원 백필"
               )}
-            </Button>
+            </Button> */}
           </div>
         </div>
 
