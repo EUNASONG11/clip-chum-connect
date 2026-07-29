@@ -50,7 +50,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const effectiveVideoId = mode === "video" ? videoId : undefined;
 
   const {
-    data: nonWatchers = [],
+    data: nonWatchersData,
     isFetching,
     refetch,
   } = useQuery({
@@ -61,16 +61,17 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
       }),
     enabled: open && (mode === "class" || !!videoId),
   });
+  const nonWatchers = nonWatchersData ?? [];
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !nonWatchersData) return;
     // 기본: 전화번호 있는 학생 전체 선택
     const init: Record<string, boolean> = {};
-    nonWatchers.forEach((n: any) => {
+    nonWatchersData.forEach((n: any) => {
       if (n.phone) init[n.user_id] = true;
     });
     setSelected(init);
-  }, [open, nonWatchers]);
+  }, [open, nonWatchersData]);
 
   useEffect(() => {
     if (open && mode === "video" && !videoId && videos.length > 0) {
