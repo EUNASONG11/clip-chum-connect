@@ -37,7 +37,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [videoId, setVideoId] = useState<string>("");
   const [channel, setChannel] = useState<"sms" | "brandtalk">("sms");
   const [message, setMessage] = useState("");
-  const [templateCode, setTemplateCode] = useState("");
+  
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [sending, setSending] = useState(false);
 
