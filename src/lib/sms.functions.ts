@@ -331,18 +331,17 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
     for (const [branch, list] of groups) {
       try {
         const creds = getBranchCreds(branch);
-        const templateCode = process.env[`NCP_${branch === "상동" ? "SANGDONG" : branch === "청라" ? "CHEONGNA" : "SONGDO"}_BT_TEMPLATE_CODE`];
-        if (!creds.btServiceId || !creds.btChannelId || !templateCode) {
-          throw new Error(`${branch} 브랜드톡 설정이 없습니다.`);
+        if (!creds.btServiceId || !creds.btChannelId) {
+          throw new Error(`${branch} 브랜드톡(친구톡) 서비스 ID 또는 채널 ID가 설정되지 않았습니다.`);
         }
-        const path = `/alimtalk/v2/services/${creds.btServiceId}/messages`;
+        // 친구톡: 템플릿 코드 불필요, 자유 문구 발송
+        const path = `/friendtalk/v2/services/${creds.btServiceId}/messages`;
         const headers = await sensHeaders("POST", path, creds.accessKey, creds.secretKey);
         const failoverSms = data.fallbackToSms && creds.smsFrom
           ? { type: byteLen(data.message) > 80 ? ("LMS" as const) : ("SMS" as const), from: creds.smsFrom, content: data.message }
           : null;
         const body: any = {
           plusFriendId: creds.btChannelId,
-          templateCode,
           messages: list.map((r) => ({
             countryCode: "82",
             to: r.phone,
