@@ -369,7 +369,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
