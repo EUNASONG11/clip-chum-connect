@@ -9,7 +9,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -32,13 +31,15 @@ type Props = {
   classId: string;
 };
 
+type SelectionKey = string; // `${user_id}:self` | `${user_id}:parent`
+
 export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
   const [videoId, setVideoId] = useState<string>("");
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
-  
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
 
   const { data: videos = [] } = useQuery({
@@ -65,10 +66,11 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   useEffect(() => {
     if (!open || !nonWatchersData) return;
-    // 기본: 전화번호 있는 학생 전체 선택
-    const init: Record<string, boolean> = {};
+    // 기본: 학생 본인 전화번호가 있으면 본인, 없고 학부모만 있으면 학부모 선택
+    const init: Record<SelectionKey, boolean> = {};
     nonWatchersData.forEach((n: any) => {
-      if (n.phone) init[n.user_id] = true;
+      if (n.student_phone) init[`${n.user_id}:self`] = true;
+      else if (n.parent_phone) init[`${n.user_id}:parent`] = true;
     });
     setSelected(init);
   }, [open, nonWatchersData]);
@@ -79,21 +81,37 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
     }
   }, [open, mode, videoId, videos]);
 
-  const selectedList = useMemo(
-    () => nonWatchers.filter((n: any) => selected[n.user_id] && n.phone),
-    [nonWatchers, selected],
-  );
+  type Recipient = { user_id: string; name: string; phone: string; branch: string };
 
-  const toggleAll = (checked: boolean) => {
-    const next: Record<string, boolean> = {};
+  const selectedList: Recipient[] = useMemo(() => {
+    const out: Recipient[] = [];
     nonWatchers.forEach((n: any) => {
-      if (n.phone) next[n.user_id] = checked;
+      if (n.student_phone && selected[`${n.user_id}:self`]) {
+        out.push({ user_id: n.user_id, name: n.name, phone: n.student_phone, branch: n.branch });
+      }
+      if (n.parent_phone && selected[`${n.user_id}:parent`]) {
+        out.push({ user_id: n.user_id, name: n.name, phone: n.parent_phone, branch: n.branch });
+      }
     });
-    setSelected(next);
+    return out;
+  }, [nonWatchers, selected]);
+
+  const toggleAll = (target: "self" | "parent", checked: boolean) => {
+    setSelected((prev) => {
+      const next = { ...prev };
+      nonWatchers.forEach((n: any) => {
+        const phone = target === "self" ? n.student_phone : n.parent_phone;
+        if (phone) next[`${n.user_id}:${target}`] = checked;
+      });
+      return next;
+    });
   };
 
-  const withPhoneCount = nonWatchers.filter((n: any) => n.phone).length;
-  const withoutPhoneCount = nonWatchers.length - withPhoneCount;
+  const clearAll = () => setSelected({});
+
+  const selfAvailable = nonWatchers.filter((n: any) => n.student_phone).length;
+  const parentAvailable = nonWatchers.filter((n: any) => n.parent_phone).length;
+  const noPhoneCount = nonWatchers.filter((n: any) => !n.student_phone && !n.parent_phone).length;
 
   const submit = async () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
@@ -101,19 +119,13 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
     setSending(true);
     try {
-      const recipients = selectedList.map((n: any) => ({
-        user_id: n.user_id,
-        name: n.name,
-        phone: n.phone,
-        branch: n.branch,
-      }));
       const res =
         channel === "sms"
-          ? await sendClassSms({ data: { classId, recipients, message: message.trim() } })
+          ? await sendClassSms({ data: { classId, recipients: selectedList, message: message.trim() } })
           : await sendClassBrandTalk({
               data: {
                 classId,
-                recipients,
+                recipients: selectedList,
                 message: message.trim(),
                 fallbackToSms: true,
               },
@@ -121,7 +133,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
       const okBranches = res.groups.filter((g: any) => g.ok);
       const failBranches = res.groups.filter((g: any) => !g.ok);
       const okCount = okBranches.reduce((n: number, g: any) => n + g.count, 0);
-      if (okCount > 0) toast.success(`${okCount}명에게 발송되었습니다.`);
+      if (okCount > 0) toast.success(`${okCount}건 발송되었습니다.`);
       if (failBranches.length > 0) {
         toast.error(
           `실패: ${failBranches.map((g: any) => `${g.branch}(${g.error ?? "오류"})`).join(", ")}`,
@@ -189,30 +201,39 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
           )}
 
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">
                 {mode === "video" ? "이 영상을 완료하지 않은 학생" : "진도 미완료 학생"}{" "}
-                ({withPhoneCount}명 발송 가능
-                {withoutPhoneCount > 0 ? ` · ${withoutPhoneCount}명 번호 없음` : ""})
+                (본인 {selfAvailable} · 학부모 {parentAvailable}
+                {noPhoneCount > 0 ? ` · 번호 없음 ${noPhoneCount}` : ""})
               </Label>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-1">
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => toggleAll(true)}
-                  disabled={isFetching || withPhoneCount === 0}
+                  onClick={() => toggleAll("self", true)}
+                  disabled={isFetching || selfAvailable === 0}
                 >
-                  전체 선택
+                  본인 전체
                 </Button>
                 <Button
                   type="button"
                   size="sm"
                   variant="outline"
-                  onClick={() => toggleAll(false)}
+                  onClick={() => toggleAll("parent", true)}
+                  disabled={isFetching || parentAvailable === 0}
+                >
+                  학부모 전체
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={clearAll}
                   disabled={isFetching}
                 >
-                  해제
+                  전체 해제
                 </Button>
                 <Button
                   type="button"
@@ -236,31 +257,61 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                 </p>
               ) : (
                 <ul className="divide-y">
-                  {nonWatchers.map((n: any) => (
-                    <li key={n.user_id} className="flex items-center gap-3 px-3 py-2">
-                      <Checkbox
-                        checked={!!selected[n.user_id]}
-                        disabled={!n.phone}
-                        onCheckedChange={(v) =>
-                          setSelected((s) => ({ ...s, [n.user_id]: !!v }))
-                        }
-                      />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {n.name || "(이름 없음)"}
-                          {n.branch && (
-                            <span className="ml-2 text-xs text-muted-foreground">[{n.branch}]</span>
-                          )}
-                          {n.phone_source === "parent" && (
-                            <span className="ml-1 text-xs text-amber-600">(학부모)</span>
-                          )}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {n.phone || "전화번호 없음"} · 미완료 {n.incomplete_count}/{n.eligible_total}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
+                  {nonWatchers.map((n: any) => {
+                    const selfKey = `${n.user_id}:self`;
+                    const parentKey = `${n.user_id}:parent`;
+                    return (
+                      <li key={n.user_id} className="flex flex-col gap-1 px-3 py-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-medium">
+                            {n.name || "(이름 없음)"}
+                            {n.branch && (
+                              <span className="ml-2 text-xs text-muted-foreground">[{n.branch}]</span>
+                            )}
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              미완료 {n.incomplete_count}/{n.eligible_total}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 pl-1">
+                          <label
+                            className={`flex items-center gap-2 text-xs ${
+                              n.student_phone ? "cursor-pointer" : "cursor-not-allowed opacity-40"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={!!selected[selfKey]}
+                              disabled={!n.student_phone}
+                              onCheckedChange={(v) =>
+                                setSelected((s) => ({ ...s, [selfKey]: !!v }))
+                              }
+                            />
+                            <span className="text-muted-foreground">본인</span>
+                            <span className="font-mono">
+                              {n.student_phone || "번호 없음"}
+                            </span>
+                          </label>
+                          <label
+                            className={`flex items-center gap-2 text-xs ${
+                              n.parent_phone ? "cursor-pointer" : "cursor-not-allowed opacity-40"
+                            }`}
+                          >
+                            <Checkbox
+                              checked={!!selected[parentKey]}
+                              disabled={!n.parent_phone}
+                              onCheckedChange={(v) =>
+                                setSelected((s) => ({ ...s, [parentKey]: !!v }))
+                              }
+                            />
+                            <span className="text-amber-600">학부모</span>
+                            <span className="font-mono">
+                              {n.parent_phone || "번호 없음"}
+                            </span>
+                          </label>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -312,7 +363,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 전송 중...
               </>
             ) : (
-              `${selectedList.length}명에게 전송`
+              `${selectedList.length}건 전송`
             )}
           </Button>
         </DialogFooter>
