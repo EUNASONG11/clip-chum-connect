@@ -213,7 +213,11 @@ export const getClassStats = createServerFn({ method: "GET" })
       let cellsWithProgress = 0;
       studs.forEach((uid: string) => {
         const start = enrollStart.get(`${c.id}:${uid}`);
-        const eligible = start ? vids.filter((v) => v.created_at >= start) : vids;
+        const eligible = vids.filter((v) => {
+          if (!start || v.created_at >= start) return true;
+          // 재배정 이전 영상이라도 시청 기록이 있으면 포함
+          return progressByVideoUser.has(`${v.id}:${uid}`);
+        });
         totalCells += eligible.length;
         eligible.forEach((v) => {
           const p = progressByVideoUser.get(`${v.id}:${uid}`);
@@ -285,8 +289,13 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
     const rel = ((progress ?? []) as any[]).filter((p: any) => videoIds.has(p.video_id));
     return studentIds.map((uid) => {
       const start = enrollStart.get(uid);
+      const myProgressVideoIds = new Set(
+        rel.filter((p: any) => p.user_id === uid).map((p: any) => p.video_id),
+      );
       const eligibleVideoIds = new Set(
-        start ? videoList.filter((v) => v.created_at >= start).map((v) => v.id) : videoList.map((v) => v.id),
+        videoList
+          .filter((v) => !start || v.created_at >= start || myProgressVideoIds.has(v.id))
+          .map((v) => v.id),
       );
       const eligibleTotal = eligibleVideoIds.size;
       const mine = rel.filter((p: any) => p.user_id === uid && eligibleVideoIds.has(p.video_id));
