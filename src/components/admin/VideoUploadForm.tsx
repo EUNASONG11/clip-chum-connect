@@ -19,6 +19,7 @@ const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
 
 export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
+  const { isAdmin } = useAdminRole();
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
