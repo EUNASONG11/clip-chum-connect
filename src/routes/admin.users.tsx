@@ -426,6 +426,19 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={runBackfill}
+              disabled={backfillBusy}
+            >
+              {backfillBusy ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 교육원 백필 중…</>
+              ) : (
+                "교육원 백필"
+              )}
+            </Button>
           </div>
         </div>
 
