@@ -332,10 +332,10 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
       try {
         const creds = getBranchCreds(branch);
         if (!creds.btServiceId || !creds.btChannelId) {
-          throw new Error(`${branch} 브랜드톡(친구톡) 서비스 ID 또는 채널 ID가 설정되지 않았습니다.`);
+          throw new Error(`${branch} 브랜드톡 서비스 ID 또는 채널 ID가 설정되지 않았습니다.`);
         }
-        // 친구톡: 템플릿 코드 불필요, 자유 문구 발송
-        const path = `/friendtalk/v2/services/${creds.btServiceId}/messages`;
+        // 템플릿 코드 없이 자유 문구 발송
+        const path = `/alimtalk/v2/services/${creds.btServiceId}/messages`;
         const headers = await sensHeaders("POST", path, creds.accessKey, creds.secretKey);
         const failoverSms = data.fallbackToSms && creds.smsFrom
           ? { type: byteLen(data.message) > 80 ? ("LMS" as const) : ("SMS" as const), from: creds.smsFrom, content: data.message }
