@@ -710,17 +710,17 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
       }
     }
 
-    // 2) 기존 전화번호 경로.
+    // 2) 기존 전화번호 경로 — 학생 본인 전화번호 또는 학부모 전화번호와 일치하면 로그인 허용.
     if (phoneDigits.length < 8) {
       throw new Error("전화번호(또는 임시 비밀번호)가 올바르지 않습니다.");
     }
 
     const { data: rows, error } = await supabaseAdmin
       .from("external_students")
-      .select("name, phone, auth_user_id, is_deleted")
+      .select("name, phone, parent_phone, auth_user_id, is_deleted")
       .eq("name", name)
-      .eq("phone", phoneDigits)
-      .limit(2);
+      .or(`phone.eq.${phoneDigits},parent_phone.eq.${phoneDigits}`)
+      .limit(3);
     if (error) throw new Error(error.message);
 
     const active = (rows ?? []).filter((r) => !r.is_deleted);
@@ -738,9 +738,14 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
       if (userErr || !userRes?.user?.email) {
         throw new Error("계정 정보를 불러올 수 없습니다.");
       }
+      const initialPassword = phoneDigits.slice(-8);
+      // 입력한 전화번호(본인/학부모 무관) 뒷 8자리로 비밀번호를 동기화하여 로그인 보장.
+      await supabaseAdmin.auth.admin.updateUserById(row.auth_user_id, {
+        password: initialPassword,
+      });
       return {
         email: userRes.user.email,
-        initialPassword: phoneDigits.slice(-8),
+        initialPassword,
       };
     }
 

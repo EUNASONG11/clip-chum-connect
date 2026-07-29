@@ -343,6 +343,7 @@ export type Database = {
           id: string
           is_deleted: boolean
           name: string
+          parent_phone: string | null
           phone: string | null
           school: string | null
           synced_at: string
@@ -360,6 +361,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           name: string
+          parent_phone?: string | null
           phone?: string | null
           school?: string | null
           synced_at?: string
@@ -377,6 +379,7 @@ export type Database = {
           id?: string
           is_deleted?: boolean
           name?: string
+          parent_phone?: string | null
           phone?: string | null
           school?: string | null
           synced_at?: string

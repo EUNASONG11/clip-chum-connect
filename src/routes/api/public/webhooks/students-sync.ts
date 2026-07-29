@@ -88,6 +88,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         }
 
         const phone = normalizePhone(rec.phone);
+        const parentPhone = normalizePhone(rec.parent_phone);
         const emailRaw = str(rec.email);
         const school = str(rec.school);
         const grade = str(rec.grade);
@@ -95,6 +96,8 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         const enrollmentStatus = str(rec.enrollment_status);
         const branch = str(rec.education_center) ?? str(rec.branch);
         const isDeletedFromMaster = rec.is_deleted === true;
+        // 학생 본인 전화번호가 없으면 학부모 전화번호를 로그인용 기본값으로 사용.
+        const loginPhone = phone ?? parentPhone;
 
         // Check if we already have this student mirrored.
         const { data: existing } = await supabaseAdmin
@@ -107,14 +110,14 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
 
         // Auto-provision auth account on first sight (skip if master marks deleted).
         if (!authUserId && !isDeletedFromMaster) {
-          const email = fakeEmail(externalId, phone, emailRaw);
-          const password = derivePassword(phone);
+          const email = fakeEmail(externalId, loginPhone, emailRaw);
+          const password = derivePassword(loginPhone);
 
           const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
             email_confirm: true,
-            user_metadata: { name, phone, external_id: externalId, source: "master-mirror" },
+            user_metadata: { name, phone, parent_phone: parentPhone, external_id: externalId, source: "master-mirror" },
           });
 
           if (createErr) {
@@ -139,6 +142,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
               external_id: externalId,
               name,
               phone,
+              parent_phone: parentPhone,
               school,
               grade,
               class_time: classTime,
