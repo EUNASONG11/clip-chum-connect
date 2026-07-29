@@ -250,7 +250,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
     const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
     const { data: ext } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone")
+      .select("auth_user_id, name, phone, parent_phone")
       .in("auth_user_id", userIds);
     const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
     return rows.map((r: any) => {
@@ -260,6 +260,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
         email: emailMap.get(r.user_id) ?? "",
         name: e?.name ?? "",
         phone: e?.phone ?? "",
+        parent_phone: e?.parent_phone ?? "",
         created_at: r.created_at as string,
       };
     });
@@ -284,13 +285,13 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     const digits = q.replace(/[^0-9]/g, "");
     let builder = supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone, school, grade, branch")
+      .select("auth_user_id, name, phone, parent_phone, school, grade, branch")
       .not("auth_user_id", "is", null)
       .eq("is_deleted", false)
       .limit(20);
     if (data.branch) builder = builder.eq("branch", data.branch);
     if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
-      builder = builder.ilike("phone", `%${digits}%`);
+      builder = builder.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`);
     } else {
       builder = builder.ilike("name", `%${q}%`);
     }
@@ -300,6 +301,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       user_id: r.auth_user_id as string,
       name: r.name as string,
       phone: (r.phone as string) ?? "",
+      parent_phone: (r.parent_phone as string) ?? "",
       school: (r.school as string) ?? "",
       grade: (r.grade as string) ?? "",
       branch: (r.branch as string) ?? "",

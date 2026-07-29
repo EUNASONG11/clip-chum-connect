@@ -180,7 +180,7 @@ function ClassDetailPage() {
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; school: string; grade: string; branch: string }[]
+    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string }[]
   >([]);
   const [searching, setSearching] = useState(false);
   const { data: branchList = [] } = useQuery({
@@ -373,6 +373,7 @@ function ClassDetailPage() {
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {r.phone}
+                          {r.parent_phone ? ` · 학부모 ${r.parent_phone}` : ""}
                           {r.school ? ` · ${r.school}` : ""}
                           {r.grade ? ` ${r.grade}` : ""}
                         </p>
@@ -404,6 +405,9 @@ function ClassDetailPage() {
                     <p className="truncate text-sm font-medium">{s.name || s.email}</p>
                     {s.phone && (
                       <p className="truncate text-xs text-muted-foreground">{s.phone}</p>
+                    )}
+                    {s.parent_phone && (
+                      <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
                   </div>
                   <Button
