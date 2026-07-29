@@ -862,8 +862,10 @@ export const createClassCategory = createServerFn({ method: "POST" })
     const { data: existing } = await supabaseAdmin
       .from("class_categories")
       .select("sort_order")
+      .is("deleted_at", null)
       .order("sort_order", { ascending: false })
       .limit(1);
+
     const nextOrder = existing && existing.length > 0 ? (existing[0] as any).sort_order + 1 : 0;
     const { data: row, error } = await supabaseAdmin
       .from("class_categories")
