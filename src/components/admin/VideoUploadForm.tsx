@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
 import { listClasses, listClassFolders } from "@/lib/classes.functions";
+import { useAdminRole } from "@/components/AdminRole";
 
 const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
