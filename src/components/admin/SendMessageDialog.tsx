@@ -256,27 +256,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-sm">채널</Label>
-            <RadioGroup
-              value={channel}
-              onValueChange={(v) => setChannel(v as "sms" | "brandtalk")}
-              className="flex gap-4"
-            >
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="sms" id="ch-sms" />
-                <Label htmlFor="ch-sms" className="cursor-pointer text-sm">
-                  SMS/LMS
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="brandtalk" id="ch-bt" />
-                <Label htmlFor="ch-bt" className="cursor-pointer text-sm">
-                  카카오 브랜드톡
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
 
 
           <div className="space-y-2">
