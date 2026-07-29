@@ -373,6 +373,7 @@ function ClassDetailPage() {
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {r.phone}
+                          {r.parent_phone ? ` · 학부모 ${r.parent_phone}` : ""}
                           {r.school ? ` · ${r.school}` : ""}
                           {r.grade ? ` ${r.grade}` : ""}
                         </p>
