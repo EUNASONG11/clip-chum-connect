@@ -45,10 +45,14 @@ export const deleteComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("comments").delete().eq("id", data.id);
+    const { error } = await context.supabase
+      .from("comments")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // ---------- Bookmarks ----------
 export const listMyBookmarks = createServerFn({ method: "GET" })
@@ -91,10 +95,14 @@ export const deleteBookmark = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("bookmarks").delete().eq("id", data.id);
+    const { error } = await context.supabase
+      .from("bookmarks")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // ---------- Admin/Instructor read helpers ----------
 async function assertVideoAccess(context: { supabase: any; userId: string }, videoId: string) {

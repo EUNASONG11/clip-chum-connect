@@ -201,17 +201,15 @@ export const deleteVideo = createServerFn({ method: "POST" })
     if (e1) throw new Error(e1.message);
     await assertOwnClassOrAdmin(context, existing.class_id);
 
-    try {
-      await vimeoFetch(`/videos/${existing.vimeo_video_id}`, { method: "DELETE" });
-    } catch (err) {
-      // 이미 삭제된 경우 무시
-      console.error("Vimeo delete error", err);
-    }
-
-    const { error } = await context.supabase.from("videos").delete().eq("id", data.id);
+    // 소프트 삭제: Vimeo 원본은 유지, 휴지통에서 영구삭제 시 Vimeo도 삭제
+    const { error } = await context.supabase
+      .from("videos")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 5) 내가 관리자냐
 export const getMyRole = createServerFn({ method: "GET" })
@@ -571,7 +569,7 @@ export const revertToPending = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// 6-6) 사용자 삭제(가입 거절)
+// 6-6) 사용자 삭제(가입 거절) - 소프트 삭제: user_roles 를 소프트 삭제하고 auth 계정은 보존
 export const rejectUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
@@ -579,11 +577,15 @@ export const rejectUser = createServerFn({ method: "POST" })
     await assertAdmin(context);
     if (data.userId === context.userId) throw new Error("자기 자신은 삭제할 수 없습니다.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    const { error } = await supabaseAdmin
+      .from("user_roles")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
+      .eq("user_id", data.userId)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 7) YouTube 링크 추가
 function parseYoutubeId(url: string): string | null {

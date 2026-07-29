@@ -17,6 +17,8 @@ export type Database = {
       bookmarks: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           note: string | null
           seconds: number
@@ -25,6 +27,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           note?: string | null
           seconds?: number
@@ -33,6 +37,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           note?: string | null
           seconds?: number
@@ -54,6 +60,8 @@ export type Database = {
           color: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           name: string
           sort_order: number
@@ -63,6 +71,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name: string
           sort_order?: number
@@ -72,6 +82,8 @@ export type Database = {
           color?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name?: string
           sort_order?: number
@@ -119,6 +131,8 @@ export type Database = {
           class_id: string
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           name: string
           sort_order: number
@@ -128,6 +142,8 @@ export type Database = {
           class_id: string
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name: string
           sort_order?: number
@@ -137,6 +153,8 @@ export type Database = {
           class_id?: string
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           name?: string
           sort_order?: number
@@ -156,18 +174,24 @@ export type Database = {
         Row: {
           class_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           instructor_user_id: string
         }
         Insert: {
           class_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           instructor_user_id: string
         }
         Update: {
           class_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           instructor_user_id?: string
         }
@@ -185,16 +209,22 @@ export type Database = {
         Row: {
           class_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           user_id: string
         }
         Insert: {
           class_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           user_id: string
         }
         Update: {
           class_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           user_id?: string
         }
         Relationships: [
@@ -214,6 +244,8 @@ export type Database = {
           category_id: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           name: string
@@ -226,6 +258,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           name: string
@@ -238,6 +272,8 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -258,6 +294,8 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           updated_at: string
           user_id: string
@@ -266,6 +304,8 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           updated_at?: string
           user_id: string
@@ -274,6 +314,8 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           updated_at?: string
           user_id?: string
@@ -427,16 +469,22 @@ export type Database = {
       team_members: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           team_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           team_id: string
           user_id: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           team_id?: string
           user_id?: string
         }
@@ -454,6 +502,8 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           sent_by: string
           subject: string
@@ -462,6 +512,8 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           sent_by: string
           subject: string
@@ -470,6 +522,8 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           sent_by?: string
           subject?: string
@@ -489,6 +543,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           name: string
@@ -497,6 +553,8 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           name: string
@@ -505,6 +563,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -515,18 +575,24 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -584,6 +650,8 @@ export type Database = {
           completion_ratio: number
           created_at: string
           created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           duration: number | null
           external_url: string | null
@@ -610,6 +678,8 @@ export type Database = {
           completion_ratio?: number
           created_at?: string
           created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           duration?: number | null
           external_url?: string | null
@@ -636,6 +706,8 @@ export type Database = {
           completion_ratio?: number
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           duration?: number | null
           external_url?: string | null

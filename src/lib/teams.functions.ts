@@ -103,10 +103,11 @@ export const deleteTeam = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("teams").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from("teams").update({ deleted_at: new Date().toISOString(), deleted_by: context.userId }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 팀 상세 (멤버 포함)
 export const getTeam = createServerFn({ method: "POST" })
@@ -159,8 +160,11 @@ export const addTeamMember = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("team_members")
-      .insert({ team_id: data.teamId, user_id: data.userId });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+      .upsert(
+        { team_id: data.teamId, user_id: data.userId, deleted_at: null, deleted_by: null },
+        { onConflict: "team_id,user_id" },
+      );
+    if (error) throw new Error(error.message);
     return { ok: true };
   });
 
@@ -174,12 +178,14 @@ export const removeTeamMember = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("team_members")
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
       .eq("team_id", data.teamId)
-      .eq("user_id", data.userId);
+      .eq("user_id", data.userId)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // 팀 전원을 특정 수강반에 일괄 배정
 export const assignTeamToClass = createServerFn({ method: "POST" })
@@ -193,17 +199,19 @@ export const assignTeamToClass = createServerFn({ method: "POST" })
     const { data: mems, error: e1 } = await supabaseAdmin
       .from("team_members")
       .select("user_id")
-      .eq("team_id", data.teamId);
+      .eq("team_id", data.teamId)
+      .is("deleted_at", null);
     if (e1) throw new Error(e1.message);
     const userIds = (mems ?? []).map((m: any) => m.user_id);
     if (userIds.length === 0) return { assigned: 0 };
-    const rows = userIds.map((uid) => ({ class_id: data.classId, user_id: uid }));
+    const rows = userIds.map((uid) => ({ class_id: data.classId, user_id: uid, deleted_at: null, deleted_by: null }));
     const { error } = await supabaseAdmin
       .from("class_students")
-      .upsert(rows, { onConflict: "class_id,user_id", ignoreDuplicates: true });
+      .upsert(rows, { onConflict: "class_id,user_id" });
     if (error) throw new Error(error.message);
     return { assigned: userIds.length };
   });
+
 
 // 팀 대상 메시지 발송
 export const sendTeamMessage = createServerFn({ method: "POST" })
