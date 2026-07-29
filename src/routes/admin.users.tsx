@@ -35,6 +35,7 @@ import {
   issueStudentTempPassword,
   getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
+import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { AdminOnly } from "@/components/AdminRole";
 import {
   Dialog,
@@ -107,6 +108,26 @@ function UsersPage() {
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [backfillBusy, setBackfillBusy] = useState(false);
+
+  async function runBackfill() {
+    if (backfillBusy) return;
+    if (!confirm("마스터 프로젝트에서 교육원 정보를 가져와 학생 branch를 일괄 업데이트합니다. 진행할까요?")) return;
+    setBackfillBusy(true);
+    try {
+      const res = await backfillBranchesFromMaster();
+      if (res.ok) {
+        toast.success(`백필 완료: 조회 ${res.totalFetched}건, 업데이트 ${res.totalUpdated}건`);
+      } else {
+        toast.error(`일부 오류 발생 (업데이트 ${res.totalUpdated}건): ${res.errors.slice(0, 2).join(" / ")}`);
+      }
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "백필 실패");
+    } finally {
+      setBackfillBusy(false);
+    }
+  }
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [tempPwUser, setTempPwUser] = useState<UserRow | null>(null);
@@ -405,6 +426,19 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={runBackfill}
+              disabled={backfillBusy}
+            >
+              {backfillBusy ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 교육원 백필 중…</>
+              ) : (
+                "교육원 백필"
+              )}
+            </Button>
           </div>
         </div>
 
