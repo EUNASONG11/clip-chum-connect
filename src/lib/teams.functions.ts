@@ -124,13 +124,16 @@ export const getTeam = createServerFn({ method: "POST" })
       .from("teams")
       .select("id, name, description, created_at")
       .eq("id", data.id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!team) throw new Error("팀을 찾을 수 없습니다.");
     const { data: mems } = await supabaseAdmin
       .from("team_members")
       .select("user_id, created_at")
-      .eq("team_id", data.id);
+      .eq("team_id", data.id)
+      .is("deleted_at", null);
+
     const userIds = (mems ?? []).map((m: any) => m.user_id);
     let members: any[] = [];
     if (userIds.length > 0) {
