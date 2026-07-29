@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   UserMinus,
@@ -52,6 +59,7 @@ type UserRow = {
   isPending: boolean;
   class_count: number;
   has_temp_password: boolean;
+  branch: string | null;
 };
 
 
@@ -97,6 +105,7 @@ function UsersPage() {
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
+  const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -133,6 +142,15 @@ function UsersPage() {
   }, [users]);
 
 
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    users.forEach((u) => {
+      const b = (u.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [users]);
+
   const filtered = useMemo(() => {
     const rows = buckets[tab];
     const terms = search
@@ -140,12 +158,16 @@ function UsersPage() {
       .toLowerCase()
       .split(/\s+/)
       .filter((t) => t.length > 0);
-    if (terms.length === 0) return rows;
-    return rows.filter((u) => {
+    const byBranch =
+      branchFilter === "__all__"
+        ? rows
+        : rows.filter((u) => (u.branch ?? "") === branchFilter);
+    if (terms.length === 0) return byBranch;
+    return byBranch.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search]);
+  }, [buckets, tab, search, branchFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -353,18 +375,36 @@ function UsersPage() {
         </Tabs>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full max-w-sm">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
+                }}
+                placeholder="이름, 전화번호, 이메일 검색"
+                className="pl-9"
+              />
+            </div>
+            <Select
+              value={branchFilter}
+              onValueChange={(v) => {
+                setBranchFilter(v);
                 setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
               }}
-              placeholder="이름, 전화번호, 이메일 검색"
-              className="pl-9"
-            />
-
+            >
+              <SelectTrigger className="h-9 w-full sm:w-48">
+                <SelectValue placeholder="교육원 전체" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">교육원 전체</SelectItem>
+                {branchOptions.map((b) => (
+                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

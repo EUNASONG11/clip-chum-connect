@@ -93,6 +93,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         const grade = str(rec.grade);
         const classTime = str(rec.class_time);
         const enrollmentStatus = str(rec.enrollment_status);
+        const branch = str(rec.education_center) ?? str(rec.branch);
         const isDeletedFromMaster = rec.is_deleted === true;
 
         // Check if we already have this student mirrored.
@@ -142,6 +143,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
               grade,
               class_time: classTime,
               enrollment_status: enrollmentStatus,
+              branch,
               is_deleted: isDeletedFromMaster,
               auth_user_id: authUserId,
               synced_at: new Date().toISOString(),
