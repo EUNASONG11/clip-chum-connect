@@ -27,6 +27,7 @@ import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.in
 import { Route as AdminVideoIdRouteImport } from './routes/admin.video.$id'
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
+import { Route as ApiPublicAdminBackfillBranchesRouteImport } from './routes/api/public/admin/backfill-branches'
 
 const MypageRoute = MypageRouteImport.update({
   id: '/mypage',
@@ -119,6 +120,12 @@ const ApiPublicWebhooksStudentsSyncRoute =
     path: '/api/public/webhooks/students-sync',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicAdminBackfillBranchesRoute =
+  ApiPublicAdminBackfillBranchesRouteImport.update({
+    id: '/api/public/admin/backfill-branches',
+    path: '/api/public/admin/backfill-branches',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByFullPath {
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
+  '/api/public/admin/backfill-branches': typeof ApiPublicAdminBackfillBranchesRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRoutesByTo {
@@ -157,6 +165,7 @@ export interface FileRoutesByTo {
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes': typeof AdminClassesIndexRoute
+  '/api/public/admin/backfill-branches': typeof ApiPublicAdminBackfillBranchesRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRoutesById {
@@ -178,6 +187,7 @@ export interface FileRoutesById {
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
+  '/api/public/admin/backfill-branches': typeof ApiPublicAdminBackfillBranchesRoute
   '/api/public/webhooks/students-sync': typeof ApiPublicWebhooksStudentsSyncRoute
 }
 export interface FileRouteTypes {
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes/'
+    | '/api/public/admin/backfill-branches'
     | '/api/public/webhooks/students-sync'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes'
+    | '/api/public/admin/backfill-branches'
     | '/api/public/webhooks/students-sync'
   id:
     | '__root__'
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes/'
+    | '/api/public/admin/backfill-branches'
     | '/api/public/webhooks/students-sync'
   fileRoutesById: FileRoutesById
 }
@@ -250,6 +263,7 @@ export interface RootRouteChildren {
   MypageRoute: typeof MypageRoute
   ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
+  ApiPublicAdminBackfillBranchesRoute: typeof ApiPublicAdminBackfillBranchesRoute
   ApiPublicWebhooksStudentsSyncRoute: typeof ApiPublicWebhooksStudentsSyncRoute
 }
 
@@ -381,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicWebhooksStudentsSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/admin/backfill-branches': {
+      id: '/api/public/admin/backfill-branches'
+      path: '/api/public/admin/backfill-branches'
+      fullPath: '/api/public/admin/backfill-branches'
+      preLoaderRoute: typeof ApiPublicAdminBackfillBranchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -420,6 +441,7 @@ const rootRouteChildren: RootRouteChildren = {
   MypageRoute: MypageRoute,
   ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
+  ApiPublicAdminBackfillBranchesRoute: ApiPublicAdminBackfillBranchesRoute,
   ApiPublicWebhooksStudentsSyncRoute: ApiPublicWebhooksStudentsSyncRoute,
 }
 export const routeTree = rootRouteImport
