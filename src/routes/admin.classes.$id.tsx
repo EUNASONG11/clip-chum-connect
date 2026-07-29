@@ -308,21 +308,37 @@ function ClassDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form onSubmit={search} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-            <div className="min-w-0">
-              <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
-              <Input
-                id="query"
-                type="text"
-                placeholder="이름 또는 전화번호로 검색"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+          <form onSubmit={search} className="space-y-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <div className="min-w-0">
+                <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
+                <Input
+                  id="query"
+                  type="text"
+                  placeholder="이름 또는 전화번호로 검색"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <Button type="submit" disabled={searching} className="shrink-0 whitespace-nowrap">
+                <Search className="mr-1 h-4 w-4 shrink-0" />
+                {searching ? "검색 중..." : "검색"}
+              </Button>
             </div>
-            <Button type="submit" disabled={searching} className="shrink-0 whitespace-nowrap">
-              <Search className="mr-1 h-4 w-4 shrink-0" />
-              {searching ? "검색 중..." : "검색"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground shrink-0">교육원</Label>
+              <Select value={searchBranch} onValueChange={setSearchBranch}>
+                <SelectTrigger className="h-9 w-full sm:w-56">
+                  <SelectValue placeholder="전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">전체</SelectItem>
+                  {branchList.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </form>
 
           {results.length > 0 && (
@@ -333,7 +349,10 @@ function ClassDetailPage() {
                   return (
                     <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">{r.name}</p>
+                        <p className="truncate text-sm font-medium">
+                          {r.name}
+                          {r.branch ? <span className="ml-2 text-xs text-muted-foreground">[{r.branch}]</span> : null}
+                        </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {r.phone}
                           {r.school ? ` · ${r.school}` : ""}
