@@ -68,7 +68,7 @@ function formatDuration(sec: number | null) {
 function getVimeoEmbedUrl(video: Video) {
   if (!video.player_embed_url) return null;
   const separator = video.player_embed_url.includes("?") ? "&" : "?";
-  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1`;
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0`;
 }
 
 async function requestElementFullscreen(element: Element | null) {
@@ -369,7 +369,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
@@ -522,10 +522,13 @@ function VideoPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (isPlayerExpanded) setIsPlayerExpanded(false);
-                  else setIsPlayerExpanded(true);
+                  if (isPlayerExpanded) {
+                    setIsPlayerExpanded(false);
+                  } else {
+                    fullscreenRef.current();
+                  }
                 }}
-                className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
+                className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
                 aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
               >
                 <Maximize2 className="h-3.5 w-3.5" /> {isPlayerExpanded ? "닫기" : "전체화면"}
