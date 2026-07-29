@@ -298,7 +298,9 @@ export const listAllClassesForAdmin = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name")
+      .is("deleted_at", null)
       .order("name");
+
     if (error) throw new Error(error.message);
     return data ?? [];
   });
