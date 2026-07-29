@@ -291,22 +291,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
             </RadioGroup>
           </div>
 
-          {channel === "brandtalk" && (
-            <div className="space-y-2">
-              <Label htmlFor="tpl" className="text-sm">
-                템플릿 코드
-              </Label>
-              <Input
-                id="tpl"
-                value={templateCode}
-                onChange={(e) => setTemplateCode(e.target.value)}
-                placeholder="사전 승인된 브랜드톡 템플릿 코드"
-              />
-              <p className="text-xs text-muted-foreground">
-                실패 시 SMS로 자동 대체 발송됩니다.
-              </p>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="msg" className="text-sm">
