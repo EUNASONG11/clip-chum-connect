@@ -308,7 +308,6 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
       .object({
         classId: z.string().uuid(),
         recipients: z.array(RecipientSchema).min(1).max(1000),
-        templateCode: z.string().min(1).max(50),
         message: z.string().min(1).max(2000),
         fallbackToSms: z.boolean().default(true),
       })
