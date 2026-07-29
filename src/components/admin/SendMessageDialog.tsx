@@ -107,7 +107,17 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         phone: n.phone,
         branch: n.branch,
       }));
-      const res = await sendClassSms({ data: { classId, recipients, message: message.trim() } });
+      const res =
+        channel === "sms"
+          ? await sendClassSms({ data: { classId, recipients, message: message.trim() } })
+          : await sendClassBrandTalk({
+              data: {
+                classId,
+                recipients,
+                message: message.trim(),
+                fallbackToSms: true,
+              },
+            });
       const okBranches = res.groups.filter((g: any) => g.ok);
       const failBranches = res.groups.filter((g: any) => !g.ok);
       const okCount = okBranches.reduce((n: number, g: any) => n + g.count, 0);
