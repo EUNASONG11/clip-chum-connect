@@ -269,7 +269,8 @@ export const listMyMessages = createServerFn({ method: "GET" })
     const { data: mems } = await supabaseAdmin
       .from("team_members")
       .select("team_id")
-      .eq("user_id", context.userId);
+      .eq("user_id", context.userId)
+      .is("deleted_at", null);
     const teamIds = (mems ?? []).map((r: any) => r.team_id);
     if (teamIds.length === 0) return [];
     const { data: msgs } = await supabaseAdmin
@@ -281,7 +282,9 @@ export const listMyMessages = createServerFn({ method: "GET" })
     const { data: teams } = await supabaseAdmin
       .from("teams")
       .select("id, name")
-      .in("id", teamIds);
+      .in("id", teamIds)
+      .is("deleted_at", null);
+
     const nameMap = new Map((teams ?? []).map((t: any) => [t.id, t.name]));
     return (msgs ?? []).map((m: any) => ({ ...m, team_name: nameMap.get(m.team_id) ?? "" }));
   });
