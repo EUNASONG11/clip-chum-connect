@@ -35,7 +35,7 @@ type Props = {
 export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
   const [videoId, setVideoId] = useState<string>("");
-  const [channel, setChannel] = useState<"sms" | "brandtalk">("sms");
+  
   const [message, setMessage] = useState("");
   
   const [selected, setSelected] = useState<Record<string, boolean>>({});
