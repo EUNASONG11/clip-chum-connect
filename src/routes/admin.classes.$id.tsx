@@ -16,8 +16,9 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
+import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import {
   getClass,
   listClassStudents,
@@ -86,6 +87,7 @@ function ClassDetailPage() {
   const [settingsTo, setSettingsTo] = useState("");
   const [settingsAlways, setSettingsAlways] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
 
   const clsAny: any = cls;
   useEffect(() => {
@@ -281,13 +283,29 @@ function ClassDetailPage() {
             <ArrowLeft className="mr-1 h-4 w-4 shrink-0" /> <span className="truncate">수강반 목록</span>
           </Link>
         </Button>
-        <div className="mt-2 flex min-w-0 items-baseline gap-2">
-          <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
-          {cls?.description && (
-            <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
-          )}
+        <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
+            {cls?.description && (
+              <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMessageDialogOpen(true)}
+            className="shrink-0"
+          >
+            <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
+          </Button>
         </div>
       </div>
+
+      <SendMessageDialog
+        open={messageDialogOpen}
+        onOpenChange={setMessageDialogOpen}
+        classId={id}
+      />
 
       <Tabs defaultValue="students" className="w-full min-w-0">
         <TabsList className={isAdmin ? "grid w-full grid-cols-6" : "grid w-full grid-cols-5"}>
