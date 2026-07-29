@@ -87,6 +87,7 @@ function ClassDetailPage() {
   const [settingsTo, setSettingsTo] = useState("");
   const [settingsAlways, setSettingsAlways] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
 
   const clsAny: any = cls;
   useEffect(() => {
