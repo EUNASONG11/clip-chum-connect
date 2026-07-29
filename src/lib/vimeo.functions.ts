@@ -354,9 +354,10 @@ export const listUsers = createServerFn({ method: "GET" })
     }
 
     const [rolesRes, csRes] = await Promise.all([
-      retry(async () => await supabaseAdmin.from("user_roles").select("user_id, role"), "user_roles"),
-      retry(async () => await supabaseAdmin.from("class_students").select("user_id"), "class_students"),
+      retry(async () => await supabaseAdmin.from("user_roles").select("user_id, role").is("deleted_at", null), "user_roles"),
+      retry(async () => await supabaseAdmin.from("class_students").select("user_id").is("deleted_at", null), "class_students"),
     ]);
+
     const userIds = allAuthUsers.map((u) => u.id);
 
     // external_students 전체 페이징 조회 후 로컬 매칭
