@@ -522,10 +522,13 @@ function VideoPage() {
               <button
                 type="button"
                 onClick={() => {
-                  if (isPlayerExpanded) setIsPlayerExpanded(false);
-                  else setIsPlayerExpanded(true);
+                  if (isPlayerExpanded) {
+                    setIsPlayerExpanded(false);
+                  } else {
+                    fullscreenRef.current();
+                  }
                 }}
-                className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
+                className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
                 aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
               >
                 <Maximize2 className="h-3.5 w-3.5" /> {isPlayerExpanded ? "닫기" : "전체화면"}
