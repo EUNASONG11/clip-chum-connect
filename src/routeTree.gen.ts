@@ -20,6 +20,7 @@ import { Route as ClassIdRouteImport } from './routes/class.$id'
 import { Route as AdminVideosRouteImport } from './routes/admin.videos'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUploadRouteImport } from './routes/admin.upload'
+import { Route as AdminTrashRouteImport } from './routes/admin.trash'
 import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
 import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
@@ -83,6 +84,11 @@ const AdminUploadRoute = AdminUploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTrashRoute = AdminTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminTeamsRoute = AdminTeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
@@ -129,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
+  '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -148,6 +155,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
+  '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -169,6 +177,7 @@ export interface FileRoutesById {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
+  '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/videos': typeof AdminVideosRoute
@@ -191,6 +200,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
+    | '/admin/trash'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
+    | '/admin/trash'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
+    | '/admin/trash'
     | '/admin/upload'
     | '/admin/users'
     | '/admin/videos'
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUploadRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/trash': {
+      id: '/admin/trash'
+      path: '/trash'
+      fullPath: '/admin/trash'
+      preLoaderRoute: typeof AdminTrashRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/teams': {
       id: '/admin/teams'
       path: '/teams'
@@ -388,6 +407,7 @@ interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminInstructorsRoute: typeof AdminInstructorsRoute
   AdminTeamsRoute: typeof AdminTeamsRoute
+  AdminTrashRoute: typeof AdminTrashRoute
   AdminUploadRoute: typeof AdminUploadRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminVideosRoute: typeof AdminVideosRoute
@@ -401,6 +421,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminInstructorsRoute: AdminInstructorsRoute,
   AdminTeamsRoute: AdminTeamsRoute,
+  AdminTrashRoute: AdminTrashRoute,
   AdminUploadRoute: AdminUploadRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminVideosRoute: AdminVideosRoute,
