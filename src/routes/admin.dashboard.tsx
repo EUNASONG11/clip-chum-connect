@@ -54,12 +54,12 @@ function DashboardPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">수강반</th>
-                <th className="px-3 py-2">학생</th>
-                <th className="px-3 py-2">영상</th>
-                <th className="px-3 py-2">완료율</th>
-                <th className="px-3 py-2">평균 시청률</th>
-                <th className="px-3 py-2"></th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">수강반</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">학생</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">영상</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">완료율</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">평균 시청률</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -72,12 +72,12 @@ function DashboardPage() {
               )}
               {classes.map((c: any) => (
                 <tr key={c.class_id} className="border-t">
-                  <td className="px-3 py-2 font-medium">{c.name}</td>
-                  <td className="px-3 py-2">{c.student_count}명</td>
-                  <td className="px-3 py-2">{c.video_count}개</td>
-                  <td className="px-3 py-2">{Math.round(c.completion_rate * 100)}%</td>
-                  <td className="px-3 py-2">{Math.round(c.avg_watched_ratio * 100)}%</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="max-sm:whitespace-nowrap px-3 py-2 font-medium">{c.name}</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{c.student_count}명</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{c.video_count}개</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.completion_rate * 100)}%</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.avg_watched_ratio * 100)}%</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2 text-right">
                     <Link
                       to="/admin/classes/$id"
                       params={{ id: c.class_id }}
