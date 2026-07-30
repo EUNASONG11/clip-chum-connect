@@ -56,7 +56,7 @@ async function assertOwnClassOrAdmin(
   throw new Error("해당 수강반에 대한 권한이 없습니다.");
 }
 
-async function vimeoFetch(path: string, init: RequestInit = {}) {
+export async function vimeoFetch(path: string, init: RequestInit = {}) {
   const token = process.env.VIMEO_ACCESS_TOKEN;
   if (!token) throw new Error("VIMEO_ACCESS_TOKEN 이 설정되지 않았습니다.");
   const res = await fetch(`${VIMEO_API}${path}`, {

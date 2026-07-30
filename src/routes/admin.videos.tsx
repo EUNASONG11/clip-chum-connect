@@ -138,15 +138,20 @@ function VideosPage() {
   };
 
   const purge = async (id: string, title: string) => {
-    if (!confirm(`"${title}" 영상을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    if (!confirm(`"${title}" 영상을 영구 삭제하시겠습니까? DB와 Vimeo 라이브러리에서 모두 삭제됩니다.`)) return;
     try {
-      await purgeItem({ data: { entity: "videos", id } });
-      toast.success("영구 삭제되었습니다.");
+      const res = await purgeItem({ data: { entity: "videos", id } });
+      if (res.vimeoError) {
+        toast.warning(`DB는 삭제되었으나 Vimeo 라이브러리 삭제에 실패했습니다: ${res.vimeoError}`);
+      } else {
+        toast.success("영구 삭제되었습니다.");
+      }
       loadTrash();
     } catch (err: any) {
       toast.error(err?.message ?? "영구 삭제 실패");
     }
   };
+
 
 
 

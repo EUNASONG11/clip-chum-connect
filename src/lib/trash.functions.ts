@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { vimeoFetch } from "@/lib/vimeo.functions";
+
 
 const ENTITIES = [
   "videos",
@@ -139,6 +141,23 @@ export const purgeItem = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let vimeoError: string | null = null;
+
+    if (data.entity === "videos") {
+      const { data: row } = await supabaseAdmin
+        .from("videos")
+        .select("source, vimeo_video_id")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (row?.source === "vimeo" && row?.vimeo_video_id) {
+        try {
+          await vimeoFetch(`/videos/${row.vimeo_video_id}`, { method: "DELETE" });
+        } catch (e: any) {
+          vimeoError = e?.message ?? "Vimeo 삭제 실패";
+        }
+      }
+    }
+
     const q = applyPkFilter(
       supabaseAdmin.from(data.entity).delete(),
       data.entity,
@@ -146,5 +165,6 @@ export const purgeItem = createServerFn({ method: "POST" })
     );
     const { error } = await q;
     if (error) throw new Error(error.message);
-    return { ok: true };
+    return { ok: true, vimeoError };
   });
+
