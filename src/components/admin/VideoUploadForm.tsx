@@ -263,6 +263,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [ytThumbFile, setYtThumbFile] = useState<File | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [ytUrl, setYtUrl] = useState("");
