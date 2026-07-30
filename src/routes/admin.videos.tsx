@@ -106,6 +106,37 @@ function VideosPage() {
   };
   useEffect(() => { load(); }, [isAdmin, classes]);
 
+  const [trashRows, setTrashRows] = useState<Row[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const loadTrash = async () => {
+    setTrashLoading(true);
+    const { data } = await supabase
+      .from("videos")
+      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+    let list = ((data as any[] | null) ?? []) as (Row & { deleted_at: string })[];
+    if (!isAdmin) {
+      const allowed = new Set((classes as any[]).map((c) => c.id));
+      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    }
+    setTrashRows(list as Row[]);
+    setTrashLoading(false);
+  };
+  useEffect(() => { loadTrash(); }, [isAdmin, classes]);
+
+  const restore = async (id: string) => {
+    try {
+      await restoreItem({ data: { entity: "videos", id } });
+      toast.success("복원되었습니다.");
+      loadTrash();
+      load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "복원 실패");
+    }
+  };
+
+
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
 
