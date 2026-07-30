@@ -313,27 +313,27 @@ function UsersPage() {
             setSelectedIds(new Set());
           }}
         >
-          <TabsList className="grid w-full max-w-2xl grid-cols-4">
-            <TabsTrigger value="admin" className="gap-1.5">
-              <ShieldCheck className="h-3.5 w-3.5" /> 관리자
+          <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
+            <TabsTrigger value="admin" className="shrink-0 gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> 관리자
               <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                 {buckets.admin.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="instructor" className="gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5" /> 강사
+            <TabsTrigger value="instructor" className="shrink-0 gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 shrink-0" /> 강사
               <span className="ml-1 rounded-full bg-sky-100 px-1.5 text-[10px] font-semibold text-sky-700">
                 {buckets.instructor.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="student" className="gap-1.5">
-              <GraduationCap className="h-3.5 w-3.5" /> 학생
+            <TabsTrigger value="student" className="shrink-0 gap-1.5">
+              <GraduationCap className="h-3.5 w-3.5 shrink-0" /> 학생
               <span className="ml-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-accent-foreground">
                 {buckets.student.length}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-1.5">
-              <Clock className="h-3.5 w-3.5" /> 승인 대기
+            <TabsTrigger value="pending" className="shrink-0 gap-1.5">
+              <Clock className="h-3.5 w-3.5 shrink-0" /> 승인 대기
               <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
                 {buckets.pending.length}
               </span>
