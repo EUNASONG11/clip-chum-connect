@@ -177,6 +177,7 @@ function VideosPage() {
       await deleteVideo({ data: { id } });
       toast.success("휴지통으로 이동했습니다.");
       load();
+      loadTrash();
     } catch (err: any) {
       toast.error(err.message);
     }
