@@ -9,8 +9,18 @@ import { GraduationCap, Save, KeyRound } from "lucide-react";
 import {
   listInstructorRoster,
   updateInstructorEmail,
+  updateInstructorCohort,
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+export const COHORT_OPTIONS = ["19기", "18기", "17기", "16기", "15기", "14기", "13기"];
 import { AdminOnly } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
@@ -26,6 +36,7 @@ type Row = {
   email: string | null;
   phone: string | null;
   branch: string | null;
+  cohort: string | null;
   auth_user_id: string | null;
   must_change_password: boolean | null;
 };
@@ -129,6 +140,7 @@ function InstructorsPage() {
                       <th className="py-2 pr-2">이름</th>
                       <th className="py-2 pr-2">전화번호</th>
                       <th className="py-2 pr-2">지점</th>
+                      <th className="py-2 pr-2">기수</th>
                       <th className="py-2 pr-2">이메일 (로그인 ID)</th>
                       <th className="py-2 pr-2">계정 상태</th>
                       <th className="py-2 pr-2 text-right">작업</th>
@@ -145,6 +157,33 @@ function InstructorsPage() {
                           <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
                           <td className="py-2 pr-2 text-muted-foreground">
                             {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
+                          </td>
+                          <td className="py-2 pr-2">
+                            <Select
+                              value={r.cohort ?? "__none__"}
+                              onValueChange={async (v) => {
+                                try {
+                                  await updateInstructorCohort({
+                                    data: { instructorId: r.id, cohort: v === "__none__" ? null : v },
+                                  });
+                                  toast.success("기수가 저장되었습니다.");
+                                  qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
+                                  qc.invalidateQueries({ queryKey: ["admin", "users"] });
+                                } catch (e: any) {
+                                  toast.error(e.message ?? "기수 저장 실패");
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-8 w-[110px]">
+                                <SelectValue placeholder="미지정" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="__none__">미지정</SelectItem>
+                                {COHORT_OPTIONS.map((c) => (
+                                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </td>
                           <td className="py-2 pr-2">
                             <Input
@@ -183,7 +222,7 @@ function InstructorsPage() {
                     })}
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                        <td colSpan={7} className="py-8 text-center text-muted-foreground">
                           표시할 강사가 없습니다.
                         </td>
                       </tr>
