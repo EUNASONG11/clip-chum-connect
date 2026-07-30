@@ -264,12 +264,10 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                     return (
                       <li key={n.user_id} className="flex flex-col gap-1 px-3 py-2">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-sm font-medium">
-                            {n.name || "(이름 없음)"}
-                            {n.branch && (
-                              <span className="ml-2 text-xs text-muted-foreground">[{n.branch}]</span>
-                            )}
-                            <span className="ml-2 text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                            <span className="truncate">{n.name || "(이름 없음)"}</span>
+                            <BranchBadge branch={n.branch} />
+                            <span className="text-xs font-normal text-muted-foreground">
                               미완료 {n.incomplete_count}/{n.eligible_total}
                             </span>
                           </p>
