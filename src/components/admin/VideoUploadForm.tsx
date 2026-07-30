@@ -18,6 +18,142 @@ import { useAdminRole } from "@/components/AdminRole";
 const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
 
+const RATES = [1, 1.25, 1.5, 1.75, 2];
+
+type Playback = {
+  allow_seek: boolean;
+  max_playback_rate: number;
+  completion_ratio: number;
+  rewatch_allow_seek: boolean | null;
+  rewatch_max_playback_rate: number | null;
+};
+
+const DEFAULT_PLAYBACK: Playback = {
+  allow_seek: false,
+  max_playback_rate: 1,
+  completion_ratio: 1,
+  rewatch_allow_seek: null,
+  rewatch_max_playback_rate: null,
+};
+
+function PlaybackSettings({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: Playback;
+  onChange: (v: Playback) => void;
+}) {
+  const set = (p: Partial<Playback>) => onChange({ ...value, ...p });
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <p className="text-sm font-medium">재생 설정</p>
+
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">최초 시청</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`${id}-seek`}
+              checked={value.allow_seek}
+              onCheckedChange={(v) => set({ allow_seek: v })}
+            />
+            <Label htmlFor={`${id}-seek`}>건너뛰기 허용</Label>
+          </div>
+          <div>
+            <Label>최대 배속</Label>
+            <Select
+              value={String(value.max_playback_rate)}
+              onValueChange={(v) => set({ max_playback_rate: Number(v) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RATES.map((r) => (
+                  <SelectItem key={r} value={String(r)}>{r}x</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>수강 완료 기준</Label>
+            <Select
+              value={String(Math.round(value.completion_ratio * 100))}
+              onValueChange={(v) => set({ completion_ratio: Number(v) / 100 })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[50, 60, 70, 80, 90, 95, 100].map((p) => (
+                  <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 border-t pt-3">
+        <p className="text-xs font-medium text-muted-foreground">
+          재시청 (미설정 시 최초 시청 설정을 따름)
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`${id}-rseek`}
+              checked={value.rewatch_allow_seek ?? value.allow_seek}
+              onCheckedChange={(v) => set({ rewatch_allow_seek: v })}
+            />
+            <Label htmlFor={`${id}-rseek`}>건너뛰기 허용</Label>
+            {value.rewatch_allow_seek !== null && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => set({ rewatch_allow_seek: null })}
+              >
+                초기화
+              </Button>
+            )}
+          </div>
+          <div>
+            <Label>최대 배속</Label>
+            <div className="flex items-center gap-1">
+              <Select
+                value={String(value.rewatch_max_playback_rate ?? value.max_playback_rate)}
+                onValueChange={(v) => set({ rewatch_max_playback_rate: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RATES.map((r) => (
+                    <SelectItem key={r} value={String(r)}>{r}x</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {value.rewatch_max_playback_rate !== null && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => set({ rewatch_max_playback_rate: null })}
+                >
+                  초기화
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const { isAdmin } = useAdminRole();
   const { data: classes = [] } = useQuery({
