@@ -339,6 +339,9 @@ function ClassesPage() {
                           </span>
                         )}
                       </div>
+                      {c.description && (
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
+                      )}
                       {(c.active_from || c.active_to) ? (
                         <p className="mt-1 text-xs text-muted-foreground">
                           기간: {c.active_from ?? "-"} ~ {c.active_to ?? "-"}
@@ -358,9 +361,6 @@ function ClassesPage() {
                           <span>배정된 학생 없음</span>
                         )}
                       </p>
-                      {c.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
-                      )}
                       <div className="mt-2">
                         <Select
                           value={c.category_id ?? "__none__"}
