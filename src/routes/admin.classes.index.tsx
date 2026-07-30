@@ -495,7 +495,7 @@ function ClassesPage() {
                 <p className="p-4 text-sm text-muted-foreground">등록된 카테고리가 없습니다.</p>
               ) : (
                 (categories as any[]).map((cat) => {
-                  const count = (classes as any[]).filter((c) => c.category_id === cat.id).length;
+                  const count = (categoryCounts as Record<string, number>)[cat.id] ?? 0;
                   const isEditing = editingCatId === cat.id;
                   return (
                     <div key={cat.id} className="flex items-center gap-3 p-3">
