@@ -717,7 +717,25 @@ function ClassDetailPage() {
                 const items = videosByFolder.get(f.id) ?? [];
                 const isEditing = editingFolderId === f.id;
                 return (
-                  <div key={f.id} className="rounded-md border" style={{ marginLeft: depth > 0 ? 16 : 0 }}>
+                  <div
+                    key={f.id}
+                    style={{ marginLeft: depth > 0 ? 16 : 0 }}
+                    onDragOver={(e) => {
+                      if (!draggingVideoId) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder(f.id);
+                    }}
+                    onDragLeave={(e) => {
+                      e.stopPropagation();
+                      setDragOverFolder((cur) => (cur === f.id ? undefined : cur));
+                    }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDropOnFolder(f.id); }}
+                    className={`rounded-md border transition-colors ${
+                      dragOverFolder === f.id ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                       {isEditing ? (
                         <>
