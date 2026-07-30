@@ -248,43 +248,6 @@ function UsersPage() {
     }
   };
 
-  const openTempPwDialog = async (u: UserRow) => {
-    setTempPwUser(u);
-    setTempPwInfo(null);
-    setTempPwLoading(true);
-    try {
-      const info = await getStudentTempPasswordInfo({ data: { userId: u.id } });
-      setTempPwInfo({
-        currentTempPassword: info.currentTempPassword,
-        history: info.history,
-      });
-    } catch (err: any) {
-      toast.error(err.message ?? "조회에 실패했습니다.");
-      setTempPwUser(null);
-    } finally {
-      setTempPwLoading(false);
-    }
-  };
-
-  const doIssueTempPassword = async (u: UserRow) => {
-    if (!confirm(`${u.nickname || "학생"} 님에게 임시 비밀번호를 ${u.has_temp_password ? "재" : ""}발급하시겠습니까?\n기존 비밀번호는 재설정되며, 새 임시코드로만 로그인할 수 있습니다.`)) return;
-    setTempPwIssuing(true);
-    try {
-      await issueStudentTempPassword({ data: { userId: u.id } });
-      toast.success("임시 비밀번호가 발급되었습니다.");
-      const info = await getStudentTempPasswordInfo({ data: { userId: u.id } });
-      setTempPwInfo({
-        currentTempPassword: info.currentTempPassword,
-        history: info.history,
-      });
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message ?? "발급에 실패했습니다.");
-    } finally {
-      setTempPwIssuing(false);
-    }
-  };
-
   const doBulkApprove = async (role: "student" | "admin" | "instructor") => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
