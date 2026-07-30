@@ -203,7 +203,58 @@ function VideosPage() {
           <TabsTrigger value="upload" className="gap-2">
             <UploadIcon className="h-4 w-4" /> 영상 업로드
           </TabsTrigger>
+          <TabsTrigger value="trash" className="gap-2">
+            <Trash2 className="h-4 w-4" /> 휴지통 ({trashRows.length})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="trash" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>휴지통 ({trashRows.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trashLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : trashRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">삭제된 영상이 없습니다.</p>
+              ) : (
+                <ul className="divide-y">
+                  {trashRows.map((r) => (
+                    <li key={r.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
+                        {r.thumbnail_url && (
+                          <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{r.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          삭제일{" "}
+                          {(r as any).deleted_at
+                            ? new Date((r as any).deleted_at).toLocaleString("ko-KR")
+                            : "-"}
+                          {r.class_id && (
+                            <>
+                              {" · "}
+                              {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => restore(r.id)}>
+                          <RotateCcw className="mr-1 h-4 w-4" /> 복원
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="upload" className="pt-4">
           <Card>
