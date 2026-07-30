@@ -149,7 +149,8 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      return await withCreatorNames(supabaseAdmin, data ?? []);
+      const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
+      return await withStudentNames(supabaseAdmin, withCreators);
     }
     // 강사: 본인이 만든 것 + 배정된 것
     const [{ data: assigned }, { data: enrolled }] = await Promise.all([
