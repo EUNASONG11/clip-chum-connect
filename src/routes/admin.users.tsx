@@ -32,8 +32,6 @@ import {
   bulkApproveUsers,
   revertToPending,
   bulkCreateInstructorAccounts,
-  issueStudentTempPassword,
-  getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
