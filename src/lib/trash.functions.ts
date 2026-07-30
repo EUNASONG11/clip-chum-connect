@@ -137,7 +137,7 @@ export const restoreItem = createServerFn({ method: "POST" })
     z.object({ entity: z.enum(ENTITIES), id: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertCanManage(context, data.entity);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = applyPkFilter(
       supabaseAdmin.from(data.entity).update({ deleted_at: null, deleted_by: null }),
@@ -155,7 +155,7 @@ export const purgeItem = createServerFn({ method: "POST" })
     z.object({ entity: z.enum(ENTITIES), id: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    await assertCanManage(context, data.entity);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = applyPkFilter(
       supabaseAdmin.from(data.entity).delete(),
