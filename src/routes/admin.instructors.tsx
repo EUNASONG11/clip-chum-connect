@@ -102,10 +102,12 @@ function InstructorsPage() {
               <GraduationCap className="h-5 w-5" />
               강사 명부 ({rows.length}) · 이메일 입력 {withEmail} · 계정 생성됨 {withAccount}
             </CardTitle>
+            {/*
             <Button size="sm" onClick={bulkCreate} disabled={busy} className="gap-1">
               <KeyRound className="h-4 w-4" />
               {busy ? "처리 중..." : "이메일 입력된 강사 계정 일괄 생성"}
             </Button>
+            */}
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="relative max-w-sm">
