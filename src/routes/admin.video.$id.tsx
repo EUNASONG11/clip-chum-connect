@@ -100,6 +100,7 @@ function AdminVideoPage() {
       .from("videos")
       .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,class_id")
       .eq("id", id)
+      .is("deleted_at", null)
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);

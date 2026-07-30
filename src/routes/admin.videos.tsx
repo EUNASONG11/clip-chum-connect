@@ -93,6 +93,7 @@ function VideosPage() {
     const { data } = await supabase
       .from("videos")
       .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at")
+      .is("deleted_at", null)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     let list = (data as Row[] | null) ?? [];
@@ -139,10 +140,10 @@ function VideosPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("삭제하시겠습니까? Vimeo 영상은 Vimeo에서도 삭제됩니다.")) return;
+    if (!confirm("휴지통으로 이동하시겠습니까? 휴지통에서 복원할 수 있습니다.")) return;
     try {
       await deleteVideo({ data: { id } });
-      toast.success("삭제되었습니다.");
+      toast.success("휴지통으로 이동했습니다.");
       load();
     } catch (err: any) {
       toast.error(err.message);
