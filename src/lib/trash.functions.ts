@@ -58,6 +58,24 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
   if (!data) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
+// 영상 휴지통은 강사도 복원/영구삭제할 수 있습니다.
+async function assertCanManage(
+  context: { supabase: any; userId: string },
+  entity: Entity,
+) {
+  if (entity !== "videos") return assertAdmin(context);
+  for (const role of ["admin", "instructor"]) {
+    const { data, error } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: role,
+    });
+    if (error) throw new Error(error.message);
+    if (data) return;
+  }
+  throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+}
+
+
 export const listTrash = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { entity: Entity; limit?: number; offset?: number }) =>
