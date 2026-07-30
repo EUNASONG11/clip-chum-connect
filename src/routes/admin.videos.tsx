@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
-import { restoreItem } from "@/lib/trash.functions";
+import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
