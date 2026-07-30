@@ -312,3 +312,57 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
     });
   });
 
+
+// 특정 학생의 수강반 내 영상별 시청 상세
+export const getStudentVideoDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: videos }, { data: history }] = await Promise.all([
+      supabaseAdmin
+        .from("videos")
+        .select("id, title, duration, created_at, sort_order")
+        .eq("class_id", data.classId)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true }),
+      supabaseAdmin
+        .from("class_enrollment_history")
+        .select("created_at")
+        .eq("class_id", data.classId)
+        .eq("user_id", data.userId)
+        .eq("action", "added"),
+    ]);
+
+    const start = ((history ?? []) as any[]).reduce(
+      (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
+      null as string | null,
+    );
+    const list = ((videos ?? []) as any[]).filter((v: any) => (start ? v.created_at >= start : true));
+    if (list.length === 0) return [];
+
+    const { data: progress } = await supabaseAdmin
+      .from("video_progress")
+      .select("video_id, watched_ratio, max_seconds, current_seconds, duration, is_completed, completed_at, updated_at")
+      .eq("user_id", data.userId)
+      .in("video_id", list.map((v: any) => v.id));
+
+    const pMap = new Map(((progress ?? []) as any[]).map((p: any) => [p.video_id, p]));
+    return list.map((v: any) => {
+      const p: any = pMap.get(v.id);
+      return {
+        video_id: v.id,
+        title: v.title,
+        duration: v.duration ?? p?.duration ?? null,
+        watched_ratio: p ? Math.min(1, Number(p.watched_ratio ?? 0)) : 0,
+        max_seconds: p?.max_seconds ?? 0,
+        is_completed: !!p?.is_completed,
+        completed_at: p?.completed_at ?? null,
+        updated_at: p?.updated_at ?? null,
+      };
+    });
+  });

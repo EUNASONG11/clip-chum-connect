@@ -41,7 +41,51 @@ import {
   listStudentBranches,
 } from "@/lib/classes.functions";
 
-import { getClassStudentStats } from "@/lib/stats.functions";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { getClassStudentStats, getStudentVideoDetail } from "@/lib/stats.functions";
+
+function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["admin", "class", classId, "student-video-detail", userId],
+    queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
+  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
+      </div>
+    );
+  }
+  if (data.length === 0) {
+    return <p className="px-3 py-3 text-sm text-muted-foreground">시청 대상 영상이 없습니다.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
+      {data.map((v: any) => (
+        <div key={v.video_id} className="flex items-center gap-3 rounded-md bg-background px-3 py-2">
+          <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
+          <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
+            <div
+              className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
+              style={{ width: `${Math.round(v.watched_ratio * 100)}%` }}
+            />
+          </div>
+          <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+            {Math.round(v.watched_ratio * 100)}%
+          </span>
+          <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
+            {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
+          </span>
+          <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
+            {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
 import { BranchBadge } from "@/components/BranchBadge";
@@ -881,34 +925,38 @@ function ClassDetailPage() {
           {studentStats.length === 0 ? (
             <p className="text-sm text-muted-foreground">배정된 학생이 없습니다.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-left text-xs text-muted-foreground">
-                  <tr>
-                    <th className="py-2 pr-4 whitespace-nowrap">학생</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">완료</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">평균 시청률</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">최근 학습</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {studentStats.map((s: any) => (
-                    <tr key={s.user_id} className="border-t">
-                      <td className="py-2 pr-4 whitespace-nowrap">{s.name || "-"}{s.phone ? ` (${s.phone})` : ""}</td>
-                      <td className="py-2 pr-4 whitespace-nowrap">
-                        {s.completed} / {s.video_total}
-                      </td>
-                      <td className="py-2 pr-4 whitespace-nowrap">{Math.round(s.avg_watched_ratio * 100)}%</td>
-                      <td className="py-2 pr-4 whitespace-nowrap text-xs text-muted-foreground">
-                        {s.last_activity ? new Date(s.last_activity).toLocaleString("ko-KR") : "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div>
+              <div className="hidden grid-cols-[1fr_80px_100px_150px] gap-2 border-b px-3 pb-2 text-xs text-muted-foreground sm:grid">
+                <span>학생</span>
+                <span>완료</span>
+                <span>평균 시청률</span>
+                <span>최근 학습</span>
+              </div>
+              <Accordion type="multiple" className="w-full">
+                {studentStats.map((s: any) => (
+                  <AccordionItem key={s.user_id} value={s.user_id}>
+                    <AccordionTrigger className="px-3 hover:no-underline">
+                      <div className="grid w-full grid-cols-2 gap-2 pr-2 text-left text-sm sm:grid-cols-[1fr_80px_100px_150px]">
+                        <span className="truncate font-medium">
+                          {s.name || "-"}{s.phone ? ` (${s.phone})` : ""}
+                        </span>
+                        <span className="whitespace-nowrap">{s.completed} / {s.video_total}</span>
+                        <span className="whitespace-nowrap">{Math.round(s.avg_watched_ratio * 100)}%</span>
+                        <span className="whitespace-nowrap text-xs text-muted-foreground">
+                          {s.last_activity ? new Date(s.last_activity).toLocaleString("ko-KR") : "-"}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <StudentVideoDetail classId={id} userId={s.user_id} />
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           )}
         </CardContent>
+
       </Card>
         </TabsContent>
 
