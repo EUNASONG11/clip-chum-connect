@@ -421,19 +421,42 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     onChange: (v: string) => void,
     list: any[],
     disabled: boolean,
-  ) => (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger>
-        <SelectValue placeholder={disabled ? "수강반을 먼저 선택" : "폴더 선택 (선택 사항)"} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value={NO_FOLDER}>폴더 없음</SelectItem>
-        {list.map((f: any) => (
-          <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
+  ) => {
+    const tree = buildFolderTree(list);
+    return (
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger>
+          <SelectValue placeholder={disabled ? "수강반을 먼저 선택" : "폴더 선택 (선택 사항)"} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_FOLDER}>폴더 없음</SelectItem>
+          {tree.map((f) => (
+            <SelectItem key={f.id} value={f.id}>
+              <span className="flex items-center gap-1.5">
+                {f.depth > 0 && (
+                  <span
+                    className="text-muted-foreground"
+                    style={{ paddingLeft: `${(f.depth - 1) * 12}px` }}
+                  >
+                    └
+                  </span>
+                )}
+                {f.depth > 0 ? (
+                  <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                ) : (
+                  <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <span className={f.depth === 0 ? "font-medium" : ""}>{f.name}</span>
+                {f.depth > 0 && (
+                  <span className="text-xs text-muted-foreground">(하위 폴더)</span>
+                )}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    );
+  };
 
   return (
     <Tabs defaultValue="vimeo" className="w-full">
