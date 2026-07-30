@@ -180,7 +180,8 @@ export const listClasses = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
-    return await withCreatorNames(supabaseAdmin, data ?? []);
+    const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
+    return await withStudentNames(supabaseAdmin, withCreators);
   });
 
 
