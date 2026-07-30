@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil } from "lucide-react";
+import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil, Search, UserCog } from "lucide-react";
 import {
   listClasses,
   createClass,
@@ -26,6 +26,8 @@ import {
   updateClassCategory,
   deleteClassCategory,
   getCategoryClassCounts,
+  searchInstructors,
+  assignInstructor,
 } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
 
@@ -65,6 +67,32 @@ function ClassesPage() {
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // 강사 사전 배정 상태
+  const [instQuery, setInstQuery] = useState("");
+  const [instResults, setInstResults] = useState<any[]>([]);
+  const [instSearching, setInstSearching] = useState(false);
+  const [pickedInstructors, setPickedInstructors] = useState<any[]>([]);
+
+  const runInstructorSearch = async () => {
+    if (!instQuery.trim()) return toast.error("강사 이름 또는 이메일을 입력하세요.");
+    setInstSearching(true);
+    try {
+      const rows: any = await searchInstructors({ data: { query: instQuery.trim() } });
+      setInstResults(rows ?? []);
+      if ((rows ?? []).length === 0) toast.info("검색 결과가 없습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setInstSearching(false);
+    }
+  };
+
+  const pickInstructor = (row: any) => {
+    setPickedInstructors((prev) =>
+      prev.some((p) => p.user_id === row.user_id) ? prev : [...prev, row],
+    );
+  };
 
   // 카테고리 관리 폼 상태
   const [catName, setCatName] = useState("");
@@ -125,6 +153,12 @@ function ClassesPage() {
         await updateClass({ data: { id: row.id, thumbnail_url: path } });
       }
 
+      if (row?.id && pickedInstructors.length > 0) {
+        for (const ins of pickedInstructors) {
+          await assignInstructor({ data: { classId: row.id, userId: ins.user_id } });
+        }
+      }
+
       setName("");
       setDesc("");
       setAlwaysActive(false);
@@ -133,6 +167,9 @@ function ClassesPage() {
       setCategoryId("__none__");
       setThumbFile(null);
       setThumbPreview(null);
+      setPickedInstructors([]);
+      setInstResults([]);
+      setInstQuery("");
       if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "classes"] });
@@ -309,6 +346,11 @@ function ClassesPage() {
                       ) : (
                         <p className="mt-1 text-xs text-muted-foreground">기간: 상시 활성</p>
                       )}
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        생성자: {c.created_by_name || c.created_by_role || "알 수 없음"}
+                        {c.created_by_name && c.created_by_role ? ` (${c.created_by_role})` : ""}
+                        {c.created_at ? ` · ${new Date(c.created_at).toLocaleDateString("ko-KR")}` : ""}
+                      </p>
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
@@ -447,6 +489,79 @@ function ClassesPage() {
                   />
                 </div>
               </div>
+              <div className="rounded-md border p-3">
+                <Label className="flex items-center gap-1">
+                  <UserCog className="h-4 w-4" /> 강사 배정 (선택)
+                </Label>
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    value={instQuery}
+                    onChange={(e) => setInstQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        runInstructorSearch();
+                      }
+                    }}
+                    placeholder="강사 이름 또는 이메일 검색"
+                  />
+                  <Button type="button" variant="outline" onClick={runInstructorSearch} disabled={instSearching}>
+                    {instSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </Button>
+                </div>
+
+                {instResults.length > 0 && (
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {instResults.map((r) => {
+                      const picked = pickedInstructors.some((p) => p.user_id === r.user_id);
+                      return (
+                        <button
+                          type="button"
+                          key={r.user_id}
+                          onClick={() => pickInstructor(r)}
+                          disabled={picked}
+                          className="flex items-center justify-between rounded-md border p-2 text-left text-sm transition hover:bg-accent disabled:opacity-50"
+                        >
+                          <span className="truncate">
+                            <span className="font-medium">{r.name || "이름 없음"}</span>
+                            <span className="ml-1 text-xs text-muted-foreground">{r.email}</span>
+                          </span>
+                          {picked ? (
+                            <span className="text-xs text-muted-foreground">선택됨</span>
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {pickedInstructors.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {pickedInstructors.map((p) => (
+                      <span
+                        key={p.user_id}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-1 text-xs text-primary"
+                      >
+                        {p.name || p.email}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPickedInstructors((prev) => prev.filter((x) => x.user_id !== p.user_id))
+                          }
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-muted-foreground">
+                  선택한 강사는 수강반 생성 직후 자동으로 배정됩니다.
+                </p>
+              </div>
+
               <Button type="submit" disabled={saving}>
                 {saving ? "생성 중..." : "생성"}
               </Button>
