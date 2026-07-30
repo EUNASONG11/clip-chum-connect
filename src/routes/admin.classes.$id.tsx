@@ -415,6 +415,9 @@ function ClassDetailPage() {
                     {s.parent_phone && (
                       <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
+                    {s.branch && (
+                      <p className="truncate text-xs text-muted-foreground">교육원 {s.branch}</p>
+                    )}
                   </div>
                   <Button
                     size="icon"
