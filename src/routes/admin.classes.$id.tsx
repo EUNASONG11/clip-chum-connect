@@ -967,13 +967,27 @@ function ClassDetailPage() {
         <TabsContent value="stats">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 shrink-0" /> <span className="truncate">학생별 학습 현황</span>
-          </CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 shrink-0" /> <span className="truncate">학생별 학습 현황</span>
+            </CardTitle>
+            <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
+              <SelectTrigger className="h-8 w-full sm:w-40">
+                <SelectValue placeholder="필터" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="completed">완료한 학생</SelectItem>
+                <SelectItem value="incomplete">미완료 학생</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           {studentStats.length === 0 ? (
             <p className="text-sm text-muted-foreground">배정된 학생이 없습니다.</p>
+          ) : filteredStudentStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">선택한 필터에 해당하는 학생이 없습니다.</p>
           ) : (
             <div>
               <div className="hidden grid-cols-[1fr_80px_100px_150px] gap-2 border-b px-3 pb-2 text-xs text-muted-foreground sm:grid">
@@ -983,7 +997,7 @@ function ClassDetailPage() {
                 <span>최근 학습</span>
               </div>
               <Accordion type="multiple" className="w-full">
-                {studentStats.map((s: any) => (
+                {filteredStudentStats.map((s: any) => (
                   <AccordionItem key={s.user_id} value={s.user_id}>
                     <AccordionTrigger className="px-3 hover:no-underline">
                       <div className="grid w-full grid-cols-2 gap-2 pr-2 text-left text-sm sm:grid-cols-[1fr_80px_100px_150px]">
