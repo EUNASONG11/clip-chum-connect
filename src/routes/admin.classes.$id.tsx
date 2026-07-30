@@ -339,19 +339,19 @@ function ClassDetailPage() {
     });
   }, [studentStats, statsFilter]);
 
-  const STATS_PAGE_SIZE = 10;
+  const [statsPageSize, setStatsPageSize] = useState(10);
   const [statsPage, setStatsPage] = useState(1);
-  const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / STATS_PAGE_SIZE));
+  const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
     setStatsPage(1);
-  }, [statsFilter, filteredStudentStats.length]);
+  }, [statsFilter, filteredStudentStats.length, statsPageSize]);
   const pagedStudentStats = useMemo(
     () =>
       (filteredStudentStats as any[]).slice(
-        (statsPage - 1) * STATS_PAGE_SIZE,
-        statsPage * STATS_PAGE_SIZE,
+        (statsPage - 1) * statsPageSize,
+        statsPage * statsPageSize,
       ),
-    [filteredStudentStats, statsPage],
+    [filteredStudentStats, statsPage, statsPageSize],
   );
 
 
