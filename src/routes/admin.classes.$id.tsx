@@ -498,12 +498,13 @@ function ClassDetailPage() {
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
                 <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
-                <Input
+                <ClearableSearchInput
                   id="query"
-                  type="text"
-                  placeholder="이름 또는 전화번호 (띄어쓰기로 여러 명)"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={setQuery}
+                  placeholder="이름 또는 전화번호 (띄어쓰기로 여러 명)"
+                  className="w-full"
+                  showIcon={false}
                 />
               </div>
               <Button type="submit" disabled={searching} className="shrink-0 whitespace-nowrap">
@@ -613,12 +614,13 @@ function ClassDetailPage() {
             <form onSubmit={searchI} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
                 <Label htmlFor="iquery" className="sr-only">이름 또는 이메일</Label>
-                <Input
+                <ClearableSearchInput
                   id="iquery"
-                  type="text"
-                  placeholder="강사 이름 또는 이메일로 검색"
                   value={iq}
-                  onChange={(e) => setIq(e.target.value)}
+                  onChange={setIq}
+                  placeholder="강사 이름 또는 이메일로 검색"
+                  className="w-full"
+                  showIcon={false}
                 />
               </div>
               <Button type="submit" disabled={iSearching} className="shrink-0 whitespace-nowrap">
@@ -1124,15 +1126,13 @@ function ClassDetailPage() {
                   <span className="truncate">배정 이력 ({filteredHistory.length}/{history.length})</span>
                 </CardTitle>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="relative w-full sm:w-56">
-                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="이름, 연락처, 처리자 검색"
-                      className="h-8 w-full pl-9"
-                      value={historySearch}
-                      onChange={(e) => setHistorySearch(e.target.value)}
-                    />
-                  </div>
+                  <ClearableSearchInput
+                    placeholder="이름, 연락처, 처리자 검색"
+                    value={historySearch}
+                    onChange={setHistorySearch}
+                    className="w-full sm:w-56"
+                    size="sm"
+                  />
                   <Select
                     value={String(historyPageSize)}
                     onValueChange={(v) => setHistoryPageSize(Number(v))}
