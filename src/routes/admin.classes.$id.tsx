@@ -331,6 +331,14 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+  const filteredStudentStats = useMemo(() => {
+    if (statsFilter === "all") return studentStats;
+    return (studentStats as any[]).filter((s) => {
+      const isCompleted = s.video_total > 0 && s.completed === s.video_total;
+      return statsFilter === "completed" ? isCompleted : !isCompleted;
+    });
+  }, [studentStats, statsFilter]);
+
   // 반 평균 학습 시청률 요약
   const statRows = studentStats as any[];
   const classAvgRatio =
