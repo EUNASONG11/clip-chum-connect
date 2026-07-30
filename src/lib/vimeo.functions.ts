@@ -353,10 +353,42 @@ export const listUsers = createServerFn({ method: "GET" })
       }
     }
 
-    const [rolesRes, csRes] = await Promise.all([
-      retry(async () => await supabaseAdmin.from("user_roles").select("user_id, role").is("deleted_at", null), "user_roles"),
-      retry(async () => await supabaseAdmin.from("class_students").select("user_id").is("deleted_at", null), "class_students"),
+    // PostgREST 기본 1000행 제한 회피 — 전체 페이징 조회
+    const fetchAllRows = async <T,>(
+      table: "user_roles" | "class_students",
+      columns: string,
+      label: string,
+    ): Promise<T[]> => {
+      const out: T[] = [];
+      const size = 1000;
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error: e } = await retry(
+          async () =>
+            await supabaseAdmin
+              .from(table)
+              .select(columns)
+              .is("deleted_at", null)
+              .range(from, from + size - 1),
+          `${label} range ${from}`,
+        );
+        if (e) throw new Error(e.message);
+        const chunk = (data ?? []) as T[];
+        out.push(...chunk);
+        if (chunk.length < size) break;
+        from += size;
+      }
+      return out;
+    };
+
+    const [roleRows, classStudentRows] = await Promise.all([
+      fetchAllRows<{ user_id: string; role: string }>("user_roles", "user_id, role", "user_roles"),
+      fetchAllRows<{ user_id: string }>("class_students", "user_id", "class_students"),
     ]);
+    const rolesRes = { data: roleRows };
+    const csRes = { data: classStudentRows };
+
 
     const userIds = allAuthUsers.map((u) => u.id);
 
