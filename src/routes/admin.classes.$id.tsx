@@ -339,6 +339,22 @@ function ClassDetailPage() {
     });
   }, [studentStats, statsFilter]);
 
+  const STATS_PAGE_SIZE = 10;
+  const [statsPage, setStatsPage] = useState(1);
+  const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / STATS_PAGE_SIZE));
+  useEffect(() => {
+    setStatsPage(1);
+  }, [statsFilter, filteredStudentStats.length]);
+  const pagedStudentStats = useMemo(
+    () =>
+      (filteredStudentStats as any[]).slice(
+        (statsPage - 1) * STATS_PAGE_SIZE,
+        statsPage * STATS_PAGE_SIZE,
+      ),
+    [filteredStudentStats, statsPage],
+  );
+
+
   // 반 평균 학습 시청률 요약
   const statRows = studentStats as any[];
   const classAvgRatio =
