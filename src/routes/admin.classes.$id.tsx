@@ -408,15 +408,15 @@ function ClassDetailPage() {
                   className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3 py-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{s.name || s.email}</p>
+                    <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                      <span className="truncate">{s.name || s.email}</span>
+                      <BranchBadge branch={s.branch} />
+                    </p>
                     {s.phone && (
                       <p className="truncate text-xs text-muted-foreground">{s.phone}</p>
                     )}
                     {s.parent_phone && (
                       <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
-                    )}
-                    {s.branch && (
-                      <p className="truncate text-xs text-muted-foreground">교육원 {s.branch}</p>
                     )}
                   </div>
                   <Button
