@@ -330,7 +330,7 @@ function UsersPage() {
           <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <div className="ml-auto">
-            <Button
+            {/* <Button
               size="sm"
               variant="outline"
               disabled={bulkBusy}
@@ -351,7 +351,7 @@ function UsersPage() {
               }}
             >
               강사 계정 일괄 생성
-            </Button>
+            </Button> */}
           </div>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
