@@ -933,6 +933,26 @@ export const listClassCategories = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+// 카테고리별 수강반 개수 (권한 무관, 개수만 노출)
+export const getCategoryClassCounts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("classes")
+      .select("category_id")
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    const counts: Record<string, number> = {};
+    (data ?? []).forEach((r: any) => {
+      if (!r.category_id) return;
+      counts[r.category_id] = (counts[r.category_id] ?? 0) + 1;
+    });
+    return counts;
+  });
+
+
+
 // 카테고리 생성 (관리자/강사)
 export const createClassCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
