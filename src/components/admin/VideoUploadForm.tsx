@@ -18,6 +18,142 @@ import { useAdminRole } from "@/components/AdminRole";
 const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
 
+const RATES = [1, 1.25, 1.5, 1.75, 2];
+
+type Playback = {
+  allow_seek: boolean;
+  max_playback_rate: number;
+  completion_ratio: number;
+  rewatch_allow_seek: boolean | null;
+  rewatch_max_playback_rate: number | null;
+};
+
+const DEFAULT_PLAYBACK: Playback = {
+  allow_seek: false,
+  max_playback_rate: 1,
+  completion_ratio: 1,
+  rewatch_allow_seek: null,
+  rewatch_max_playback_rate: null,
+};
+
+function PlaybackSettings({
+  id,
+  value,
+  onChange,
+}: {
+  id: string;
+  value: Playback;
+  onChange: (v: Playback) => void;
+}) {
+  const set = (p: Partial<Playback>) => onChange({ ...value, ...p });
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <p className="text-sm font-medium">재생 설정</p>
+
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-muted-foreground">최초 시청</p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`${id}-seek`}
+              checked={value.allow_seek}
+              onCheckedChange={(v) => set({ allow_seek: v })}
+            />
+            <Label htmlFor={`${id}-seek`}>건너뛰기 허용</Label>
+          </div>
+          <div>
+            <Label>최대 배속</Label>
+            <Select
+              value={String(value.max_playback_rate)}
+              onValueChange={(v) => set({ max_playback_rate: Number(v) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {RATES.map((r) => (
+                  <SelectItem key={r} value={String(r)}>{r}x</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label>수강 완료 기준</Label>
+            <Select
+              value={String(Math.round(value.completion_ratio * 100))}
+              onValueChange={(v) => set({ completion_ratio: Number(v) / 100 })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[50, 60, 70, 80, 90, 95, 100].map((p) => (
+                  <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3 border-t pt-3">
+        <p className="text-xs font-medium text-muted-foreground">
+          재시청 (미설정 시 최초 시청 설정을 따름)
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              id={`${id}-rseek`}
+              checked={value.rewatch_allow_seek ?? value.allow_seek}
+              onCheckedChange={(v) => set({ rewatch_allow_seek: v })}
+            />
+            <Label htmlFor={`${id}-rseek`}>건너뛰기 허용</Label>
+            {value.rewatch_allow_seek !== null && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => set({ rewatch_allow_seek: null })}
+              >
+                초기화
+              </Button>
+            )}
+          </div>
+          <div>
+            <Label>최대 배속</Label>
+            <div className="flex items-center gap-1">
+              <Select
+                value={String(value.rewatch_max_playback_rate ?? value.max_playback_rate)}
+                onValueChange={(v) => set({ rewatch_max_playback_rate: Number(v) })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RATES.map((r) => (
+                    <SelectItem key={r} value={String(r)}>{r}x</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {value.rewatch_max_playback_rate !== null && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => set({ rewatch_max_playback_rate: null })}
+                >
+                  초기화
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const { isAdmin } = useAdminRole();
   const { data: classes = [] } = useQuery({
@@ -34,6 +170,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [ytUrl, setYtUrl] = useState("");
@@ -44,6 +181,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytPublished, setYtPublished] = useState(false);
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
+  const [ytPlayback, setYtPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class-folders", classId],
@@ -92,6 +230,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: classId === NO_CLASS || folderId === NO_FOLDER ? null : folderId,
           is_published: isPublished,
           sort_order: sortOrder,
+          ...playback,
         },
       });
 
@@ -102,6 +241,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setFolderId(NO_FOLDER);
       setIsPublished(false);
       setSortOrder(0);
+      setPlayback(DEFAULT_PLAYBACK);
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
@@ -128,6 +268,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: ytClassId === NO_CLASS || ytFolderId === NO_FOLDER ? null : ytFolderId,
           is_published: ytPublished,
           sort_order: ytSort,
+          ...ytPlayback,
         },
       });
       toast.success("YouTube 영상이 추가되었습니다.");
@@ -138,6 +279,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtFolderId(NO_FOLDER);
       setYtPublished(false);
       setYtSort(0);
+      setYtPlayback(DEFAULT_PLAYBACK);
       onUploaded?.();
     } catch (err: any) {
       toast.error(err.message ?? "추가 실패");
@@ -228,6 +370,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
+          <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
           <div>
             <Label htmlFor="file">영상 파일</Label>
             <Input
@@ -307,6 +450,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
+            <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <Button type="submit" disabled={ytSaving}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>

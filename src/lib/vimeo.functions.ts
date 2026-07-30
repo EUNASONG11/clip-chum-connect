@@ -124,6 +124,12 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
+        allow_seek: z.boolean().optional(),
+        max_playback_rate: z.number().optional(),
+        completion_ratio: z.number().min(0).max(1).optional(),
+        rewatch_allow_seek: z.boolean().nullable().optional(),
+        rewatch_max_playback_rate: z.number().nullable().optional(),
+
       })
       .parse(input),
   )
@@ -153,6 +159,12 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
+        allow_seek: data.allow_seek ?? false,
+        max_playback_rate: data.max_playback_rate ?? 1,
+        completion_ratio: data.completion_ratio ?? 1,
+        rewatch_allow_seek: data.rewatch_allow_seek ?? null,
+        rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+
       })
       .select("*")
       .single();
@@ -652,6 +664,12 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
+        allow_seek: z.boolean().optional(),
+        max_playback_rate: z.number().optional(),
+        completion_ratio: z.number().min(0).max(1).optional(),
+        rewatch_allow_seek: z.boolean().nullable().optional(),
+        rewatch_max_playback_rate: z.number().nullable().optional(),
+
       })
       .parse(input),
   )
@@ -677,6 +695,12 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
+        allow_seek: data.allow_seek ?? false,
+        max_playback_rate: data.max_playback_rate ?? 1,
+        completion_ratio: data.completion_ratio ?? 1,
+        rewatch_allow_seek: data.rewatch_allow_seek ?? null,
+        rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+
       })
       .select("*")
       .single();
