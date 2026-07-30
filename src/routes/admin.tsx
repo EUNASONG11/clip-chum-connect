@@ -174,10 +174,7 @@ function AdminLayout() {
         <div className="flex min-h-screen w-full bg-background">
           <AdminSidebar />
           <div className="flex flex-1 flex-col min-w-0">
-            <div className="flex items-center gap-2 border-b bg-card px-2 py-2 md:hidden">
-              <SidebarTrigger />
-              <span className="text-sm font-semibold">관리자</span>
-            </div>
+            <MobileHeader />
             <SiteHeader />
             <main className="flex-1 p-6">
               <div className="mx-auto max-w-5xl">
@@ -188,5 +185,17 @@ function AdminLayout() {
         </div>
       </SidebarProvider>
     </AdminRoleContext.Provider>
+  );
+}
+
+function MobileHeader() {
+  const { isAdmin, isInstructor } = useAdminRole();
+  const label = isAdmin ? "관리자" : isInstructor ? "강사" : "";
+
+  return (
+    <div className="flex items-center gap-2 border-b bg-card px-2 py-2 md:hidden">
+      <SidebarTrigger />
+      {label && <span className="text-sm font-semibold">{label}</span>}
+    </div>
   );
 }
