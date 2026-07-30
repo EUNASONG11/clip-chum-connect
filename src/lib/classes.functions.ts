@@ -439,6 +439,8 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         actor_name: r.actor_id ? actorMap.get(r.actor_id) ?? "" : "",
         student_name: e?.name ?? "",
         student_phone: e?.phone ?? "",
+        student_parent_phone: e?.parent_phone ?? "",
+        student_branch: e?.branch ?? null,
         student_email: emailMap.get(r.user_id) ?? "",
         created_at: r.created_at as string,
       };
