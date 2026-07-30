@@ -36,6 +36,7 @@ import {
   getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
+import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
 import {
   Dialog,
@@ -557,6 +558,7 @@ function UsersPage() {
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
                           <span className="font-medium">{u.nickname || "-"}</span>
+                          <BranchBadge branch={u.branch} />
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>

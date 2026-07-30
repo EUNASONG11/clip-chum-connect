@@ -12,6 +12,7 @@ import {
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
 import { AdminOnly } from "@/components/AdminRole";
+import { BranchBadge } from "@/components/BranchBadge";
 
 export const Route = createFileRoute("/admin/instructors")({
   head: () => ({ meta: [{ title: "강사 명부 — 관리자" }] }),
@@ -141,7 +142,9 @@ function InstructorsPage() {
                         <tr key={r.id} className="border-t">
                           <td className="py-2 pr-2 font-medium">{r.name}</td>
                           <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
-                          <td className="py-2 pr-2 text-muted-foreground">{r.branch || "-"}</td>
+                          <td className="py-2 pr-2 text-muted-foreground">
+                            {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
+                          </td>
                           <td className="py-2 pr-2">
                             <Input
                               type="email"
