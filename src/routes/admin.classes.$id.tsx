@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
+  ArrowLeft, UserPlus, X, Film, BarChart3, ArrowUp, ArrowDown,
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";

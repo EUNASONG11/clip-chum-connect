@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil, Search, UserCog } from "lucide-react";
+import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil, UserCog } from "lucide-react";
 import {
   listClasses,
   createClass,
