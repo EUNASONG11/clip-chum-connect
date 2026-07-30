@@ -688,7 +688,7 @@ export const searchInstructors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = data.query.trim();
     const { data: rows, error } = await supabaseAdmin
@@ -712,7 +712,8 @@ export const assignInstructor = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
@@ -731,7 +732,8 @@ export const unassignInstructor = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
