@@ -365,8 +365,8 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     }
 
     // 승인 완료(student 역할)된 계정만 노출
-    const candidateIds = Array.from(
-      new Set((rows ?? []).map((r: any) => r.auth_user_id as string).filter(Boolean)),
+    const candidateIds: string[] = Array.from(
+      new Set((allRows ?? []).map((r: any) => r.auth_user_id as string).filter(Boolean)),
     );
     if (candidateIds.length === 0) return [];
     const { data: roleRows, error: roleErr } = await supabaseAdmin
@@ -378,7 +378,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     if (roleErr) throw new Error(roleErr.message);
     const approved = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
 
-    return (rows ?? [])
+    return (allRows ?? [])
       .filter((r: any) => approved.has(r.auth_user_id))
       .slice(0, 20)
       .map((r: any) => ({
