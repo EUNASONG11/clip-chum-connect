@@ -137,6 +137,18 @@ function VideosPage() {
     }
   };
 
+  const purge = async (id: string, title: string) => {
+    if (!confirm(`"${title}" 영상을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    try {
+      await purgeItem({ data: { entity: "videos", id } });
+      toast.success("영구 삭제되었습니다.");
+      loadTrash();
+    } catch (err: any) {
+      toast.error(err?.message ?? "영구 삭제 실패");
+    }
+  };
+
+
 
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
