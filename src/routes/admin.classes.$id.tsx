@@ -339,7 +339,7 @@ function ClassDetailPage() {
     });
   }, [studentStats, statsFilter]);
 
-  const [statsPageSize, setStatsPageSize] = useState(10);
+  const [statsPageSize, setStatsPageSize] = useState(20);
   const [statsPage, setStatsPage] = useState(1);
   const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
