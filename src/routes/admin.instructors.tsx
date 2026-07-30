@@ -12,6 +12,7 @@ import {
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
 import { AdminOnly } from "@/components/AdminRole";
+import { BranchBadge } from "@/components/BranchBadge";
 
 export const Route = createFileRoute("/admin/instructors")({
   head: () => ({ meta: [{ title: "강사 명부 — 관리자" }] }),
