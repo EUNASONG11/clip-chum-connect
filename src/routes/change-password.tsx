@@ -57,7 +57,8 @@ function ChangePasswordPage() {
         const s = await getMyStatus();
         navigate({ to: s.isAdmin || s.isInstructor ? "/admin" : "/", replace: true });
       } catch {
-        navigate({ to: "/admin", replace: true });
+        // 상태 조회 실패 시에는 관리자 페이지가 아니라 홈으로 보낸다
+        navigate({ to: "/", replace: true });
       }
     } catch (err: any) {
       toast.error(err.message ?? "비밀번호 변경에 실패했습니다.");
