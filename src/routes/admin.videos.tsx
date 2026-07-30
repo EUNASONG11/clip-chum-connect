@@ -254,9 +254,12 @@ function VideosPage() {
                           )}
                         </p>
                       </div>
-                      <div className="flex shrink-0 justify-end">
+                      <div className="flex shrink-0 justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => restore(r.id)}>
                           <RotateCcw className="mr-1 h-4 w-4" /> 복원
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => purge(r.id, r.title)}>
+                          <Trash2 className="mr-1 h-4 w-4" /> 영구 삭제
                         </Button>
                       </div>
                     </li>
