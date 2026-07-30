@@ -577,19 +577,6 @@ function UsersPage() {
                               <Clock className="h-3.5 w-3.5" /> 승인 대기로
                             </Button>
                           )}
-                          {u.isStudent && !u.phone && (
-                            <Button
-                              size="sm"
-                              variant={u.has_temp_password ? "secondary" : "outline"}
-                              disabled={busy}
-                              onClick={() => openTempPwDialog(u)}
-                              className="gap-1"
-                              title="전화번호가 없는 학생의 임시 비밀번호를 조회하거나 발급합니다"
-                            >
-                              {u.has_temp_password ? "임시 비밀번호 발급됨" : "임시 비밀번호 미발급"}
-                            </Button>
-                          )}
-
                         </div>
                       </td>
                     </tr>
