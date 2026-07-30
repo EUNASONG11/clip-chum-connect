@@ -578,6 +578,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
+            <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
             <Button type="submit" disabled={ytSaving}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
