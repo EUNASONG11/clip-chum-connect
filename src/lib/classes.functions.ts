@@ -80,6 +80,30 @@ async function assertAdminOnly(context: { supabase: any; userId: string }) {
   if (!admin) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
+
+// 생성자(created_by) 이름 붙이기
+async function withCreatorNames(supabaseAdmin: any, rows: any[]) {
+  const ids = Array.from(new Set(rows.map((r) => r.created_by).filter(Boolean)));
+  if (ids.length === 0) return rows;
+  const [{ data: instr }, { data: roles }] = await Promise.all([
+    supabaseAdmin.from("instructors").select("auth_user_id, name, email").in("auth_user_id", ids),
+    supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids).is("deleted_at", null),
+  ]);
+  const nameMap = new Map<string, string>(
+    (instr ?? []).map((r: any) => [r.auth_user_id as string, (r.name || r.email || "") as string]),
+  );
+  const roleMap = new Map<string, string>();
+  for (const r of roles ?? []) {
+    if (r.role === "admin") roleMap.set(r.user_id, "관리자");
+    else if (r.role === "instructor" && !roleMap.has(r.user_id)) roleMap.set(r.user_id, "강사");
+  }
+  return rows.map((r) => ({
+    ...r,
+    created_by_name: nameMap.get(r.created_by) ?? null,
+    created_by_role: roleMap.get(r.created_by) ?? null,
+  }));
+}
+
 // 수강반 목록 (관리자: 전체, 강사: 본인 생성 + 배정된 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -93,7 +117,7 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      return data ?? [];
+      return await withCreatorNames(supabaseAdmin, data ?? []);
     }
     // 강사: 본인이 만든 것 + 배정된 것
     const [{ data: assigned }, { data: enrolled }] = await Promise.all([
@@ -123,8 +147,9 @@ export const listClasses = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
-    return data ?? [];
+    return await withCreatorNames(supabaseAdmin, data ?? []);
   });
+
 
 
 
@@ -688,7 +713,7 @@ export const searchInstructors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ query: z.string().min(1).max(100) }).parse(i))
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const q = data.query.trim();
     const { data: rows, error } = await supabaseAdmin
@@ -712,7 +737,8 @@ export const assignInstructor = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
@@ -731,7 +757,8 @@ export const unassignInstructor = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), userId: z.string().uuid() }).parse(i),
   )
   .handler(async ({ context, data }) => {
-    await assertAdminOnly(context);
+    await assertAdminOrInstructor(context);
+    await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("class_instructors")
