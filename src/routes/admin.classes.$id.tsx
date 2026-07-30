@@ -133,6 +133,7 @@ function ClassDetailPage() {
   const [settingsAlways, setSettingsAlways] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
 
   const clsAny: any = cls;
   useEffect(() => {
