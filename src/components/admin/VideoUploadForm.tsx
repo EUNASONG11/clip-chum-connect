@@ -10,7 +10,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Youtube, ImagePlus } from "lucide-react";
+import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen } from "lucide-react";
+
+type FolderNode = { id: string; name: string; depth: number };
+
+function buildFolderTree(list: any[]): FolderNode[] {
+  const out: FolderNode[] = [];
+  const walk = (parentId: string | null, depth: number) => {
+    list
+      .filter((f) => (f.parent_folder_id ?? null) === parentId)
+      .forEach((f) => {
+        out.push({ id: f.id, name: f.name, depth });
+        walk(f.id, depth + 1);
+      });
+  };
+  walk(null, 0);
+  // 부모가 목록에 없는 폴더도 누락되지 않게 보완
+  for (const f of list) {
+    if (!out.some((o) => o.id === f.id)) out.push({ id: f.id, name: f.name, depth: 0 });
+  }
+  return out;
+}
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
 import { listClasses, listClassFolders, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
