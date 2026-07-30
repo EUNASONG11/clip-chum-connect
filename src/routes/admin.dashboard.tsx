@@ -54,12 +54,12 @@ function DashboardPage() {
           <table className="w-full text-sm">
             <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
               <tr>
-                <th className="px-3 py-2">수강반</th>
-                <th className="px-3 py-2">학생</th>
-                <th className="px-3 py-2">영상</th>
-                <th className="px-3 py-2">완료율</th>
-                <th className="px-3 py-2">평균 시청률</th>
-                <th className="px-3 py-2"></th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">수강반</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">학생</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">영상</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">완료율</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2">평균 시청률</th>
+                <th className="max-sm:whitespace-nowrap px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
