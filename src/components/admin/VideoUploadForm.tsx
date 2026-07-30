@@ -12,8 +12,100 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
-import { listClasses, listClassFolders } from "@/lib/classes.functions";
+import { listClasses, listClassFolders, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
+import { supabase } from "@/integrations/supabase/client";
+
+const THUMB_BUCKET = "video-thumbnails";
+
+async function uploadThumbnail(videoId: string, file: File) {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${videoId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from(THUMB_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  await updateVideo({ data: { id: videoId, thumbnail_url: path } });
+}
+
+function ThumbnailPicker({
+  id,
+  file,
+  onChange,
+}: {
+  id: string;
+  file: File | null;
+  onChange: (f: File | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const pick = (f: File | null) => {
+    if (f) {
+      if (!f.type.startsWith("image/")) {
+        toast.error("이미지 파일만 업로드할 수 있습니다.");
+        return;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        toast.error("5MB 이하 이미지를 사용하세요.");
+        return;
+      }
+      setPreview(URL.createObjectURL(f));
+    } else {
+      setPreview(null);
+    }
+    onChange(f);
+  };
+
+  return (
+    <div>
+      <Label>썸네일 (선택 사항)</Label>
+      <div className="mt-1.5 flex flex-wrap items-center gap-3">
+        <input
+          id={`${id}-thumb`}
+          ref={ref}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => pick(e.target.files?.[0] ?? null)}
+        />
+        {preview && (
+          <img
+            src={preview}
+            alt="썸네일 미리보기"
+            className="h-16 w-28 rounded-md border object-cover"
+          />
+        )}
+        <Button type="button" variant="secondary" onClick={() => ref.current?.click()}>
+          <ImagePlus className="mr-1.5 h-4 w-4" />
+          {file ? "썸네일 변경" : "썸네일 선택"}
+        </Button>
+        {file ? (
+          <>
+            <span className="rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
+              {file.name}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                pick(null);
+                if (ref.current) ref.current.value = "";
+              }}
+            >
+              제거
+            </Button>
+          </>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            미지정 시 영상 기본 썸네일이 사용됩니다.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
