@@ -830,15 +830,36 @@ function ClassDetailPage() {
               void ancestorsOf;
               return (
                 <div className="space-y-4">
+                  {draggingVideoId && (
+                    <p className="text-xs text-muted-foreground">
+                      영상을 원하는 폴더 위로 끌어다 놓으면 이동됩니다.
+                    </p>
+                  )}
                   {rootFolders.map((f: any) => renderFolder(f, 0))}
-                  {unassignedVideos.length > 0 && (
-                    <div className="rounded-md border">
+                  {(unassignedVideos.length > 0 || draggingVideoId) && (
+                    <div
+                      onDragOver={(e) => {
+                        if (!draggingVideoId) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setDragOverFolder(null);
+                      }}
+                      onDragLeave={() => setDragOverFolder((cur) => (cur === null ? undefined : cur))}
+                      onDrop={(e) => { e.preventDefault(); handleDropOnFolder(null); }}
+                      className={`rounded-md border transition-colors ${
+                        dragOverFolder === null ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
                       <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                         <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">폴더 미지정</span>
                         <span className="text-xs text-muted-foreground">({unassignedVideos.length})</span>
                       </div>
-                      {renderVideoList(unassignedVideos)}
+                      {unassignedVideos.length > 0 ? (
+                        renderVideoList(unassignedVideos)
+                      ) : (
+                        <p className="px-3 py-3 text-xs text-muted-foreground">여기에 놓으면 폴더 미지정으로 이동합니다.</p>
+                      )}
                     </div>
                   )}
                 </div>
