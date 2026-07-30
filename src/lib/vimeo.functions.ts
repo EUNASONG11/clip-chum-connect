@@ -664,6 +664,12 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         folder_id: z.string().uuid().nullable().optional(),
         is_published: z.boolean().optional(),
         sort_order: z.number().int().optional(),
+        allow_seek: z.boolean().optional(),
+        max_playback_rate: z.number().optional(),
+        completion_ratio: z.number().min(0).max(1).optional(),
+        rewatch_allow_seek: z.boolean().nullable().optional(),
+        rewatch_max_playback_rate: z.number().nullable().optional(),
+
       })
       .parse(input),
   )
