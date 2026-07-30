@@ -41,7 +41,51 @@ import {
   listStudentBranches,
 } from "@/lib/classes.functions";
 
-import { getClassStudentStats } from "@/lib/stats.functions";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
+import { getClassStudentStats, getStudentVideoDetail } from "@/lib/stats.functions";
+
+function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["admin", "class", classId, "student-video-detail", userId],
+    queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
+  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
+      </div>
+    );
+  }
+  if (data.length === 0) {
+    return <p className="px-3 py-3 text-sm text-muted-foreground">시청 대상 영상이 없습니다.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
+      {data.map((v: any) => (
+        <div key={v.video_id} className="flex items-center gap-3 rounded-md bg-background px-3 py-2">
+          <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
+          <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
+            <div
+              className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
+              style={{ width: `${Math.round(v.watched_ratio * 100)}%` }}
+            />
+          </div>
+          <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+            {Math.round(v.watched_ratio * 100)}%
+          </span>
+          <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
+            {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
+          </span>
+          <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
+            {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
 import { BranchBadge } from "@/components/BranchBadge";
