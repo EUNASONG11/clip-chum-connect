@@ -900,7 +900,18 @@ function ClassDetailPage() {
                             </span>
                           </td>
                           <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
-                            {h.actor_name || (h.actor_id ? h.actor_id.slice(0, 8) : "시스템")}
+                            {h.actor_id ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                {h.actor_role && h.actor_role !== "other" && (
+                                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
+                                    {h.actor_role === "admin" ? "관리자" : "강사"}
+                                  </span>
+                                )}
+                                <span>{h.actor_name || h.actor_id.slice(0, 8)}</span>
+                              </span>
+                            ) : (
+                              "시스템"
+                            )}
                           </td>
                         </tr>
                       ))}
