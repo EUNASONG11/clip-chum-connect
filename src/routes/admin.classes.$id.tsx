@@ -330,6 +330,19 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+  // 반 평균 학습 시청률 요약
+  const statRows = studentStats as any[];
+  const classAvgRatio =
+    statRows.length > 0
+      ? statRows.reduce((sum, r) => sum + Number(r.avg_watched_ratio ?? 0), 0) / statRows.length
+      : 0;
+  const classCompletionRate = (() => {
+    const total = statRows.reduce((sum, r) => sum + Number(r.video_total ?? 0), 0);
+    const done = statRows.reduce((sum, r) => sum + Number(r.completed ?? 0), 0);
+    return total > 0 ? done / total : 0;
+  })();
+  const activeLearners = statRows.filter((r) => Number(r.avg_watched_ratio ?? 0) > 0).length;
+
   const removeI = async (userId: string) => {
     try {
       await unassignInstructor({ data: { classId: id, userId } });
@@ -364,6 +377,34 @@ function ClassDetailPage() {
           >
             <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
           </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs text-muted-foreground">반 평균 학습 시청률</p>
+          <p className="mt-1 text-2xl font-bold text-primary">
+            {(classAvgRatio * 100).toFixed(1)}%
+          </p>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${Math.min(100, classAvgRatio * 100)}%` }}
+            />
+          </div>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs text-muted-foreground">영상 완료율</p>
+          <p className="mt-1 text-2xl font-bold">{(classCompletionRate * 100).toFixed(1)}%</p>
+          <p className="mt-1 text-xs text-muted-foreground">완료 영상 / 배정 영상 합계</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs text-muted-foreground">학습 참여 학생</p>
+          <p className="mt-1 text-2xl font-bold">
+            {activeLearners}
+            <span className="text-base font-normal text-muted-foreground"> / {statRows.length}명</span>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">1회 이상 시청한 학생 수</p>
         </div>
       </div>
 
