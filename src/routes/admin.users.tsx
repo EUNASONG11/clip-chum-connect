@@ -31,7 +31,9 @@ import {
   bulkApproveUsers,
   revertToPending,
   bulkCreateInstructorAccounts,
+  updateInstructorCohort,
 } from "@/lib/vimeo.functions";
+import { COHORT_OPTIONS } from "@/routes/admin.instructors";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
@@ -460,6 +462,9 @@ function UsersPage() {
                 <th className="min-w-[120px] whitespace-nowrap px-4 py-3">이름</th>
                 <th className="min-w-[110px] whitespace-nowrap px-4 py-3">전화번호</th>
                 <th className="min-w-[80px] whitespace-nowrap px-4 py-3">역할</th>
+                {tab === "instructor" && (
+                  <th className="min-w-[110px] whitespace-nowrap px-4 py-3">기수</th>
+                )}
 
                 <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
                 <th className="min-w-[100px] whitespace-nowrap px-4 py-3">가입일</th>
@@ -469,7 +474,7 @@ function UsersPage() {
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={(tab === "pending" ? 7 : 6) + (tab === "instructor" ? 1 : 0)} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
@@ -508,6 +513,35 @@ function UsersPage() {
                       <td className="whitespace-nowrap px-4 py-3">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
+                      {tab === "instructor" && (
+                        <td className="whitespace-nowrap px-4 py-3">
+                          <Select
+                            value={(u as any).cohort ?? "__none__"}
+                            onValueChange={async (v) => {
+                              try {
+                                await updateInstructorCohort({
+                                  data: { authUserId: u.id, cohort: v === "__none__" ? null : v },
+                                });
+                                toast.success("기수가 저장되었습니다.");
+                                refetch();
+                                qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
+                              } catch (e: any) {
+                                toast.error(e.message ?? "기수 저장 실패");
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-[110px]">
+                              <SelectValue placeholder="미지정" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">미지정</SelectItem>
+                              {COHORT_OPTIONS.map((c) => (
+                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </td>
+                      )}
                       <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
