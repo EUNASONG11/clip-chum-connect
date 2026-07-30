@@ -134,6 +134,10 @@ function ClassDetailPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyPageSize, setHistoryPageSize] = useState(20);
+  const [historyPage, setHistoryPage] = useState(1);
+
 
   const clsAny: any = cls;
   useEffect(() => {
