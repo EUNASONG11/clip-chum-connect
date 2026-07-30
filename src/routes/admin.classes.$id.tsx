@@ -184,6 +184,21 @@ function ClassDetailPage() {
     }
   };
 
+  // 영상 드래그 앤 드롭으로 폴더 이동
+  const [draggingVideoId, setDraggingVideoId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null | undefined>(undefined);
+
+  const handleDropOnFolder = async (folderId: string | null) => {
+    const vid = draggingVideoId;
+    setDraggingVideoId(null);
+    setDragOverFolder(undefined);
+    if (!vid) return;
+    const current = (videos as any[]).find((v) => v.id === vid);
+    if (!current || (current.folder_id ?? null) === folderId) return;
+    await handleAssignVideoToFolder(vid, folderId);
+    toast.success("영상을 이동했습니다.");
+  };
+
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [results, setResults] = useState<
@@ -607,7 +622,19 @@ function ClassDetailPage() {
               const renderVideoList = (items: any[]) => (
                 <ul className="divide-y">
                   {items.map((v: any, i: number) => (
-                    <li key={v.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
+                    <li
+                      key={v.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingVideoId(v.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", v.id);
+                      }}
+                      onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
+                      className={`grid cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 active:cursor-grabbing sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3 ${
+                        draggingVideoId === v.id ? "opacity-50" : ""
+                      }`}
+                    >
                       <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
                       <Link
                         to="/admin/video/$id"
@@ -690,7 +717,25 @@ function ClassDetailPage() {
                 const items = videosByFolder.get(f.id) ?? [];
                 const isEditing = editingFolderId === f.id;
                 return (
-                  <div key={f.id} className="rounded-md border" style={{ marginLeft: depth > 0 ? 16 : 0 }}>
+                  <div
+                    key={f.id}
+                    style={{ marginLeft: depth > 0 ? 16 : 0 }}
+                    onDragOver={(e) => {
+                      if (!draggingVideoId) return;
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverFolder(f.id);
+                    }}
+                    onDragLeave={(e) => {
+                      e.stopPropagation();
+                      setDragOverFolder((cur) => (cur === f.id ? undefined : cur));
+                    }}
+                    onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleDropOnFolder(f.id); }}
+                    className={`rounded-md border transition-colors ${
+                      dragOverFolder === f.id ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                       {isEditing ? (
                         <>
@@ -785,15 +830,36 @@ function ClassDetailPage() {
               void ancestorsOf;
               return (
                 <div className="space-y-4">
+                  {draggingVideoId && (
+                    <p className="text-xs text-muted-foreground">
+                      영상을 원하는 폴더 위로 끌어다 놓으면 이동됩니다.
+                    </p>
+                  )}
                   {rootFolders.map((f: any) => renderFolder(f, 0))}
-                  {unassignedVideos.length > 0 && (
-                    <div className="rounded-md border">
+                  {(unassignedVideos.length > 0 || draggingVideoId) && (
+                    <div
+                      onDragOver={(e) => {
+                        if (!draggingVideoId) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setDragOverFolder(null);
+                      }}
+                      onDragLeave={() => setDragOverFolder((cur) => (cur === null ? undefined : cur))}
+                      onDrop={(e) => { e.preventDefault(); handleDropOnFolder(null); }}
+                      className={`rounded-md border transition-colors ${
+                        dragOverFolder === null ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
                       <div className="flex items-center gap-2 border-b bg-muted/40 px-3 py-2 text-sm font-medium">
                         <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <span className="truncate">폴더 미지정</span>
                         <span className="text-xs text-muted-foreground">({unassignedVideos.length})</span>
                       </div>
-                      {renderVideoList(unassignedVideos)}
+                      {unassignedVideos.length > 0 ? (
+                        renderVideoList(unassignedVideos)
+                      ) : (
+                        <p className="px-3 py-3 text-xs text-muted-foreground">여기에 놓으면 폴더 미지정으로 이동합니다.</p>
+                      )}
                     </div>
                   )}
                 </div>
