@@ -353,13 +353,7 @@ function ClassesPage() {
                       </p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {c.student_count > 0 ? (
-                          <>
-                            <span className="font-medium text-foreground">학생 {c.student_count}명</span>
-                            <span className="ml-1">
-                              {c.student_names.slice(0, 4).join(", ")}
-                              {c.student_names.length > 4 && ` 외 ${c.student_names.length - 4}명`}
-                            </span>
-                          </>
+                          <span className="font-medium text-foreground">학생 {c.student_count}명</span>
                         ) : (
                           <span>배정된 학생 없음</span>
                         )}
