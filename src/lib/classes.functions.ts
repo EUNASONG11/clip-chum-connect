@@ -104,6 +104,38 @@ async function withCreatorNames(supabaseAdmin: any, rows: any[]) {
   }));
 }
 
+// 배정된 학생 이름 붙이기
+async function withStudentNames(supabaseAdmin: any, rows: any[]) {
+  const classIds = rows.map((r) => r.id).filter(Boolean);
+  if (classIds.length === 0) return rows;
+  const { data: members, error } = await supabaseAdmin
+    .from("class_students")
+    .select("class_id, user_id")
+    .in("class_id", classIds)
+    .is("deleted_at", null);
+  if (error) throw new Error(error.message);
+  if (!members || members.length === 0) {
+    return rows.map((r) => ({ ...r, student_names: [], student_count: 0 }));
+  }
+  const userIds = Array.from(new Set(members.map((m: any) => m.user_id)));
+  const { data: ext } = await supabaseAdmin
+    .from("external_students")
+    .select("auth_user_id, name")
+    .in("auth_user_id", userIds);
+  const extMap = new Map<string, string>((ext ?? []).map((e: any) => [e.auth_user_id as string, (e.name ?? "") as string]));
+  const byClass = new Map<string, string[]>();
+  for (const m of members as any[]) {
+    const name = extMap.get(m.user_id)?.trim() || "이름 없음";
+    if (!byClass.has(m.class_id)) byClass.set(m.class_id, []);
+    byClass.get(m.class_id)!.push(name);
+  }
+  return rows.map((r) => ({
+    ...r,
+    student_names: byClass.get(r.id) ?? [],
+    student_count: byClass.get(r.id)?.length ?? 0,
+  }));
+}
+
 // 수강반 목록 (관리자: 전체, 강사: 본인 생성 + 배정된 반)
 export const listClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -117,7 +149,8 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
-      return await withCreatorNames(supabaseAdmin, data ?? []);
+      const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
+      return await withStudentNames(supabaseAdmin, withCreators);
     }
     // 강사: 본인이 만든 것 + 배정된 것
     const [{ data: assigned }, { data: enrolled }] = await Promise.all([
@@ -147,7 +180,8 @@ export const listClasses = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
-    return await withCreatorNames(supabaseAdmin, data ?? []);
+    const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
+    return await withStudentNames(supabaseAdmin, withCreators);
   });
 
 

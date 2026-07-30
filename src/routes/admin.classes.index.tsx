@@ -351,6 +351,19 @@ function ClassesPage() {
                         {c.created_by_name && c.created_by_role ? ` (${c.created_by_role})` : ""}
                         {c.created_at ? ` · ${new Date(c.created_at).toLocaleDateString("ko-KR")}` : ""}
                       </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {c.student_count > 0 ? (
+                          <>
+                            <span className="font-medium text-foreground">학생 {c.student_count}명</span>
+                            <span className="ml-1">
+                              {c.student_names.slice(0, 4).join(", ")}
+                              {c.student_names.length > 4 && ` 외 ${c.student_names.length - 4}명`}
+                            </span>
+                          </>
+                        ) : (
+                          <span>배정된 학생 없음</span>
+                        )}
+                      </p>
                       {c.description && (
                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
                       )}
