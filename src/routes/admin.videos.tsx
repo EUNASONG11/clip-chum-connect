@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
-import { restoreItem } from "@/lib/trash.functions";
+import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -137,6 +137,18 @@ function VideosPage() {
     }
   };
 
+  const purge = async (id: string, title: string) => {
+    if (!confirm(`"${title}" 영상을 영구 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    try {
+      await purgeItem({ data: { entity: "videos", id } });
+      toast.success("영구 삭제되었습니다.");
+      loadTrash();
+    } catch (err: any) {
+      toast.error(err?.message ?? "영구 삭제 실패");
+    }
+  };
+
+
 
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
@@ -242,9 +254,12 @@ function VideosPage() {
                           )}
                         </p>
                       </div>
-                      <div className="flex shrink-0 justify-end">
+                      <div className="flex shrink-0 justify-end gap-2">
                         <Button size="sm" variant="outline" onClick={() => restore(r.id)}>
                           <RotateCcw className="mr-1 h-4 w-4" /> 복원
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => purge(r.id, r.title)}>
+                          <Trash2 className="mr-1 h-4 w-4" /> 영구 삭제
                         </Button>
                       </div>
                     </li>
