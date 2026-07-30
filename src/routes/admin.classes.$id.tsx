@@ -1013,7 +1013,7 @@ function ClassDetailPage() {
                 <span>최근 학습</span>
               </div>
               <Accordion type="multiple" className="w-full">
-                {filteredStudentStats.map((s: any) => (
+                {pagedStudentStats.map((s: any) => (
                   <AccordionItem key={s.user_id} value={s.user_id}>
                     <AccordionTrigger className="px-3 hover:no-underline">
                       <div className="grid w-full grid-cols-2 gap-2 pr-2 text-left text-sm sm:grid-cols-[1fr_80px_100px_150px]">
@@ -1033,7 +1033,31 @@ function ClassDetailPage() {
                   </AccordionItem>
                 ))}
               </Accordion>
+              <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
+                <span className="text-xs text-muted-foreground">
+                  총 {filteredStudentStats.length}명 · {statsPage} / {statsTotalPages} 페이지
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={statsPage <= 1}
+                    onClick={() => setStatsPage((p) => Math.max(1, p - 1))}
+                  >
+                    이전
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={statsPage >= statsTotalPages}
+                    onClick={() => setStatsPage((p) => Math.min(statsTotalPages, p + 1))}
+                  >
+                    다음
+                  </Button>
+                </div>
+              </div>
             </div>
+
           )}
         </CardContent>
 
