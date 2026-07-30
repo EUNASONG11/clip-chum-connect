@@ -170,6 +170,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [ytUrl, setYtUrl] = useState("");
@@ -180,6 +181,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytPublished, setYtPublished] = useState(false);
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
+  const [ytPlayback, setYtPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class-folders", classId],
@@ -228,6 +230,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: classId === NO_CLASS || folderId === NO_FOLDER ? null : folderId,
           is_published: isPublished,
           sort_order: sortOrder,
+          ...playback,
         },
       });
 
@@ -238,6 +241,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setFolderId(NO_FOLDER);
       setIsPublished(false);
       setSortOrder(0);
+      setPlayback(DEFAULT_PLAYBACK);
       setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
@@ -264,6 +268,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: ytClassId === NO_CLASS || ytFolderId === NO_FOLDER ? null : ytFolderId,
           is_published: ytPublished,
           sort_order: ytSort,
+          ...ytPlayback,
         },
       });
       toast.success("YouTube 영상이 추가되었습니다.");
@@ -274,6 +279,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtFolderId(NO_FOLDER);
       setYtPublished(false);
       setYtSort(0);
+      setYtPlayback(DEFAULT_PLAYBACK);
       onUploaded?.();
     } catch (err: any) {
       toast.error(err.message ?? "추가 실패");
@@ -364,6 +370,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
+          <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
           <div>
             <Label htmlFor="file">영상 파일</Label>
             <Input
@@ -443,6 +450,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
+            <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <Button type="submit" disabled={ytSaving}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
