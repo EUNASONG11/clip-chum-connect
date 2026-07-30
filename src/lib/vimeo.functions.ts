@@ -695,6 +695,12 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         folder_id: data.folder_id ?? null,
         is_published: data.is_published ?? false,
         sort_order: data.sort_order ?? 0,
+        allow_seek: data.allow_seek ?? false,
+        max_playback_rate: data.max_playback_rate ?? 1,
+        completion_ratio: data.completion_ratio ?? 1,
+        rewatch_allow_seek: data.rewatch_allow_seek ?? null,
+        rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+
       })
       .select("*")
       .single();
