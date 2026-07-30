@@ -347,6 +347,32 @@ export const listStudentBranches = createServerFn({ method: "GET" })
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   });
 
+// 배정 이력의 처리자(actor) 보정: service_role 쓰기에서는 auth.uid()가 없으므로 직접 기록
+async function stampEnrollmentActor(
+  supabaseAdmin: any,
+  classId: string,
+  userId: string,
+  action: "added" | "removed",
+  actorId: string,
+) {
+  const { data: rows } = await supabaseAdmin
+    .from("class_enrollment_history")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("user_id", userId)
+    .eq("action", action)
+    .is("actor_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  const rowId = rows?.[0]?.id;
+  if (rowId) {
+    await supabaseAdmin
+      .from("class_enrollment_history")
+      .update({ actor_id: actorId })
+      .eq("id", rowId);
+  }
+}
+
 // 학생 배정 (user_id 기반)
 export const assignStudent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -364,6 +390,7 @@ export const assignStudent = createServerFn({ method: "POST" })
         { onConflict: "class_id,user_id" },
       );
     if (error) throw new Error(error.message);
+    await stampEnrollmentActor(supabaseAdmin, data.classId, data.userId, "added", context.userId);
     return { ok: true };
   });
 
@@ -385,6 +412,7 @@ export const unassignStudent = createServerFn({ method: "POST" })
       .eq("user_id", data.userId)
       .is("deleted_at", null);
     if (error) throw new Error(error.message);
+    await stampEnrollmentActor(supabaseAdmin, data.classId, data.userId, "removed", context.userId);
     return { ok: true };
   });
 
