@@ -411,7 +411,7 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
     ) as string[];
     const { data: ext } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone")
+      .select("auth_user_id, name, phone, parent_phone, branch")
       .in("auth_user_id", userIds);
     const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
     const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
@@ -439,6 +439,8 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         actor_name: r.actor_id ? actorMap.get(r.actor_id) ?? "" : "",
         student_name: e?.name ?? "",
         student_phone: e?.phone ?? "",
+        student_parent_phone: e?.parent_phone ?? "",
+        student_branch: e?.branch ?? null,
         student_email: emailMap.get(r.user_id) ?? "",
         created_at: r.created_at as string,
       };
