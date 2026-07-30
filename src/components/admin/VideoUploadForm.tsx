@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Youtube } from "lucide-react";
+import { Upload as UploadIcon, Youtube, ImagePlus } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
 import { listClasses, listClassFolders, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
