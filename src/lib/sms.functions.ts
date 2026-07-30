@@ -50,9 +50,9 @@ async function assertAdminOrInstructorOnClass(
   if (!assigned) throw new Error("이 수강반에 문자 전송 권한이 없습니다.");
 }
 
-// ---------- 미시청 학생 조회 ----------
+// ---------- 수강반 학생 조회 (문자 전송용) ----------
 
-export const listNonWatchers = createServerFn({ method: "POST" })
+export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
     z
@@ -132,11 +132,11 @@ export const listNonWatchers = createServerFn({ method: "POST" })
           ? targetVideos
           : targetVideos.filter((v) => !start || v.created_at >= start);
         if (eligible.length === 0) return null;
-        const incompleteCount = eligible.reduce(
-          (n, v) => (completedSet.has(`${uid}::${v.id}`) ? n : n + 1),
+        const completedCount = eligible.reduce(
+          (n, v) => (completedSet.has(`${uid}::${v.id}`) ? n + 1 : n),
           0,
         );
-        if (incompleteCount === 0) return null;
+        const incompleteCount = eligible.length - completedCount;
         const studentPhone = normalizePhone(e.phone);
         const parentPhone = normalizePhone(e.parent_phone);
         const phone = studentPhone ?? parentPhone;
@@ -153,6 +153,8 @@ export const listNonWatchers = createServerFn({ method: "POST" })
           student_phone: studentPhone ?? "",
           parent_phone: parentPhone ?? "",
           branch: (e.branch as string) ?? "",
+          status: incompleteCount === 0 ? ("completed" as const) : ("incomplete" as const),
+          completed_count: completedCount,
           incomplete_count: incompleteCount,
           eligible_total: eligible.length,
         };
@@ -165,6 +167,8 @@ export const listNonWatchers = createServerFn({ method: "POST" })
       student_phone: string;
       parent_phone: string;
       branch: string;
+      status: "completed" | "incomplete";
+      completed_count: number;
       incomplete_count: number;
       eligible_total: number;
     }>;

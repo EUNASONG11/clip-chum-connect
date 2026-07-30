@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/select";
 import { Loader2, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
-import { listNonWatchers, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
+import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos } from "@/lib/classes.functions";
 import { BranchBadge } from "@/components/BranchBadge";
+import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
@@ -34,11 +35,14 @@ type Props = {
 
 type SelectionKey = string; // `${user_id}:self` | `${user_id}:parent`
 
+type StudentStatus = "all" | "completed" | "incomplete";
+
 export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
   const [videoId, setVideoId] = useState<string>("");
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StudentStatus>("incomplete");
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
@@ -52,29 +56,36 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const effectiveVideoId = mode === "video" ? videoId : undefined;
 
   const {
-    data: nonWatchersData,
+    data: studentsData,
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["non-watchers", classId, effectiveVideoId ?? "__all__"],
+    queryKey: ["class-students-messaging", classId, effectiveVideoId ?? "__all__"],
     queryFn: () =>
-      listNonWatchers({
+      listClassStudentsForMessaging({
         data: { classId, ...(effectiveVideoId ? { videoId: effectiveVideoId } : {}) },
       }),
     enabled: open && (mode === "class" || !!videoId),
   });
-  const nonWatchers = nonWatchersData ?? [];
+  const students = studentsData ?? [];
+
+  const filteredStudents = useMemo(() => {
+    if (statusFilter === "all") return students;
+    return students.filter((s: any) => s.status === statusFilter);
+  }, [students, statusFilter]);
 
   useEffect(() => {
-    if (!open || !nonWatchersData) return;
-    // 기본: 학생 본인 전화번호가 있으면 본인, 없고 학부모만 있으면 학부모 선택
+    if (!open || !studentsData) return;
+    // 기본: 미완료 학생 중 본인 전화번호가 있으면 본인, 없고 학부모만 있으면 학부모 선택
     const init: Record<SelectionKey, boolean> = {};
-    nonWatchersData.forEach((n: any) => {
-      if (n.student_phone) init[`${n.user_id}:self`] = true;
-      else if (n.parent_phone) init[`${n.user_id}:parent`] = true;
-    });
+    studentsData
+      .filter((n: any) => n.status === "incomplete")
+      .forEach((n: any) => {
+        if (n.student_phone) init[`${n.user_id}:self`] = true;
+        else if (n.parent_phone) init[`${n.user_id}:parent`] = true;
+      });
     setSelected(init);
-  }, [open, nonWatchersData]);
+  }, [open, studentsData]);
 
   useEffect(() => {
     if (open && mode === "video" && !videoId && videos.length > 0) {
@@ -86,7 +97,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   const selectedList: Recipient[] = useMemo(() => {
     const out: Recipient[] = [];
-    nonWatchers.forEach((n: any) => {
+    students.forEach((n: any) => {
       if (n.student_phone && selected[`${n.user_id}:self`]) {
         out.push({ user_id: n.user_id, name: n.name, phone: n.student_phone, branch: n.branch });
       }
@@ -95,12 +106,12 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
       }
     });
     return out;
-  }, [nonWatchers, selected]);
+  }, [students, selected]);
 
   const toggleAll = (target: "self" | "parent", checked: boolean) => {
     setSelected((prev) => {
       const next = { ...prev };
-      nonWatchers.forEach((n: any) => {
+      filteredStudents.forEach((n: any) => {
         const phone = target === "self" ? n.student_phone : n.parent_phone;
         if (phone) next[`${n.user_id}:${target}`] = checked;
       });
@@ -110,9 +121,12 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   const clearAll = () => setSelected({});
 
-  const selfAvailable = nonWatchers.filter((n: any) => n.student_phone).length;
-  const parentAvailable = nonWatchers.filter((n: any) => n.parent_phone).length;
-  const noPhoneCount = nonWatchers.filter((n: any) => !n.student_phone && !n.parent_phone).length;
+  const selfAvailable = filteredStudents.filter((n: any) => n.student_phone).length;
+  const parentAvailable = filteredStudents.filter((n: any) => n.parent_phone).length;
+  const noPhoneCount = filteredStudents.filter((n: any) => !n.student_phone && !n.parent_phone).length;
+
+  const completedCount = students.filter((s: any) => s.status === "completed").length;
+  const incompleteCount = students.filter((s: any) => s.status === "incomplete").length;
 
   const submit = async () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
@@ -148,12 +162,19 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
     }
   };
 
+  const statusLabel =
+    statusFilter === "completed"
+      ? "완료한 학생"
+      : statusFilter === "incomplete"
+        ? "미완료 학생"
+        : "전체 학생";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" /> 미시청 학생에게 문자 전송
+            <MessageSquare className="h-5 w-5" /> 학생에게 문자 전송
           </DialogTitle>
           <DialogDescription>
             학생의 교육원(상동·청라·송도)에 따라 각 교육원 계정으로 자동 발송됩니다.
@@ -162,7 +183,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-sm">미시청 기준</Label>
+            <Label className="text-sm">시청 기준</Label>
             <RadioGroup
               value={mode}
               onValueChange={(v) => setMode(v as "video" | "class")}
@@ -203,10 +224,27 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label className="text-sm">수신 대상</Label>
+              <div className="flex flex-wrap gap-1">
+                {(["all", "incomplete", "completed"] as StudentStatus[]).map((s) => (
+                  <Button
+                    key={s}
+                    type="button"
+                    size="sm"
+                    variant={statusFilter === s ? "default" : "outline"}
+                    onClick={() => setStatusFilter(s)}
+                    disabled={isFetching}
+                  >
+                    {s === "all" ? "전체" : s === "completed" ? "완료" : "미완료"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">
-                {mode === "video" ? "이 영상을 완료하지 않은 학생" : "진도 미완료 학생"}{" "}
-                (본인 {selfAvailable} · 학부모 {parentAvailable}
-                {noPhoneCount > 0 ? ` · 번호 없음 ${noPhoneCount}` : ""})
+                {mode === "video" ? "이 영상을 " : "수강반 진도 "}
+                {statusLabel} ({students.length}명: 완료 {completedCount} · 미완료 {incompleteCount})
               </Label>
               <div className="flex flex-wrap gap-1">
                 <Button
@@ -247,18 +285,23 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                 </Button>
               </div>
             </div>
+
             <div className="max-h-64 overflow-y-auto rounded-md border">
               {isFetching ? (
                 <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 조회 중...
                 </div>
-              ) : nonWatchers.length === 0 ? (
+              ) : filteredStudents.length === 0 ? (
                 <p className="p-4 text-center text-sm text-muted-foreground">
-                  미시청 학생이 없습니다.
+                  {statusFilter === "completed"
+                    ? "완료한 학생이 없습니다."
+                    : statusFilter === "incomplete"
+                      ? "미완료 학생이 없습니다."
+                      : "배정된 학생이 없습니다."}
                 </p>
               ) : (
                 <ul className="divide-y">
-                  {nonWatchers.map((n: any) => {
+                  {filteredStudents.map((n: any) => {
                     const selfKey = `${n.user_id}:self`;
                     const parentKey = `${n.user_id}:parent`;
                     return (
@@ -267,8 +310,15 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                           <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                             <span className="truncate">{n.name || "(이름 없음)"}</span>
                             <BranchBadge branch={n.branch} />
-                            <span className="text-xs font-normal text-muted-foreground">
-                              미완료 {n.incomplete_count}/{n.eligible_total}
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-xs font-normal",
+                                n.status === "completed"
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                  : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
+                              )}
+                            >
+                              {n.status === "completed" ? "완료" : "미완료"} {n.completed_count}/{n.eligible_total}
                             </span>
                           </p>
                         </div>
