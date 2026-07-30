@@ -341,26 +341,32 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const q = data.query.trim();
-    const digits = q.replace(/[^0-9]/g, "");
-    let builder = supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, phone, parent_phone, school, grade, branch")
-      .not("auth_user_id", "is", null)
-      .eq("is_deleted", false)
-      .limit(200);
-    if (data.branch) builder = builder.eq("branch", data.branch);
-    if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
-      builder = builder.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`);
-    } else {
-      builder = builder.ilike("name", `%${q}%`);
+    const tokens = data.query.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+    if (tokens.length === 0) return [];
+
+    const allRows: any[] = [];
+    for (const token of tokens) {
+      const digits = token.replace(/[^0-9]/g, "");
+      let builder = supabaseAdmin
+        .from("external_students")
+        .select("auth_user_id, name, phone, parent_phone, school, grade, branch")
+        .not("auth_user_id", "is", null)
+        .eq("is_deleted", false)
+        .limit(200);
+      if (data.branch) builder = builder.eq("branch", data.branch);
+      if (digits.length >= 2 && digits.length === token.replace(/[-\s]/g, "").length) {
+        builder = builder.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`);
+      } else {
+        builder = builder.ilike("name", `%${token}%`);
+      }
+      const { data: rows, error } = await builder;
+      if (error) throw new Error(error.message);
+      allRows.push(...(rows ?? []));
     }
-    const { data: rows, error } = await builder;
-    if (error) throw new Error(error.message);
 
     // 승인 완료(student 역할)된 계정만 노출
-    const candidateIds = Array.from(
-      new Set((rows ?? []).map((r: any) => r.auth_user_id as string).filter(Boolean)),
+    const candidateIds: string[] = Array.from(
+      new Set((allRows ?? []).map((r: any) => r.auth_user_id as string).filter(Boolean)),
     );
     if (candidateIds.length === 0) return [];
     const { data: roleRows, error: roleErr } = await supabaseAdmin
@@ -372,7 +378,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     if (roleErr) throw new Error(roleErr.message);
     const approved = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
 
-    return (rows ?? [])
+    return (allRows ?? [])
       .filter((r: any) => approved.has(r.auth_user_id))
       .slice(0, 20)
       .map((r: any) => ({
