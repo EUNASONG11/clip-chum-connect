@@ -44,6 +44,7 @@ import {
 import { getClassStudentStats } from "@/lib/stats.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
+import { BranchBadge } from "@/components/BranchBadge";
 
 export const Route = createFileRoute("/admin/classes/$id")({
   component: ClassDetailPage,
