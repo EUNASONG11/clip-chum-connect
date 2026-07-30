@@ -261,6 +261,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
         name: e?.name ?? "",
         phone: e?.phone ?? "",
         parent_phone: e?.parent_phone ?? "",
+        branch: e?.branch ?? "",
         created_at: r.created_at as string,
       };
     });
