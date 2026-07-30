@@ -151,6 +151,7 @@ function VideoPage() {
       .from("videos")
       .select("id,title,description,source,vimeo_video_id,external_video_id,player_embed_url,thumbnail_url,duration,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate")
       .eq("id", id)
+      .is("deleted_at", null)
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);
