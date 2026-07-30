@@ -72,12 +72,12 @@ function DashboardPage() {
               )}
               {classes.map((c: any) => (
                 <tr key={c.class_id} className="border-t">
-                  <td className="px-3 py-2 font-medium">{c.name}</td>
-                  <td className="px-3 py-2">{c.student_count}명</td>
-                  <td className="px-3 py-2">{c.video_count}개</td>
-                  <td className="px-3 py-2">{Math.round(c.completion_rate * 100)}%</td>
-                  <td className="px-3 py-2">{Math.round(c.avg_watched_ratio * 100)}%</td>
-                  <td className="px-3 py-2 text-right">
+                  <td className="max-sm:whitespace-nowrap px-3 py-2 font-medium">{c.name}</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{c.student_count}명</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{c.video_count}개</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.completion_rate * 100)}%</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.avg_watched_ratio * 100)}%</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2 text-right">
                     <Link
                       to="/admin/classes/$id"
                       params={{ id: c.class_id }}
