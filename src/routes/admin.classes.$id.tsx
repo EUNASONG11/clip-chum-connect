@@ -987,16 +987,31 @@ function ClassDetailPage() {
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 shrink-0" /> <span className="truncate">학생별 학습 현황</span>
             </CardTitle>
-            <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
-              <SelectTrigger className="h-8 w-full sm:w-40">
-                <SelectValue placeholder="필터" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">전체</SelectItem>
-                <SelectItem value="completed">완료한 학생</SelectItem>
-                <SelectItem value="incomplete">미완료 학생</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
+                <SelectTrigger className="h-8 w-full sm:w-40">
+                  <SelectValue placeholder="필터" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  <SelectItem value="completed">완료한 학생</SelectItem>
+                  <SelectItem value="incomplete">미완료 학생</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={String(statsPageSize)}
+                onValueChange={(v) => setStatsPageSize(Number(v))}
+              >
+                <SelectTrigger className="h-8 w-full sm:w-32">
+                  <SelectValue placeholder="페이지당 인원" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10명씩</SelectItem>
+                  <SelectItem value="20">20명씩</SelectItem>
+                  <SelectItem value="50">50명씩</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
