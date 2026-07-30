@@ -184,6 +184,21 @@ function ClassDetailPage() {
     }
   };
 
+  // 영상 드래그 앤 드롭으로 폴더 이동
+  const [draggingVideoId, setDraggingVideoId] = useState<string | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null | undefined>(undefined);
+
+  const handleDropOnFolder = async (folderId: string | null) => {
+    const vid = draggingVideoId;
+    setDraggingVideoId(null);
+    setDragOverFolder(undefined);
+    if (!vid) return;
+    const current = (videos as any[]).find((v) => v.id === vid);
+    if (!current || (current.folder_id ?? null) === folderId) return;
+    await handleAssignVideoToFolder(vid, folderId);
+    toast.success("영상을 이동했습니다.");
+  };
+
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [results, setResults] = useState<
