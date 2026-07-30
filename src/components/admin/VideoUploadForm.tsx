@@ -485,6 +485,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
           <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
+          <ThumbnailPicker key={`up-${resetKey}`} id="up" file={thumbFile} onChange={setThumbFile} />
           <div>
             <Label htmlFor="file">영상 파일</Label>
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
