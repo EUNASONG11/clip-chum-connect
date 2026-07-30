@@ -134,6 +134,10 @@ function ClassDetailPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
+  const [historySearch, setHistorySearch] = useState("");
+  const [historyPageSize, setHistoryPageSize] = useState(20);
+  const [historyPage, setHistoryPage] = useState(1);
+
 
   const clsAny: any = cls;
   useEffect(() => {
@@ -353,6 +357,38 @@ function ClassDetailPage() {
       ),
     [filteredStudentStats, statsPage, statsPageSize],
   );
+
+  const filteredHistory = useMemo(() => {
+    const q = historySearch.trim();
+    if (!q) return history;
+    return (history as any[]).filter((h) => {
+      const hay = [
+        h.student_name,
+        h.student_email,
+        h.student_phone,
+        h.student_parent_phone,
+        h.actor_name,
+        h.action === "added" ? "배정" : "해제",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      return hay.toLowerCase().includes(q.toLowerCase());
+    });
+  }, [history, historySearch]);
+
+  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / historyPageSize));
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearch, filteredHistory.length, historyPageSize]);
+  const pagedHistory = useMemo(
+    () =>
+      (filteredHistory as any[]).slice(
+        (historyPage - 1) * historyPageSize,
+        historyPage * historyPageSize,
+      ),
+    [filteredHistory, historyPage, historyPageSize],
+  );
+
 
 
   // 반 평균 학습 시청률 요약
@@ -1082,79 +1118,133 @@ function ClassDetailPage() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle className="flex min-w-0 items-center gap-2">
-                <History className="h-5 w-5 shrink-0" />
-                <span className="truncate">배정 이력 ({history.length})</span>
-              </CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex min-w-0 items-center gap-2">
+                  <History className="h-5 w-5 shrink-0" />
+                  <span className="truncate">배정 이력 ({filteredHistory.length}/{history.length})</span>
+                </CardTitle>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="relative w-full sm:w-56">
+                    <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="이름, 연락처, 처리자 검색"
+                      className="h-8 w-full pl-9"
+                      value={historySearch}
+                      onChange={(e) => setHistorySearch(e.target.value)}
+                    />
+                  </div>
+                  <Select
+                    value={String(historyPageSize)}
+                    onValueChange={(v) => setHistoryPageSize(Number(v))}
+                  >
+                    <SelectTrigger className="h-8 w-full sm:w-32">
+                      <SelectValue placeholder="페이지당 인원" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10명씩</SelectItem>
+                      <SelectItem value="20">20명씩</SelectItem>
+                      <SelectItem value="50">50명씩</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {history.length === 0 ? (
                 <p className="text-sm text-muted-foreground">아직 이력이 없습니다.</p>
+              ) : filteredHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-muted-foreground">
-                        <th className="whitespace-nowrap py-2 pr-4">일시</th>
-                        <th className="whitespace-nowrap py-2 pr-4">학생</th>
-                        <th className="whitespace-nowrap py-2 pr-4">연락처</th>
-                        <th className="whitespace-nowrap py-2 pr-4">학부모 연락처</th>
-                        <th className="whitespace-nowrap py-2 pr-4">동작</th>
-                        <th className="whitespace-nowrap py-2 pr-4">처리자</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history.map((h: any) => (
-                        <tr key={h.id} className="border-b last:border-0">
-                          <td className="whitespace-nowrap py-2 pr-4">
-                            {new Date(h.created_at).toLocaleString("ko-KR")}
-                          </td>
-                          <td className="whitespace-nowrap py-2 pr-4">
-                            <span className="inline-flex items-center gap-1.5">
-                              {h.student_name || h.student_email || h.user_id.slice(0, 8)}
-                              <BranchBadge branch={h.student_branch} />
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
-                            {h.student_phone || "-"}
-                          </td>
-                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
-                            {h.student_parent_phone || "-"}
-                          </td>
-                          <td className="whitespace-nowrap py-2 pr-4">
-                            <span
-                              className={
-                                h.action === "added"
-                                  ? "rounded bg-green-500/15 px-2 py-0.5 text-xs text-green-700"
-                                  : "rounded bg-red-500/15 px-2 py-0.5 text-xs text-red-700"
-                              }
-                            >
-                              {h.action === "added" ? "배정" : "해제"}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
-                            {h.actor_id ? (
-                              <span className="inline-flex items-center gap-1.5">
-                                {h.actor_role && h.actor_role !== "other" && (
-                                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
-                                    {h.actor_role === "admin" ? "관리자" : "강사"}
-                                  </span>
-                                )}
-                                <span>{h.actor_name || h.actor_id.slice(0, 8)}</span>
-                              </span>
-                            ) : (
-                              "시스템"
-                            )}
-                          </td>
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-muted-foreground">
+                          <th className="whitespace-nowrap py-2 pr-4">일시</th>
+                          <th className="whitespace-nowrap py-2 pr-4">학생</th>
+                          <th className="whitespace-nowrap py-2 pr-4">연락처</th>
+                          <th className="whitespace-nowrap py-2 pr-4">학부모 연락처</th>
+                          <th className="whitespace-nowrap py-2 pr-4">동작</th>
+                          <th className="whitespace-nowrap py-2 pr-4">처리자</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {pagedHistory.map((h: any) => (
+                          <tr key={h.id} className="border-b last:border-0">
+                            <td className="whitespace-nowrap py-2 pr-4">
+                              {new Date(h.created_at).toLocaleString("ko-KR")}
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-4">
+                              <span className="inline-flex items-center gap-1.5">
+                                {h.student_name || h.student_email || h.user_id.slice(0, 8)}
+                                <BranchBadge branch={h.student_branch} />
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                              {h.student_phone || "-"}
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                              {h.student_parent_phone || "-"}
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-4">
+                              <span
+                                className={
+                                  h.action === "added"
+                                    ? "rounded bg-green-500/15 px-2 py-0.5 text-xs text-green-700"
+                                    : "rounded bg-red-500/15 px-2 py-0.5 text-xs text-red-700"
+                                }
+                              >
+                                {h.action === "added" ? "배정" : "해제"}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                              {h.actor_id ? (
+                                <span className="inline-flex items-center gap-1.5">
+                                  {h.actor_role && h.actor_role !== "other" && (
+                                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">
+                                      {h.actor_role === "admin" ? "관리자" : "강사"}
+                                    </span>
+                                  )}
+                                  <span>{h.actor_name || h.actor_id.slice(0, 8)}</span>
+                                </span>
+                              ) : (
+                                "시스템"
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
+                    <span className="text-xs text-muted-foreground">
+                      총 {filteredHistory.length}건 · {historyPage} / {historyTotalPages} 페이지
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={historyPage <= 1}
+                        onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                      >
+                        이전
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={historyPage >= historyTotalPages}
+                        onClick={() => setHistoryPage((p) => Math.min(historyTotalPages, p + 1))}
+                      >
+                        다음
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
+
 
         <TabsContent value="settings">
           <Card>
