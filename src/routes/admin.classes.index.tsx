@@ -48,6 +48,11 @@ function ClassesPage() {
     queryKey: ["admin", "class-categories"],
     queryFn: () => listClassCategories(),
   });
+  const { data: categoryCounts = {} } = useQuery({
+    queryKey: ["admin", "class-category-counts"],
+    queryFn: () => getCategoryClassCounts(),
+  });
+
   const [tab, setTab] = useState("list");
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
