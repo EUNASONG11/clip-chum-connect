@@ -343,18 +343,15 @@ function UsersPage() {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative w-full max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
-                }}
-                placeholder="이름, 전화번호, 이메일 검색"
-                className="pl-9"
-              />
-            </div>
+            <ClearableSearchInput
+              value={search}
+              onChange={(v) => {
+                setSearch(v);
+                setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
+              }}
+              placeholder="이름, 전화번호, 이메일 검색"
+              className="w-full max-w-sm"
+            />
             <Select
               value={branchFilter}
               onValueChange={(v) => {

@@ -126,15 +126,14 @@ function TeamsPage() {
       <div className="rounded-2xl border bg-card p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <span className="text-sm font-medium">{filtered.length}팀</span>
-          <div className="relative w-full max-w-xs">
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="팀명"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-8"
-            />
-          </div>
+          <ClearableSearchInput
+            placeholder="팀명"
+            value={filter}
+            onChange={setFilter}
+            className="w-full max-w-xs"
+            inputClassName="pl-8"
+            iconClassName="left-2"
+          />
         </div>
 
         {isLoading ? (
@@ -334,10 +333,12 @@ function TeamDetailDialog({ teamId, onClose }: { teamId: string; onClose: () => 
           {tab === "members" && (
             <div className="space-y-4">
               <div className="flex gap-2">
-                <Input
+                <ClearableSearchInput
                   placeholder="이름 또는 전화번호로 검색"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={setQuery}
+                  className="flex-1"
+                  showIcon={false}
                   onKeyDown={(e) => e.key === "Enter" && runSearch()}
                 />
                 <Button onClick={runSearch} disabled={searching}>

@@ -501,9 +501,9 @@ function ClassesPage() {
                   <UserCog className="h-4 w-4" /> 강사 배정 (선택)
                 </Label>
                 <div className="mt-2 flex gap-2">
-                  <Input
+                  <ClearableSearchInput
                     value={instQuery}
-                    onChange={(e) => setInstQuery(e.target.value)}
+                    onChange={setInstQuery}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -511,6 +511,8 @@ function ClassesPage() {
                       }
                     }}
                     placeholder="강사 이름 또는 이메일 검색"
+                    className="flex-1"
+                    showIcon={false}
                   />
                   <Button type="button" variant="outline" onClick={runInstructorSearch} disabled={instSearching}>
                     {instSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}

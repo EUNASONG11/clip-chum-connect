@@ -110,15 +110,13 @@ function InstructorsPage() {
             */}
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="relative max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="이름·이메일·전화번호 검색"
-                className="pl-8"
-              />
-            </div>
+            <ClearableSearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="이름·이메일·전화번호 검색"
+              className="max-w-sm"
+              inputClassName="pl-8"
+            />
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground">불러오는 중...</p>
