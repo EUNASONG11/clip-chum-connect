@@ -32,19 +32,10 @@ import {
   bulkApproveUsers,
   revertToPending,
   bulkCreateInstructorAccounts,
-  issueStudentTempPassword,
-  getStudentTempPasswordInfo,
 } from "@/lib/vimeo.functions";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -60,7 +51,6 @@ type UserRow = {
   isInstructor: boolean;
   isPending: boolean;
   class_count: number;
-  has_temp_password: boolean;
   branch: string | null;
 };
 
@@ -131,13 +121,6 @@ function UsersPage() {
   }
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [tempPwUser, setTempPwUser] = useState<UserRow | null>(null);
-  const [tempPwInfo, setTempPwInfo] = useState<{
-    currentTempPassword: string | null;
-    history: { id: string; temp_password: string; created_at: string; issued_by_email: string | null }[];
-  } | null>(null);
-  const [tempPwLoading, setTempPwLoading] = useState(false);
-  const [tempPwIssuing, setTempPwIssuing] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
     instructor: 1,
@@ -255,43 +238,6 @@ function UsersPage() {
       toast.error(err.message);
     } finally {
       setBusyId(null);
-    }
-  };
-
-  const openTempPwDialog = async (u: UserRow) => {
-    setTempPwUser(u);
-    setTempPwInfo(null);
-    setTempPwLoading(true);
-    try {
-      const info = await getStudentTempPasswordInfo({ data: { userId: u.id } });
-      setTempPwInfo({
-        currentTempPassword: info.currentTempPassword,
-        history: info.history,
-      });
-    } catch (err: any) {
-      toast.error(err.message ?? "조회에 실패했습니다.");
-      setTempPwUser(null);
-    } finally {
-      setTempPwLoading(false);
-    }
-  };
-
-  const doIssueTempPassword = async (u: UserRow) => {
-    if (!confirm(`${u.nickname || "학생"} 님에게 임시 비밀번호를 ${u.has_temp_password ? "재" : ""}발급하시겠습니까?\n기존 비밀번호는 재설정되며, 새 임시코드로만 로그인할 수 있습니다.`)) return;
-    setTempPwIssuing(true);
-    try {
-      await issueStudentTempPassword({ data: { userId: u.id } });
-      toast.success("임시 비밀번호가 발급되었습니다.");
-      const info = await getStudentTempPasswordInfo({ data: { userId: u.id } });
-      setTempPwInfo({
-        currentTempPassword: info.currentTempPassword,
-        history: info.history,
-      });
-      refetch();
-    } catch (err: any) {
-      toast.error(err.message ?? "발급에 실패했습니다.");
-    } finally {
-      setTempPwIssuing(false);
     }
   };
 
@@ -624,19 +570,6 @@ function UsersPage() {
                               <Clock className="h-3.5 w-3.5" /> 승인 대기로
                             </Button>
                           )}
-                          {u.isStudent && !u.phone && (
-                            <Button
-                              size="sm"
-                              variant={u.has_temp_password ? "secondary" : "outline"}
-                              disabled={busy}
-                              onClick={() => openTempPwDialog(u)}
-                              className="gap-1"
-                              title="전화번호가 없는 학생의 임시 비밀번호를 조회하거나 발급합니다"
-                            >
-                              {u.has_temp_password ? "임시 비밀번호 발급됨" : "임시 비밀번호 미발급"}
-                            </Button>
-                          )}
-
                         </div>
                       </td>
                     </tr>
@@ -695,118 +628,6 @@ function UsersPage() {
 
       </CardContent>
     </Card>
-
-    <Dialog
-      open={!!tempPwUser}
-      onOpenChange={(open) => {
-        if (!open) {
-          setTempPwUser(null);
-          setTempPwInfo(null);
-        }
-      }}
-    >
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>
-            {tempPwUser?.nickname || "학생"} · 임시 비밀번호
-          </DialogTitle>
-        </DialogHeader>
-
-        {tempPwLoading ? (
-          <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-lg border bg-muted/40 p-3">
-              <div className="text-xs text-muted-foreground">현재 임시 비밀번호</div>
-              <div className="mt-1 flex items-center gap-2">
-                <code className="rounded bg-background px-2 py-1 font-mono text-base">
-                  {tempPwInfo?.currentTempPassword ?? "미발급"}
-                </code>
-                {tempPwInfo?.currentTempPassword && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(tempPwInfo.currentTempPassword!);
-                      toast.success("복사되었습니다.");
-                    }}
-                  >
-                    복사
-                  </Button>
-                )}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                로그인: 이름 + 위 8자리 코드
-              </p>
-            </div>
-
-            <div>
-              <div className="mb-2 text-xs font-medium text-muted-foreground">
-                발급 이력 (최근 {tempPwInfo?.history.length ?? 0}건)
-              </div>
-              <div className="max-h-64 overflow-y-auto rounded-lg border">
-                {tempPwInfo && tempPwInfo.history.length > 0 ? (
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/40 text-left text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2">일시</th>
-                        <th className="px-3 py-2">비밀번호</th>
-                        <th className="px-3 py-2">발급자</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tempPwInfo.history.map((h) => (
-                        <tr key={h.id} className="border-t">
-                          <td className="px-3 py-2 text-muted-foreground">
-                            {new Date(h.created_at).toLocaleString("ko-KR")}
-                          </td>
-                          <td className="px-3 py-2 font-mono">{h.temp_password}</td>
-                          <td className="px-3 py-2 text-muted-foreground">
-                            {h.issued_by_email ?? "-"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-                    발급 이력이 없습니다.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setTempPwUser(null);
-              setTempPwInfo(null);
-            }}
-          >
-            닫기
-          </Button>
-          <Button
-            disabled={tempPwIssuing || tempPwLoading || !tempPwUser}
-            onClick={() => tempPwUser && doIssueTempPassword(tempPwUser)}
-          >
-            {tempPwIssuing ? (
-              <>
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 처리 중...
-              </>
-            ) : tempPwInfo?.currentTempPassword ? (
-              "임시 비밀번호 재발급"
-            ) : (
-              "임시 비밀번호 발급"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
     </AdminOnly>
   );
 }
