@@ -10,10 +10,102 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Youtube } from "lucide-react";
+import { Upload as UploadIcon, Youtube, ImagePlus } from "lucide-react";
 import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
-import { listClasses, listClassFolders } from "@/lib/classes.functions";
+import { listClasses, listClassFolders, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
+import { supabase } from "@/integrations/supabase/client";
+
+const THUMB_BUCKET = "video-thumbnails";
+
+async function uploadThumbnail(videoId: string, file: File) {
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${videoId}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from(THUMB_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  await updateVideo({ data: { id: videoId, thumbnail_url: path } });
+}
+
+function ThumbnailPicker({
+  id,
+  file,
+  onChange,
+}: {
+  id: string;
+  file: File | null;
+  onChange: (f: File | null) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+
+  const pick = (f: File | null) => {
+    if (f) {
+      if (!f.type.startsWith("image/")) {
+        toast.error("이미지 파일만 업로드할 수 있습니다.");
+        return;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        toast.error("5MB 이하 이미지를 사용하세요.");
+        return;
+      }
+      setPreview(URL.createObjectURL(f));
+    } else {
+      setPreview(null);
+    }
+    onChange(f);
+  };
+
+  return (
+    <div>
+      <Label>썸네일 (선택 사항)</Label>
+      <div className="mt-1.5 flex flex-wrap items-center gap-3">
+        <input
+          id={`${id}-thumb`}
+          ref={ref}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => pick(e.target.files?.[0] ?? null)}
+        />
+        {preview && (
+          <img
+            src={preview}
+            alt="썸네일 미리보기"
+            className="h-16 w-28 rounded-md border object-cover"
+          />
+        )}
+        <Button type="button" variant="secondary" onClick={() => ref.current?.click()}>
+          <ImagePlus className="mr-1.5 h-4 w-4" />
+          {file ? "썸네일 변경" : "썸네일 선택"}
+        </Button>
+        {file ? (
+          <>
+            <span className="rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
+              {file.name}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                pick(null);
+                if (ref.current) ref.current.value = "";
+              }}
+            >
+              제거
+            </Button>
+          </>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            미지정 시 영상 기본 썸네일이 사용됩니다.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const NO_CLASS = "__none__";
 const NO_FOLDER = "__none__";
@@ -171,6 +263,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [thumbFile, setThumbFile] = useState<File | null>(null);
+  const [ytThumbFile, setYtThumbFile] = useState<File | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [ytUrl, setYtUrl] = useState("");
@@ -221,7 +316,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         up.start();
       });
 
-      await finalizeVideo({
+      const row: any = await finalizeVideo({
         data: {
           uri: session.uri,
           title,
@@ -234,6 +329,14 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         },
       });
 
+      if (thumbFile && row?.id) {
+        try {
+          await uploadThumbnail(row.id, thumbFile);
+        } catch (err: any) {
+          toast.error(`썸네일 저장 실패: ${err.message ?? ""}`);
+        }
+      }
+
       toast.success("업로드 완료! Vimeo 처리 후 자동으로 재생 가능합니다.");
       setTitle("");
       setDescription("");
@@ -243,6 +346,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
       setFile(null);
+      setThumbFile(null);
+      setResetKey((k) => k + 1);
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
       onUploaded?.();
@@ -259,7 +364,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     if (!ytTitle.trim()) return toast.error("제목을 입력하세요.");
     setYtSaving(true);
     try {
-      await addYoutubeVideo({
+      const row: any = await addYoutubeVideo({
         data: {
           url: ytUrl.trim(),
           title: ytTitle,
@@ -271,6 +376,13 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           ...ytPlayback,
         },
       });
+      if (ytThumbFile && row?.id) {
+        try {
+          await uploadThumbnail(row.id, ytThumbFile);
+        } catch (err: any) {
+          toast.error(`썸네일 저장 실패: ${err.message ?? ""}`);
+        }
+      }
       toast.success("YouTube 영상이 추가되었습니다.");
       setYtUrl("");
       setYtTitle("");
@@ -280,6 +392,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
+      setYtThumbFile(null);
+      setResetKey((k) => k + 1);
       onUploaded?.();
     } catch (err: any) {
       toast.error(err.message ?? "추가 실패");
@@ -371,6 +485,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
           <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
+          <ThumbnailPicker key={`up-${resetKey}`} id="up" file={thumbFile} onChange={setThumbFile} />
           <div>
             <Label htmlFor="file">영상 파일</Label>
             <div className="mt-1.5 flex flex-wrap items-center gap-3">
@@ -463,6 +578,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
+            <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
             <Button type="submit" disabled={ytSaving}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
