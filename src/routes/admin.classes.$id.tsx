@@ -865,6 +865,7 @@ function ClassDetailPage() {
                         <th className="whitespace-nowrap py-2 pr-4">일시</th>
                         <th className="whitespace-nowrap py-2 pr-4">학생</th>
                         <th className="whitespace-nowrap py-2 pr-4">연락처</th>
+                        <th className="whitespace-nowrap py-2 pr-4">학부모 연락처</th>
                         <th className="whitespace-nowrap py-2 pr-4">동작</th>
                         <th className="whitespace-nowrap py-2 pr-4">처리자</th>
                       </tr>
@@ -876,10 +877,16 @@ function ClassDetailPage() {
                             {new Date(h.created_at).toLocaleString("ko-KR")}
                           </td>
                           <td className="whitespace-nowrap py-2 pr-4">
-                            {h.student_name || h.student_email || h.user_id.slice(0, 8)}
+                            <span className="inline-flex items-center gap-1.5">
+                              {h.student_name || h.student_email || h.user_id.slice(0, 8)}
+                              <BranchBadge branch={h.student_branch} />
+                            </span>
                           </td>
                           <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
                             {h.student_phone || "-"}
+                          </td>
+                          <td className="whitespace-nowrap py-2 pr-4 text-muted-foreground">
+                            {h.student_parent_phone || "-"}
                           </td>
                           <td className="whitespace-nowrap py-2 pr-4">
                             <span
