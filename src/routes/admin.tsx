@@ -115,6 +115,10 @@ function AdminLayout() {
         if (s.isAdmin || s.isInstructor) {
           setIsAdmin(s.isAdmin);
           setIsInstructor(s.isInstructor);
+        } else if (s.isStudent) {
+          // 학생 계정은 관리자 화면 대신 홈으로
+          navigate({ to: "/", replace: true });
+          return;
         } else {
           const c = await claimAdminIfNone();
           if (c.claimed) {
