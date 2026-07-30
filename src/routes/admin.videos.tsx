@@ -8,9 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, RefreshCw, Save, Settings2 } from "lucide-react";
+import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
+import { restoreItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -106,6 +107,37 @@ function VideosPage() {
   };
   useEffect(() => { load(); }, [isAdmin, classes]);
 
+  const [trashRows, setTrashRows] = useState<Row[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const loadTrash = async () => {
+    setTrashLoading(true);
+    const { data } = await supabase
+      .from("videos")
+      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+    let list = ((data as any[] | null) ?? []) as (Row & { deleted_at: string })[];
+    if (!isAdmin) {
+      const allowed = new Set((classes as any[]).map((c) => c.id));
+      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    }
+    setTrashRows(list as Row[]);
+    setTrashLoading(false);
+  };
+  useEffect(() => { loadTrash(); }, [isAdmin, classes]);
+
+  const restore = async (id: string) => {
+    try {
+      await restoreItem({ data: { entity: "videos", id } });
+      toast.success("복원되었습니다.");
+      loadTrash();
+      load();
+    } catch (err: any) {
+      toast.error(err?.message ?? "복원 실패");
+    }
+  };
+
+
   const patch = (id: string, p: Partial<Row>) =>
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
 
@@ -145,6 +177,7 @@ function VideosPage() {
       await deleteVideo({ data: { id } });
       toast.success("휴지통으로 이동했습니다.");
       load();
+      loadTrash();
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -170,7 +203,58 @@ function VideosPage() {
           <TabsTrigger value="upload" className="gap-2">
             <UploadIcon className="h-4 w-4" /> 영상 업로드
           </TabsTrigger>
+          <TabsTrigger value="trash" className="gap-2">
+            <Trash2 className="h-4 w-4" /> 휴지통 ({trashRows.length})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="trash" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>휴지통 ({trashRows.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trashLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : trashRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">삭제된 영상이 없습니다.</p>
+              ) : (
+                <ul className="divide-y">
+                  {trashRows.map((r) => (
+                    <li key={r.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
+                        {r.thumbnail_url && (
+                          <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{r.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          삭제일{" "}
+                          {(r as any).deleted_at
+                            ? new Date((r as any).deleted_at).toLocaleString("ko-KR")
+                            : "-"}
+                          {r.class_id && (
+                            <>
+                              {" · "}
+                              {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => restore(r.id)}>
+                          <RotateCcw className="mr-1 h-4 w-4" /> 복원
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
 
         <TabsContent value="upload" className="pt-4">
           <Card>
