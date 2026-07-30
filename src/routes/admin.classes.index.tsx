@@ -25,6 +25,7 @@ import {
   createClassCategory,
   updateClassCategory,
   deleteClassCategory,
+  getCategoryClassCounts,
 } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
 
