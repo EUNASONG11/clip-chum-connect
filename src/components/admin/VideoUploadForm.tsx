@@ -364,7 +364,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     if (!ytTitle.trim()) return toast.error("제목을 입력하세요.");
     setYtSaving(true);
     try {
-      await addYoutubeVideo({
+      const row: any = await addYoutubeVideo({
         data: {
           url: ytUrl.trim(),
           title: ytTitle,
@@ -376,6 +376,13 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           ...ytPlayback,
         },
       });
+      if (ytThumbFile && row?.id) {
+        try {
+          await uploadThumbnail(row.id, ytThumbFile);
+        } catch (err: any) {
+          toast.error(`썸네일 저장 실패: ${err.message ?? ""}`);
+        }
+      }
       toast.success("YouTube 영상이 추가되었습니다.");
       setYtUrl("");
       setYtTitle("");
@@ -385,6 +392,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
+      setYtThumbFile(null);
+      setResetKey((k) => k + 1);
       onUploaded?.();
     } catch (err: any) {
       toast.error(err.message ?? "추가 실패");
