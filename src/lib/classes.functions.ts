@@ -445,16 +445,32 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
     const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
     const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
     const actorMap = new Map<string, string>();
+    const actorRoleMap = new Map<string, "admin" | "instructor" | "other">();
     if (actorIds.length > 0) {
-      const { data: instr } = await supabaseAdmin
-        .from("instructors")
-        .select("auth_user_id, name")
-        .in("auth_user_id", actorIds);
+      const [{ data: instr }, { data: roles }] = await Promise.all([
+        supabaseAdmin
+          .from("instructors")
+          .select("auth_user_id, name")
+          .in("auth_user_id", actorIds),
+        supabaseAdmin
+          .from("user_roles")
+          .select("user_id, role")
+          .in("user_id", actorIds)
+          .is("deleted_at", null),
+      ]);
       for (const i of instr ?? []) {
         if ((i as any).auth_user_id) actorMap.set((i as any).auth_user_id, (i as any).name ?? "");
       }
       for (const id of actorIds) {
-        if (!actorMap.has(id)) actorMap.set(id, emailMap.get(id) ?? "");
+        if (!actorMap.has(id) || !actorMap.get(id)) actorMap.set(id, emailMap.get(id) ?? "");
+      }
+      for (const r of roles ?? []) {
+        const uid = (r as any).user_id as string;
+        const role = (r as any).role as string;
+        if (role === "admin") actorRoleMap.set(uid, "admin");
+        else if (role === "instructor" && actorRoleMap.get(uid) !== "admin")
+          actorRoleMap.set(uid, "instructor");
+        else if (!actorRoleMap.has(uid)) actorRoleMap.set(uid, "other");
       }
     }
     return rows.map((r: any) => {
@@ -465,6 +481,7 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         action: r.action as "added" | "removed",
         actor_id: r.actor_id as string | null,
         actor_name: r.actor_id ? actorMap.get(r.actor_id) ?? "" : "",
+        actor_role: r.actor_id ? actorRoleMap.get(r.actor_id) ?? "other" : null,
         student_name: e?.name ?? "",
         student_phone: e?.phone ?? "",
         student_parent_phone: e?.parent_phone ?? "",
