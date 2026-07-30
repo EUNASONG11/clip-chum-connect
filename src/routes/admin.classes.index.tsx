@@ -30,6 +30,7 @@ import {
   assignInstructor,
 } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
+import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 
 
 import { supabase } from "@/integrations/supabase/client";

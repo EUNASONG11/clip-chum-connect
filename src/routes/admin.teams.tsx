@@ -27,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import {
   addTeamMember,
   assignTeamToClass,
