@@ -313,7 +313,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         up.start();
       });
 
-      await finalizeVideo({
+      const row: any = await finalizeVideo({
         data: {
           uri: session.uri,
           title,
@@ -326,6 +326,14 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         },
       });
 
+      if (thumbFile && row?.id) {
+        try {
+          await uploadThumbnail(row.id, thumbFile);
+        } catch (err: any) {
+          toast.error(`썸네일 저장 실패: ${err.message ?? ""}`);
+        }
+      }
+
       toast.success("업로드 완료! Vimeo 처리 후 자동으로 재생 가능합니다.");
       setTitle("");
       setDescription("");
@@ -335,6 +343,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
       setFile(null);
+      setThumbFile(null);
+      setResetKey((k) => k + 1);
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
       onUploaded?.();
