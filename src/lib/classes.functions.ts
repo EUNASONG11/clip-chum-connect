@@ -122,7 +122,7 @@ async function withStudentNames(supabaseAdmin: any, rows: any[]) {
     .from("external_students")
     .select("auth_user_id, name")
     .in("auth_user_id", userIds);
-  const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e.name ?? ""]));
+  const extMap = new Map<string, string>((ext ?? []).map((e: any) => [e.auth_user_id as string, (e.name ?? "") as string]));
   const byClass = new Map<string, string[]>();
   for (const m of members as any[]) {
     const name = extMap.get(m.user_id)?.trim() || "이름 없음";
