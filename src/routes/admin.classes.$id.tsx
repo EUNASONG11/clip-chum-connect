@@ -622,7 +622,19 @@ function ClassDetailPage() {
               const renderVideoList = (items: any[]) => (
                 <ul className="divide-y">
                   {items.map((v: any, i: number) => (
-                    <li key={v.id} className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3">
+                    <li
+                      key={v.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingVideoId(v.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", v.id);
+                      }}
+                      onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
+                      className={`grid cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 active:cursor-grabbing sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3 ${
+                        draggingVideoId === v.id ? "opacity-50" : ""
+                      }`}
+                    >
                       <span className="w-5 shrink-0 text-xs text-muted-foreground">{i + 1}</span>
                       <Link
                         to="/admin/video/$id"
