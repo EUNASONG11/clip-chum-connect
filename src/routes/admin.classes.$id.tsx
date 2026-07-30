@@ -373,9 +373,9 @@ function ClassDetailPage() {
                   return (
                     <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {r.name}
-                          {r.branch ? <span className="ml-2 text-xs text-muted-foreground">[{r.branch}]</span> : null}
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                          <span className="truncate">{r.name}</span>
+                          <BranchBadge branch={r.branch} />
                         </p>
                         <p className="truncate text-xs text-muted-foreground">
                           {r.phone}
