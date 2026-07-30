@@ -250,7 +250,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
     const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
     const { data: ext } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone, parent_phone")
+      .select("auth_user_id, name, phone, parent_phone, branch")
       .in("auth_user_id", userIds);
     const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
     return rows.map((r: any) => {
