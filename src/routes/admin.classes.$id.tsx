@@ -501,7 +501,7 @@ function ClassDetailPage() {
                 <Input
                   id="query"
                   type="text"
-                  placeholder="이름 또는 전화번호로 검색"
+                  placeholder="이름 또는 전화번호 (띄어쓰기로 여러 명)"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
