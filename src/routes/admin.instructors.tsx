@@ -141,7 +141,9 @@ function InstructorsPage() {
                         <tr key={r.id} className="border-t">
                           <td className="py-2 pr-2 font-medium">{r.name}</td>
                           <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
-                          <td className="py-2 pr-2 text-muted-foreground">{r.branch || "-"}</td>
+                          <td className="py-2 pr-2 text-muted-foreground">
+                            {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
+                          </td>
                           <td className="py-2 pr-2">
                             <Input
                               type="email"
