@@ -58,7 +58,6 @@ type UserRow = {
   isInstructor: boolean;
   isPending: boolean;
   class_count: number;
-  has_temp_password: boolean;
   branch: string | null;
 };
 
