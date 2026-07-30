@@ -373,18 +373,30 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
           <div>
             <Label htmlFor="file">영상 파일</Label>
-            <Input
-              id="file"
-              type="file"
-              accept="video/*"
-              ref={fileRef}
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-            {file && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
-              </p>
-            )}
+            <div className="mt-1.5 flex flex-wrap items-center gap-3">
+              <Input
+                id="file"
+                type="file"
+                accept="video/*"
+                ref={fileRef}
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+              >
+                파일 선택
+              </Button>
+              {file ? (
+                <span className="rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
+                  {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">선택된 파일 없음</span>
+              )}
+            </div>
           </div>
           {progress !== null && (
             <div>
