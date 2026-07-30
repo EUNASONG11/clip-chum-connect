@@ -128,13 +128,6 @@ function UsersPage() {
   }
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [tempPwUser, setTempPwUser] = useState<UserRow | null>(null);
-  const [tempPwInfo, setTempPwInfo] = useState<{
-    currentTempPassword: string | null;
-    history: { id: string; temp_password: string; created_at: string; issued_by_email: string | null }[];
-  } | null>(null);
-  const [tempPwLoading, setTempPwLoading] = useState(false);
-  const [tempPwIssuing, setTempPwIssuing] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
     instructor: 1,
