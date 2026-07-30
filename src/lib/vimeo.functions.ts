@@ -949,3 +949,28 @@ export const updateInstructorEmail = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// 강사 기수 저장 (instructors.cohort)
+export const updateInstructorCohort = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        instructorId: z.string().uuid().optional(),
+        authUserId: z.string().uuid().optional(),
+        cohort: z.string().trim().max(20).nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (!data.instructorId && !data.authUserId) throw new Error("대상 강사가 지정되지 않았습니다.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const cohort = data.cohort && data.cohort.length > 0 ? data.cohort : null;
+    let q = supabaseAdmin.from("instructors").update({ cohort });
+    q = data.instructorId ? q.eq("id", data.instructorId) : q.eq("auth_user_id", data.authUserId!);
+    const { error } = await q;
+    if (error) throw new Error(error.message);
+    return { ok: true, cohort };
+  });
+
+
