@@ -330,6 +330,7 @@ function UsersPage() {
           onValueChange={(v) => {
             setTab(v as TabKey);
             setSelectedIds(new Set());
+            setCohortFilter("__all__");
           }}
         >
           <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
