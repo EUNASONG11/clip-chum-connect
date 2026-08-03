@@ -52,17 +52,24 @@ function InstructorsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
+  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return rows;
-    return rows.filter(
+    const byCohort =
+      cohortFilter === "__all__"
+        ? rows
+        : cohortFilter === "__none__"
+          ? rows.filter((r) => !r.cohort)
+          : rows.filter((r) => r.cohort === cohortFilter);
+    if (!needle) return byCohort;
+    return byCohort.filter(
       (r) =>
         r.name.toLowerCase().includes(needle) ||
         (r.email ?? "").toLowerCase().includes(needle) ||
         (r.phone ?? "").includes(needle),
     );
-  }, [rows, q]);
+  }, [rows, q, cohortFilter]);
 
   const withEmail = rows.filter((r) => (r.email ?? "").trim()).length;
   const withAccount = rows.filter((r) => r.auth_user_id).length;
