@@ -129,13 +129,30 @@ function InstructorsPage() {
             */}
           </CardHeader>
           <CardContent className="space-y-4">
-            <ClearableSearchInput
-              value={q}
-              onChange={setQ}
-              placeholder="이름·이메일·전화번호 검색"
-              className="max-w-sm"
-              inputClassName="pl-8"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ClearableSearchInput
+                value={q}
+                onChange={setQ}
+                placeholder="이름·이메일·전화번호 검색"
+                className="max-w-sm"
+                inputClassName="pl-8"
+              />
+              <Select
+                value={cohortFilter}
+                onValueChange={setCohortFilter}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-44">
+                  <SelectValue placeholder="기수 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">기수 전체</SelectItem>
+                  <SelectItem value="__none__">미지정</SelectItem>
+                  {COHORT_OPTIONS.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
             {isLoading ? (
               <p className="text-sm text-muted-foreground">불러오는 중...</p>
