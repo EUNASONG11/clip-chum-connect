@@ -160,6 +160,15 @@ function UsersPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [users]);
 
+  const cohortOptions = useMemo(() => {
+    const set = new Set<string>();
+    buckets.instructor.forEach((u) => {
+      const c = (u.cohort ?? "").trim();
+      if (c) set.add(c);
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a, "ko"));
+  }, [buckets.instructor]);
+
   const filtered = useMemo(() => {
     const rows = buckets[tab];
     const terms = search
@@ -171,12 +180,18 @@ function UsersPage() {
       branchFilter === "__all__"
         ? rows
         : rows.filter((u) => (u.branch ?? "") === branchFilter);
-    if (terms.length === 0) return byBranch;
-    return byBranch.filter((u) => {
+    const byCohort =
+      tab !== "instructor" || cohortFilter === "__all__"
+        ? byBranch
+        : cohortFilter === "__none__"
+          ? byBranch.filter((u) => !u.cohort)
+          : byBranch.filter((u) => u.cohort === cohortFilter);
+    if (terms.length === 0) return byCohort;
+    return byCohort.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search, branchFilter]);
+  }, [buckets, tab, search, branchFilter, cohortFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
