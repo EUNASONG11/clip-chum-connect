@@ -54,6 +54,7 @@ type UserRow = {
   isPending: boolean;
   class_count: number;
   branch: string | null;
+  cohort: string | null;
 };
 
 
