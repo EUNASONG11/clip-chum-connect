@@ -390,6 +390,26 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            {tab === "instructor" && (
+              <Select
+                value={cohortFilter}
+                onValueChange={(v) => {
+                  setCohortFilter(v);
+                  setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
+                }}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-40">
+                  <SelectValue placeholder="기수 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">기수 전체</SelectItem>
+                  <SelectItem value="__none__">미지정</SelectItem>
+                  {cohortOptions.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {/* <Button
               variant="outline"
               size="sm"
