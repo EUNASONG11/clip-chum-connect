@@ -54,6 +54,7 @@ type UserRow = {
   isPending: boolean;
   class_count: number;
   branch: string | null;
+  cohort: string | null;
 };
 
 
@@ -100,6 +101,7 @@ function UsersPage() {
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
+  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
 
@@ -158,6 +160,15 @@ function UsersPage() {
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [users]);
 
+  const cohortOptions = useMemo(() => {
+    const set = new Set<string>();
+    buckets.instructor.forEach((u) => {
+      const c = (u.cohort ?? "").trim();
+      if (c) set.add(c);
+    });
+    return Array.from(set).sort((a, b) => b.localeCompare(a, "ko"));
+  }, [buckets.instructor]);
+
   const filtered = useMemo(() => {
     const rows = buckets[tab];
     const terms = search
@@ -169,12 +180,18 @@ function UsersPage() {
       branchFilter === "__all__"
         ? rows
         : rows.filter((u) => (u.branch ?? "") === branchFilter);
-    if (terms.length === 0) return byBranch;
-    return byBranch.filter((u) => {
+    const byCohort =
+      tab !== "instructor" || cohortFilter === "__all__"
+        ? byBranch
+        : cohortFilter === "__none__"
+          ? byBranch.filter((u) => !u.cohort)
+          : byBranch.filter((u) => u.cohort === cohortFilter);
+    if (terms.length === 0) return byCohort;
+    return byCohort.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search, branchFilter]);
+  }, [buckets, tab, search, branchFilter, cohortFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -313,6 +330,7 @@ function UsersPage() {
           onValueChange={(v) => {
             setTab(v as TabKey);
             setSelectedIds(new Set());
+            setCohortFilter("__all__");
           }}
         >
           <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
@@ -372,6 +390,26 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            {tab === "instructor" && (
+              <Select
+                value={cohortFilter}
+                onValueChange={(v) => {
+                  setCohortFilter(v);
+                  setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
+                }}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-40">
+                  <SelectValue placeholder="기수 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">기수 전체</SelectItem>
+                  <SelectItem value="__none__">미지정</SelectItem>
+                  {cohortOptions.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             {/* <Button
               variant="outline"
               size="sm"
