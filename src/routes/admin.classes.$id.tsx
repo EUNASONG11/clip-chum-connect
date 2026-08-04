@@ -137,6 +137,8 @@ function ClassDetailPage() {
   const [settingsFrom, setSettingsFrom] = useState("");
   const [settingsTo, setSettingsTo] = useState("");
   const [settingsAlways, setSettingsAlways] = useState(false);
+  const [settingsCategory, setSettingsCategory] = useState("__none__");
+  const [settingsBranch, setSettingsBranch] = useState("__all_branches__");
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
@@ -144,6 +146,11 @@ function ClassDetailPage() {
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [historyPage, setHistoryPage] = useState(1);
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin", "class-categories"],
+    queryFn: () => listClassCategories(),
+    staleTime: 60_000,
+  });
 
   const clsAny: any = cls;
   useEffect(() => {
@@ -152,8 +159,10 @@ function ClassDetailPage() {
       setSettingsAlways(always);
       setSettingsFrom(clsAny.active_from ?? "");
       setSettingsTo(clsAny.active_to ?? "");
+      setSettingsCategory(clsAny.category_id ?? "__none__");
+      setSettingsBranch(clsAny.branch ?? "__all_branches__");
     }
-  }, [clsAny?.active_from, clsAny?.active_to]);
+  }, [clsAny?.active_from, clsAny?.active_to, clsAny?.category_id, clsAny?.branch]);
 
 
   const saveSettings = async () => {
@@ -168,10 +177,13 @@ function ClassDetailPage() {
           id,
           active_from: settingsAlways ? null : settingsFrom,
           active_to: settingsAlways ? null : settingsTo,
+          category_id: settingsCategory === "__none__" ? null : settingsCategory,
+          branch: settingsBranch === "__all_branches__" ? null : settingsBranch,
         },
       });
       toast.success("저장되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
+      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
