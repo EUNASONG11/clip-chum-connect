@@ -1,7 +1,6 @@
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { BranchBadge } from "@/components/BranchBadge";
 
-const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -39,6 +38,8 @@ import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getMyCohorts } from "@/lib/vimeo.functions";
+
+const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 
 export const Route = createFileRoute("/admin/classes/")({
