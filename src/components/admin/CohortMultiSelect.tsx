@@ -16,6 +16,9 @@ interface CohortMultiSelectProps {
   placeholder?: string;
   noneLabel?: string;
   width?: string;
+  /** 필터가 아닌 실제 배정용: "기수 전체"/"미지정" 항목을 숨깁니다. */
+  assignMode?: boolean;
+  allLabel?: string;
 }
 
 export function CohortMultiSelect({
@@ -25,16 +28,21 @@ export function CohortMultiSelect({
   placeholder = "기수 전체",
   noneLabel = "미지정",
   width = "w-full sm:w-44",
+  assignMode = false,
+  allLabel = "기수 전체",
 }: CohortMultiSelectProps) {
-  const allSelected = selected.length === options.length + 1;
+  const allSelected = assignMode
+    ? selected.length === options.length
+    : selected.length === options.length + 1;
 
   const toggleAll = () => {
     if (allSelected) {
       onChange([]);
     } else {
-      onChange(["__none__", ...options]);
+      onChange(assignMode ? [...options] : ["__none__", ...options]);
     }
   };
+
 
   const toggleValue = (value: string) => {
     if (selected.includes(value)) {
