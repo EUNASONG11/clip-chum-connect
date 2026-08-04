@@ -1300,6 +1300,45 @@ function ClassDetailPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-2 block">카테고리</Label>
+                    <Select value={settingsCategory} onValueChange={setSettingsCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미지정</SelectItem>
+                        {(categories as any[]).map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block">공개 교육원</Label>
+                    <Select value={settingsBranch} onValueChange={setSettingsBranch}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="교육원 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all_branches__">모든 교육원 (전체 공개)</SelectItem>
+                        {BRANCH_OPTIONS.map((b) => (
+                          <SelectItem key={b} value={b}>
+                            {b} 전용
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      특정 교육원 전용으로 설정하면 해당 교육원 강사만 조회할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+
                 <Button onClick={saveSettings} disabled={savingSettings}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>
