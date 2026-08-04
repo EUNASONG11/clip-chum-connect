@@ -27,7 +27,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
   const { data: links } = await supabaseAdmin
     .from("external_assignment_links")
-    .select("id, external_id")
+    .select("id, external_id, assignment_type")
     .eq("class_id", video.class_id)
     .is("deleted_at", null);
   if (!links || links.length === 0) return;
@@ -58,7 +58,8 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     try {
       await pushAssignmentComplete({
         external_id: link.external_id,
-        student_ref: { student_id: student.external_id },
+        student_id: student.external_id,
+        assignment_type: link.assignment_type,
         status: COMPLETED_STATUS,
         memo: `이러닝: "${video.title}" 시청 완료`,
         occurred_at: occurredAt,
