@@ -16,6 +16,9 @@ interface CohortMultiSelectProps {
   placeholder?: string;
   noneLabel?: string;
   width?: string;
+  /** 필터가 아닌 실제 배정용: "기수 전체"/"미지정" 항목을 숨깁니다. */
+  assignMode?: boolean;
+  allLabel?: string;
 }
 
 export function CohortMultiSelect({
@@ -25,16 +28,21 @@ export function CohortMultiSelect({
   placeholder = "기수 전체",
   noneLabel = "미지정",
   width = "w-full sm:w-44",
+  assignMode = false,
+  allLabel = "기수 전체",
 }: CohortMultiSelectProps) {
-  const allSelected = selected.length === options.length + 1;
+  const allSelected = assignMode
+    ? selected.length === options.length
+    : selected.length === options.length + 1;
 
   const toggleAll = () => {
     if (allSelected) {
       onChange([]);
     } else {
-      onChange(["__none__", ...options]);
+      onChange(assignMode ? [...options] : ["__none__", ...options]);
     }
   };
+
 
   const toggleValue = (value: string) => {
     if (selected.includes(value)) {
@@ -51,14 +59,14 @@ export function CohortMultiSelect({
 
   const display = useMemo(() => {
     if (selected.length === 0) return placeholder;
-    if (selected.length === options.length + 1) return "기수 전체";
+    if (allSelected) return allLabel;
     const labels = selected
       .slice(0, 2)
       .map((v) => (v === "__none__" ? noneLabel : v));
     return (
       labels.join(", ") + (selected.length > 2 ? ` +${selected.length - 2}` : "")
     );
-  }, [selected, options.length, placeholder, noneLabel]);
+  }, [selected, allSelected, allLabel, placeholder, noneLabel]);
 
   return (
     <DropdownMenu>
@@ -88,14 +96,17 @@ export function CohortMultiSelect({
           checked={allSelected}
           onCheckedChange={toggleAll}
         >
-          기수 전체
+          {allLabel}
         </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={selected.includes("__none__")}
-          onCheckedChange={() => toggleValue("__none__")}
-        >
-          {noneLabel}
-        </DropdownMenuCheckboxItem>
+        {!assignMode && (
+          <DropdownMenuCheckboxItem
+            checked={selected.includes("__none__")}
+            onCheckedChange={() => toggleValue("__none__")}
+          >
+            {noneLabel}
+          </DropdownMenuCheckboxItem>
+        )}
+
         {options.map((option) => (
           <DropdownMenuCheckboxItem
             key={option}

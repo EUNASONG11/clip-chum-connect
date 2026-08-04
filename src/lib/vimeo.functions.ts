@@ -445,12 +445,12 @@ export const listUsers = createServerFn({ method: "GET" })
 
     // instructors 테이블에서 강사 정보 조회
     const { data: instRows } = await retry(
-      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone, branch, cohort").not("auth_user_id", "is", null),
+      async () => await supabaseAdmin.from("instructors").select("auth_user_id, name, phone, branch, cohort, cohorts").not("auth_user_id", "is", null),
       "instructors",
     );
-    const instMap = new Map<string, { name: string | null; phone: string | null; branch: string | null; cohort: string | null }>();
+    const instMap = new Map<string, { name: string | null; phone: string | null; branch: string | null; cohort: string | null; cohorts: string[] }>();
     (instRows ?? []).forEach((r: any) => {
-      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone, branch: r.branch, cohort: r.cohort ?? null });
+      if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone, branch: r.branch, cohort: r.cohort ?? null, cohorts: ((r as any).cohorts ?? []) as string[] });
     });
 
     const formatPhone = (p: string | null | undefined) => {
@@ -488,6 +488,7 @@ export const listUsers = createServerFn({ method: "GET" })
           class_count: classCount.get(u.id) ?? 0,
           branch: inst?.branch ?? ext?.branch ?? null,
           cohort: inst?.cohort ?? null,
+          cohorts: inst?.cohorts ?? [],
         };
       })
       .filter((u: any) => {
@@ -911,7 +912,7 @@ export const listInstructorRoster = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("instructors")
-      .select("id, name, email, phone, branch, cohort, auth_user_id, must_change_password")
+      .select("id, name, email, phone, branch, cohort, cohorts, auth_user_id, must_change_password")
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -950,7 +951,7 @@ export const updateInstructorEmail = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// 강사 기수 저장 (instructors.cohort)
+// 강사 기수 저장 (instructors.cohorts — 다중 배정)
 export const updateInstructorCohort = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -958,7 +959,7 @@ export const updateInstructorCohort = createServerFn({ method: "POST" })
       .object({
         instructorId: z.string().uuid().optional(),
         authUserId: z.string().uuid().optional(),
-        cohort: z.string().trim().max(20).nullable(),
+        cohorts: z.array(z.string().trim().min(1).max(20)).max(50),
       })
       .parse(i),
   )
@@ -966,12 +967,14 @@ export const updateInstructorCohort = createServerFn({ method: "POST" })
     await assertAdmin(context);
     if (!data.instructorId && !data.authUserId) throw new Error("대상 강사가 지정되지 않았습니다.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const cohort = data.cohort && data.cohort.length > 0 ? data.cohort : null;
-    let q = supabaseAdmin.from("instructors").update({ cohort });
+    const cohorts = Array.from(new Set(data.cohorts));
+    let q = supabaseAdmin
+      .from("instructors")
+      .update({ cohorts, cohort: cohorts[0] ?? null } as any);
     q = data.instructorId ? q.eq("id", data.instructorId) : q.eq("auth_user_id", data.authUserId!);
     const { error } = await q;
     if (error) throw new Error(error.message);
-    return { ok: true, cohort };
+    return { ok: true, cohorts };
   });
 
 

@@ -68,12 +68,16 @@ async function assertOwnClassOrAdmin(
         .maybeSingle(),
       supabaseAdmin
         .from("instructors")
-        .select("cohort")
+        .select("cohort, cohorts")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
     const catCohort = (cat as any)?.cohort as string | null | undefined;
-    if (catCohort && catCohort === ((me as any)?.cohort ?? null)) return;
+    const myCohorts: string[] = [
+      ...(((me as any)?.cohorts ?? []) as string[]),
+      ...((me as any)?.cohort ? [(me as any).cohort as string] : []),
+    ];
+    if (catCohort && myCohorts.includes(catCohort)) return;
   }
   // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
   const { data: enrolled } = await supabaseAdmin
@@ -184,7 +188,7 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null),
       supabaseAdmin
         .from("instructors")
-        .select("cohort")
+        .select("cohort, cohorts")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
@@ -195,12 +199,17 @@ export const listClasses = createServerFn({ method: "GET" })
     const ids = Array.from(idSet);
     const orParts = [`created_by.eq.${context.userId}`];
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
-    const myCohort = (me as any)?.cohort as string | null | undefined;
-    if (myCohort) {
+    const myCohorts: string[] = Array.from(
+      new Set([
+        ...(((me as any)?.cohorts ?? []) as string[]),
+        ...((me as any)?.cohort ? [(me as any).cohort as string] : []),
+      ]),
+    );
+    if (myCohorts.length) {
       const { data: cats } = await supabaseAdmin
         .from("class_categories")
         .select("id")
-        .eq("cohort" as any, myCohort)
+        .in("cohort" as any, myCohorts)
         .is("deleted_at", null);
       const catIds = (cats ?? []).map((c: any) => c.id as string);
       if (catIds.length) orParts.push(`category_id.in.(${catIds.join(",")})`);

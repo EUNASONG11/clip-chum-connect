@@ -406,6 +406,7 @@ export type Database = {
           auth_user_id: string | null
           branch: string | null
           cohort: string | null
+          cohorts: string[]
           created_at: string
           department_id: number | null
           email: string | null
@@ -424,6 +425,7 @@ export type Database = {
           auth_user_id?: string | null
           branch?: string | null
           cohort?: string | null
+          cohorts?: string[]
           created_at?: string
           department_id?: number | null
           email?: string | null
@@ -442,6 +444,7 @@ export type Database = {
           auth_user_id?: string | null
           branch?: string | null
           cohort?: string | null
+          cohorts?: string[]
           created_at?: string
           department_id?: number | null
           email?: string | null

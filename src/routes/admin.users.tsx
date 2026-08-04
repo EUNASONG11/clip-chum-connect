@@ -56,6 +56,7 @@ type UserRow = {
   class_count: number;
   branch: string | null;
   cohort: string | null;
+  cohorts: string[] | null;
 };
 
 
@@ -164,11 +165,14 @@ function UsersPage() {
   const cohortOptions = useMemo(() => {
     const set = new Set<string>();
     buckets.instructor.forEach((u) => {
-      const c = (u.cohort ?? "").trim();
-      if (c) set.add(c);
+      (((u as any).cohorts ?? []) as string[]).forEach((c) => {
+        const v = (c ?? "").trim();
+        if (v) set.add(v);
+      });
     });
     return Array.from(set).sort((a, b) => b.localeCompare(a, "ko"));
   }, [buckets.instructor]);
+
 
   const filtered = useMemo(() => {
     const rows = buckets[tab];
@@ -185,8 +189,9 @@ function UsersPage() {
       tab !== "instructor" || cohortFilter.length === 0
         ? byBranch
         : byBranch.filter((u) => {
-            const matchesNone = cohortFilter.includes("__none__") && !u.cohort;
-            const matchesCohort = !!u.cohort && cohortFilter.includes(u.cohort);
+            const list = ((u as any).cohorts ?? []) as string[];
+            const matchesNone = cohortFilter.includes("__none__") && list.length === 0;
+            const matchesCohort = list.some((c) => cohortFilter.includes(c));
             return matchesNone || matchesCohort;
           });
     if (terms.length === 0) return byCohort;
@@ -547,31 +552,25 @@ function UsersPage() {
                       </td>
                       {tab === "instructor" && (
                         <td className="whitespace-nowrap px-4 py-3">
-                          <Select
-                            value={(u as any).cohort ?? "__none__"}
-                            onValueChange={async (v) => {
+                          <CohortMultiSelect
+                            options={COHORT_OPTIONS}
+                            selected={((u as any).cohorts ?? []) as string[]}
+                            assignMode
+                            placeholder="미지정"
+                            allLabel="전체 기수"
+                            width="w-[150px]"
+                            onChange={async (next) => {
                               try {
                                 await updateInstructorCohort({
-                                  data: { authUserId: u.id, cohort: v === "__none__" ? null : v },
+                                  data: { authUserId: u.id, cohorts: next },
                                 });
-                                toast.success("기수가 저장되었습니다.");
                                 refetch();
                                 qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
                               } catch (e: any) {
                                 toast.error(e.message ?? "기수 저장 실패");
                               }
                             }}
-                          >
-                            <SelectTrigger className="h-8 w-[110px]">
-                              <SelectValue placeholder="미지정" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="__none__">미지정</SelectItem>
-                              {COHORT_OPTIONS.map((c) => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          />
                         </td>
                       )}
                       <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
