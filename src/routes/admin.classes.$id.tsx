@@ -176,6 +176,29 @@ function ClassDetailPage() {
     clsAny?.description,
   ]);
 
+  const isSettingsDirty = useMemo(() => {
+    if (!clsAny) return false;
+    const originalAlways = !clsAny.active_from && !clsAny.active_to;
+    if (settingsAlways !== originalAlways) return true;
+    if (settingsName !== (clsAny.name ?? "")) return true;
+    if (settingsDesc !== (clsAny.description ?? "")) return true;
+    if (settingsCategory !== (clsAny.category_id ?? "__none__")) return true;
+    if (settingsBranch !== (clsAny.branch ?? "__all_branches__")) return true;
+    if (!settingsAlways) {
+      if (settingsFrom !== (clsAny.active_from ?? "")) return true;
+      if (settingsTo !== (clsAny.active_to ?? "")) return true;
+    }
+    return false;
+  }, [
+    clsAny,
+    settingsAlways,
+    settingsName,
+    settingsDesc,
+    settingsCategory,
+    settingsBranch,
+    settingsFrom,
+    settingsTo,
+  ]);
 
   const saveSettings = async () => {
     if (!settingsName.trim()) return toast.error("수강반 이름을 입력하세요.");
@@ -1376,7 +1399,7 @@ function ClassDetailPage() {
                   </div>
                 </div>
 
-                <Button onClick={saveSettings} disabled={savingSettings}>
+                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>
               </CardContent>
