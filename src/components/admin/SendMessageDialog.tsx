@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: videos = [] } = useQuery({
     queryKey: ["admin", "class", classId, "videos-lite"],
@@ -145,6 +146,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
                 fallbackToSms: true,
               },
             });
+      queryClient.invalidateQueries({ queryKey: ["class-sms-logs", classId] });
       const okBranches = res.groups.filter((g: any) => g.ok);
       const failBranches = res.groups.filter((g: any) => !g.ok);
       const okCount = okBranches.reduce((n: number, g: any) => n + g.count, 0);

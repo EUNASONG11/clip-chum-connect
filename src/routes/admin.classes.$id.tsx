@@ -20,6 +20,7 @@ import {
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
+import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
 import { ExternalAssignmentPanel } from "@/components/admin/ExternalAssignmentPanel";
 
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
@@ -538,6 +539,7 @@ function ClassDetailPage() {
           <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
+          <TabsTrigger value="sms" className="whitespace-nowrap px-2 text-xs sm:text-sm">문자 이력</TabsTrigger>
           <TabsTrigger value="settings" className="whitespace-nowrap px-2 text-xs sm:text-sm">설정</TabsTrigger>
         </TabsList>
 
@@ -1302,6 +1304,10 @@ function ClassDetailPage() {
           </Card>
         </TabsContent>
 
+
+        <TabsContent value="sms">
+          <SmsLogPanel classId={id} />
+        </TabsContent>
 
         <TabsContent value="settings">
           <div className="space-y-4">
