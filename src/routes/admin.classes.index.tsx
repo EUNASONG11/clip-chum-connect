@@ -35,6 +35,7 @@ import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 
 
 import { supabase } from "@/integrations/supabase/client";
+import { getMyCohorts } from "@/lib/vimeo.functions";
 
 
 export const Route = createFileRoute("/admin/classes/")({
