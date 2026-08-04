@@ -139,21 +139,12 @@ function InstructorsPage() {
                 className="max-w-sm"
                 inputClassName="pl-8"
               />
-              <Select
-                value={cohortFilter}
-                onValueChange={setCohortFilter}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-44">
-                  <SelectValue placeholder="기수 전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">기수 전체</SelectItem>
-                  <SelectItem value="__none__">미지정</SelectItem>
-                  {COHORT_OPTIONS.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CohortMultiSelect
+                options={COHORT_OPTIONS}
+                selected={cohortFilter}
+                onChange={setCohortFilter}
+                placeholder="기수 전체"
+              />
             </div>
 
             {isLoading ? (
