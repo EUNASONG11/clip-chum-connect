@@ -236,6 +236,114 @@ const RecipientSchema = z.object({
   branch: z.string().min(1),
 });
 
+type LogRow = {
+  batch_id: string;
+  class_id: string;
+  channel: "sms" | "brandtalk";
+  message: string;
+  user_id: string | null;
+  recipient_name: string;
+  phone: string;
+  branch: string | null;
+  success: boolean;
+  error_message: string | null;
+  sent_by: string;
+};
+
+async function writeSmsLogs(rows: LogRow[]) {
+  if (rows.length === 0) return;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.from("sms_logs").insert(rows as any);
+  if (error) console.error("sms_logs insert failed:", error.message);
+}
+
+// ---------- 문자 전송 이력 조회 ----------
+
+export const listClassSmsLogs = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertAdminOrInstructorOnClass(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("sms_logs")
+      .select(
+        "id, batch_id, channel, message, user_id, recipient_name, phone, branch, success, error_message, sent_by, created_at",
+      )
+      .eq("class_id", data.classId)
+      .order("created_at", { ascending: false })
+      .limit(2000);
+    if (error) throw new Error(error.message);
+
+    const list = (rows ?? []) as any[];
+
+    const senderIds = Array.from(new Set(list.map((r) => r.sent_by).filter(Boolean)));
+    const senderMap = new Map<string, string>();
+    if (senderIds.length > 0) {
+      const { data: insts } = await supabaseAdmin
+        .from("instructors")
+        .select("auth_user_id, name")
+        .in("auth_user_id", senderIds);
+      ((insts ?? []) as any[]).forEach((i) => senderMap.set(i.auth_user_id, i.name));
+    }
+
+    const batches = new Map<
+      string,
+      {
+        batch_id: string;
+        channel: "sms" | "brandtalk";
+        message: string;
+        created_at: string;
+        sender_name: string;
+        total: number;
+        success_count: number;
+        fail_count: number;
+        recipients: Array<{
+          id: string;
+          user_id: string | null;
+          name: string;
+          phone: string;
+          branch: string | null;
+          success: boolean;
+          error_message: string | null;
+        }>;
+      }
+    >();
+
+    for (const r of list) {
+      let b = batches.get(r.batch_id);
+      if (!b) {
+        b = {
+          batch_id: r.batch_id,
+          channel: r.channel,
+          message: r.message,
+          created_at: r.created_at,
+          sender_name: senderMap.get(r.sent_by) ?? "",
+          total: 0,
+          success_count: 0,
+          fail_count: 0,
+          recipients: [],
+        };
+        batches.set(r.batch_id, b);
+      }
+      b.total += 1;
+      if (r.success) b.success_count += 1;
+      else b.fail_count += 1;
+      b.recipients.push({
+        id: r.id,
+        user_id: r.user_id,
+        name: r.recipient_name,
+        phone: r.phone,
+        branch: r.branch,
+        success: r.success,
+        error_message: r.error_message,
+      });
+    }
+
+    return Array.from(batches.values()).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  });
+
+
 export const sendClassSms = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -266,8 +374,12 @@ export const sendClassSms = createServerFn({ method: "POST" })
     const isLms = byteLen(data.message) > 80;
     const results: Array<{ branch: string; count: number; ok: boolean; error?: string }> = [];
     const unknownBranches: string[] = [];
+    const batchId = crypto.randomUUID();
+    const logRows: LogRow[] = [];
 
     for (const [branch, list] of groups) {
+      let ok = true;
+      let errMsg: string | null = null;
       try {
         const creds = getBranchCreds(branch);
         if (!creds.smsServiceId || !creds.smsFrom) {
@@ -299,16 +411,36 @@ export const sendClassSms = createServerFn({ method: "POST" })
         }
         results.push({ branch, count: list.length, ok: true });
       } catch (err: any) {
+        ok = false;
+        errMsg = err.message ?? "오류";
         if (err.message?.includes("지원되지 않는")) unknownBranches.push(branch);
         results.push({ branch, count: list.length, ok: false, error: err.message });
       }
+      for (const r of list) {
+        logRows.push({
+          batch_id: batchId,
+          class_id: data.classId,
+          channel: "sms",
+          message: data.message,
+          user_id: r.user_id,
+          recipient_name: r.name ?? "",
+          phone: r.phone,
+          branch,
+          success: ok,
+          error_message: errMsg,
+          sent_by: context.userId,
+        });
+      }
     }
+
+    await writeSmsLogs(logRows);
 
     return {
       total: data.recipients.length,
       groups: results,
       unknownBranches,
     };
+
   });
 
 export const sendClassBrandTalk = createServerFn({ method: "POST" })
@@ -338,7 +470,11 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
     if (groups.size === 0) throw new Error("발송 가능한 수신자가 없습니다.");
 
     const results: Array<{ branch: string; count: number; ok: boolean; error?: string }> = [];
+    const batchId = crypto.randomUUID();
+    const logRows: LogRow[] = [];
     for (const [branch, list] of groups) {
+      let ok = true;
+      let errMsg: string | null = null;
       try {
         const creds = getBranchCreds(branch);
         if (!creds.btServiceId || !creds.btChannelId) {
@@ -373,8 +509,27 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
         }
         results.push({ branch, count: list.length, ok: true });
       } catch (err: any) {
+        ok = false;
+        errMsg = err.message ?? "오류";
         results.push({ branch, count: list.length, ok: false, error: err.message });
       }
+      for (const r of list) {
+        logRows.push({
+          batch_id: batchId,
+          class_id: data.classId,
+          channel: "brandtalk",
+          message: data.message,
+          user_id: r.user_id,
+          recipient_name: r.name ?? "",
+          phone: r.phone,
+          branch,
+          success: ok,
+          error_message: errMsg,
+          sent_by: context.userId,
+        });
+      }
     }
+    await writeSmsLogs(logRows);
     return { total: data.recipients.length, groups: results };
+
   });
