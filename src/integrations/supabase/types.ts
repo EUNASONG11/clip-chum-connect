@@ -57,6 +57,7 @@ export type Database = {
       }
       class_categories: {
         Row: {
+          cohort: string | null
           color: string | null
           created_at: string
           created_by: string
@@ -68,6 +69,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cohort?: string | null
           color?: string | null
           created_at?: string
           created_by: string
@@ -79,6 +81,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cohort?: string | null
           color?: string | null
           created_at?: string
           created_by?: string

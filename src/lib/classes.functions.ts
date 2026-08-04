@@ -41,7 +41,7 @@ async function assertOwnClassOrAdmin(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
-    .select("created_by, active_from, active_to")
+    .select("created_by, active_from, active_to, category_id")
     .eq("id", classId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -57,6 +57,24 @@ async function assertOwnClassOrAdmin(
     .is("deleted_at", null)
     .maybeSingle();
   if (assigned) return;
+  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사도 접근 허용
+  if ((data as any).category_id) {
+    const [{ data: cat }, { data: me }] = await Promise.all([
+      supabaseAdmin
+        .from("class_categories")
+        .select("cohort")
+        .eq("id", (data as any).category_id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
+    ]);
+    const catCohort = (cat as any)?.cohort as string | null | undefined;
+    if (catCohort && catCohort === ((me as any)?.cohort ?? null)) return;
+  }
   // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
@@ -152,8 +170,8 @@ export const listClasses = createServerFn({ method: "GET" })
       const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
       return await withStudentNames(supabaseAdmin, withCreators);
     }
-    // 강사: 본인이 만든 것 + 배정된 것
-    const [{ data: assigned }, { data: enrolled }] = await Promise.all([
+    // 강사: 본인이 만든 것 + 배정된 것 + 본인 기수로 지정된 카테고리의 반 전체
+    const [{ data: assigned }, { data: enrolled }, { data: me }] = await Promise.all([
       supabaseAdmin
         .from("class_instructors")
         .select("class_id")
@@ -164,6 +182,11 @@ export const listClasses = createServerFn({ method: "GET" })
         .select("class_id")
         .eq("user_id", context.userId)
         .is("deleted_at", null),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
     ]);
     const idSet = new Set<string>([
       ...(assigned ?? []).map((r: any) => r.class_id as string),
@@ -172,6 +195,16 @@ export const listClasses = createServerFn({ method: "GET" })
     const ids = Array.from(idSet);
     const orParts = [`created_by.eq.${context.userId}`];
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
+    const myCohort = (me as any)?.cohort as string | null | undefined;
+    if (myCohort) {
+      const { data: cats } = await supabaseAdmin
+        .from("class_categories")
+        .select("id")
+        .eq("cohort" as any, myCohort)
+        .is("deleted_at", null);
+      const catIds = (cats ?? []).map((c: any) => c.id as string);
+      if (catIds.length) orParts.push(`category_id.in.(${catIds.join(",")})`);
+    }
     const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
@@ -993,7 +1026,7 @@ export const listClassCategories = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("class_categories")
-      .select("id, name, color, sort_order, created_at")
+      .select("id, name, color, sort_order, cohort, created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -1027,6 +1060,7 @@ export const createClassCategory = createServerFn({ method: "POST" })
     z.object({
       name: z.string().min(1).max(100),
       color: z.string().max(20).nullable().optional(),
+      cohort: z.string().max(20).nullable().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1045,10 +1079,11 @@ export const createClassCategory = createServerFn({ method: "POST" })
       .insert({
         name: data.name,
         color: data.color ?? null,
+        cohort: data.cohort ?? null,
         sort_order: nextOrder,
         created_by: context.userId,
       })
-      .select("id, name, color, sort_order")
+      .select("id, name, color, sort_order, cohort")
       .single();
     if (error) throw new Error(error.message);
     return row;
@@ -1062,6 +1097,7 @@ export const updateClassCategory = createServerFn({ method: "POST" })
       id: z.string().uuid(),
       name: z.string().min(1).max(100).optional(),
       color: z.string().max(20).nullable().optional(),
+      cohort: z.string().max(20).nullable().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1070,6 +1106,7 @@ export const updateClassCategory = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.color !== undefined) patch.color = data.color;
+    if (data.cohort !== undefined) patch.cohort = data.cohort;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("class_categories")
