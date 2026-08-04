@@ -152,8 +152,8 @@ export const listClasses = createServerFn({ method: "GET" })
       const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
       return await withStudentNames(supabaseAdmin, withCreators);
     }
-    // 강사: 본인이 만든 것 + 배정된 것
-    const [{ data: assigned }, { data: enrolled }] = await Promise.all([
+    // 강사: 본인이 만든 것 + 배정된 것 + 본인 기수로 지정된 카테고리의 반 전체
+    const [{ data: assigned }, { data: enrolled }, { data: me }] = await Promise.all([
       supabaseAdmin
         .from("class_instructors")
         .select("class_id")
@@ -164,6 +164,11 @@ export const listClasses = createServerFn({ method: "GET" })
         .select("class_id")
         .eq("user_id", context.userId)
         .is("deleted_at", null),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
     ]);
     const idSet = new Set<string>([
       ...(assigned ?? []).map((r: any) => r.class_id as string),
@@ -172,6 +177,16 @@ export const listClasses = createServerFn({ method: "GET" })
     const ids = Array.from(idSet);
     const orParts = [`created_by.eq.${context.userId}`];
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
+    const myCohort = (me as any)?.cohort as string | null | undefined;
+    if (myCohort) {
+      const { data: cats } = await supabaseAdmin
+        .from("class_categories")
+        .select("id")
+        .eq("cohort" as any, myCohort)
+        .is("deleted_at", null);
+      const catIds = (cats ?? []).map((c: any) => c.id as string);
+      if (catIds.length) orParts.push(`category_id.in.(${catIds.join(",")})`);
+    }
     const { data, error } = await supabaseAdmin
       .from("classes")
       .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
