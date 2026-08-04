@@ -344,6 +344,131 @@ export type Database = {
           },
         ]
       }
+      external_assignment_completions: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          link_id: string
+          occurred_at: string
+          remote_status: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          link_id: string
+          occurred_at?: string
+          remote_status?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          link_id?: string
+          occurred_at?: string
+          remote_status?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_assignment_completions_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "external_assignment_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_assignment_completions_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_assignment_links: {
+        Row: {
+          assignment_type: string
+          class_id: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          external_id: string
+          id: string
+          last_error: string | null
+          last_synced_at: string | null
+          period_end: string | null
+          period_start: string | null
+          remote_assignment_type_id: string | null
+          scope: string
+          source: string
+          student_count: number
+          updated_at: string
+        }
+        Insert: {
+          assignment_type: string
+          class_id?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          external_id: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          remote_assignment_type_id?: string | null
+          scope?: string
+          source?: string
+          student_count?: number
+          updated_at?: string
+        }
+        Update: {
+          assignment_type?: string
+          class_id?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          external_id?: string
+          id?: string
+          last_error?: string | null
+          last_synced_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          remote_assignment_type_id?: string | null
+          scope?: string
+          source?: string
+          student_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_assignment_links_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_students: {
         Row: {
           auth_user_id: string | null
