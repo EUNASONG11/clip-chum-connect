@@ -1399,7 +1399,7 @@ function ClassDetailPage() {
                   </div>
                 </div>
 
-                <Button onClick={saveSettings} disabled={savingSettings}>
+                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>
               </CardContent>
