@@ -19,6 +19,8 @@ import {
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
+import { ExternalAssignmentPanel } from "@/components/admin/ExternalAssignmentPanel";
+
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import {
   getClass,
