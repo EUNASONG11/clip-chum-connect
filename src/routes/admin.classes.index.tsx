@@ -1,3 +1,4 @@
+import { COHORT_OPTIONS } from "@/lib/cohort";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -98,10 +99,12 @@ function ClassesPage() {
   // 카테고리 관리 폼 상태
   const [catName, setCatName] = useState("");
   const [catColor, setCatColor] = useState("#22c55e");
+  const [catCohort, setCatCohort] = useState<string>("__none__");
   const [catSaving, setCatSaving] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
   const [editingCatColor, setEditingCatColor] = useState("#22c55e");
+  const [editingCatCohort, setEditingCatCohort] = useState<string>("__none__");
 
   const categoryMap = new Map<string, any>(
     (categories as any[]).map((c) => [c.id as string, c]),
@@ -202,10 +205,15 @@ function ClassesPage() {
     setCatSaving(true);
     try {
       await createClassCategory({
-        data: { name: catName.trim(), color: catColor || null },
+        data: {
+          name: catName.trim(),
+          color: catColor || null,
+          cohort: catCohort === "__none__" ? null : catCohort,
+        },
       });
       setCatName("");
       setCatColor("#22c55e");
+      setCatCohort("__none__");
       toast.success("카테고리가 추가되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "class-categories"] });
     } catch (err: any) {
@@ -220,7 +228,12 @@ function ClassesPage() {
     if (!editingCatName.trim()) return toast.error("이름을 입력하세요.");
     try {
       await updateClassCategory({
-        data: { id: editingCatId, name: editingCatName.trim(), color: editingCatColor || null },
+        data: {
+          id: editingCatId,
+          name: editingCatName.trim(),
+          color: editingCatColor || null,
+          cohort: editingCatCohort === "__none__" ? null : editingCatCohort,
+        },
       });
       setEditingCatId(null);
       qc.invalidateQueries({ queryKey: ["admin", "class-categories"] });
@@ -609,6 +622,20 @@ function ClassesPage() {
                   className="h-10 w-16 p-1"
                 />
               </div>
+              <div>
+                <Label>기수</Label>
+                <Select value={catCohort} onValueChange={setCatCohort}>
+                  <SelectTrigger className="w-[130px]">
+                    <SelectValue placeholder="미지정" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">미지정</SelectItem>
+                    {COHORT_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button type="submit" disabled={catSaving}>
                 {catSaving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Plus className="mr-1 h-4 w-4" />}
                 추가
@@ -637,6 +664,17 @@ function ClassesPage() {
                             onChange={(e) => setEditingCatName(e.target.value)}
                             className="h-9 flex-1"
                           />
+                          <Select value={editingCatCohort} onValueChange={setEditingCatCohort}>
+                            <SelectTrigger className="h-9 w-[120px]">
+                              <SelectValue placeholder="미지정" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__none__">미지정</SelectItem>
+                              {COHORT_OPTIONS.map((c) => (
+                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Button size="sm" onClick={saveCategoryEdit}>저장</Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditingCatId(null)}>
                             취소
@@ -649,6 +687,11 @@ function ClassesPage() {
                             style={{ backgroundColor: cat.color ?? "#94a3b8" }}
                           />
                           <span className="flex-1 truncate font-medium">{cat.name}</span>
+                          {cat.cohort && (
+                            <span className="rounded bg-secondary px-1.5 py-0.5 text-xs text-secondary-foreground">
+                              {cat.cohort}
+                            </span>
+                          )}
                           <span className="text-xs text-muted-foreground">{count}개 수강반</span>
                           <Button
                             size="sm"
@@ -657,6 +700,7 @@ function ClassesPage() {
                               setEditingCatId(cat.id);
                               setEditingCatName(cat.name);
                               setEditingCatColor(cat.color ?? "#22c55e");
+                              setEditingCatCohort(cat.cohort ?? "__none__");
                             }}
                           >
                             <Pencil className="h-4 w-4" />
