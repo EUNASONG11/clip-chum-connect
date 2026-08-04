@@ -19,6 +19,8 @@ import {
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
+import { ExternalAssignmentPanel } from "@/components/admin/ExternalAssignmentPanel";
+
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import {
   getClass,
@@ -477,14 +479,16 @@ function ClassDetailPage() {
       />
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
           <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>
           <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
+          <TabsTrigger value="assignment" className="whitespace-nowrap px-2 text-xs sm:text-sm">과제 연동</TabsTrigger>
           <TabsTrigger value="settings" className="whitespace-nowrap px-2 text-xs sm:text-sm">설정</TabsTrigger>
         </TabsList>
+
 
 
         <TabsContent value="students">
@@ -1287,7 +1291,12 @@ function ClassDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="assignment">
+          <ExternalAssignmentPanel classId={id} className={cls?.name ?? ""} />
+        </TabsContent>
       </Tabs>
+
 
     </div>
   );
