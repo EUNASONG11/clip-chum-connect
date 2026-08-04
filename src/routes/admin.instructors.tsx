@@ -12,18 +12,11 @@ import {
   updateInstructorCohort,
   bulkCreateInstructorAccounts,
 } from "@/lib/vimeo.functions";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-export const COHORT_OPTIONS = ["19기", "18기", "17기", "16기", "15기", "14기", "13기"];
+import { COHORT_OPTIONS } from "@/lib/cohort";
 import { AdminOnly } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 
 export const Route = createFileRoute("/admin/instructors")({
   head: () => ({ meta: [{ title: "강사 명부 — 관리자" }] }),
