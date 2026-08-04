@@ -41,32 +41,58 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
     const linkIds = linkList.map((l: any) => l.id as string);
 
     // 링크별 완료 통보 집계 (학생 단위 중복 제거)
+    type Person = { user_id: string; name: string; status: string; occurred_at: string | null };
     const statsByLink: Record<
       string,
-      { completedCount: number; statusCounts: Record<string, number> }
+      { completedCount: number; statusCounts: Record<string, number>; people: Person[] }
     > = {};
 
     if (linkIds.length > 0) {
       const { data: comps, error: compErr } = await context.supabase
         .from("external_assignment_completions")
-        .select("link_id, user_id, status, remote_status")
-        .in("link_id", linkIds);
+        .select("link_id, user_id, status, remote_status, occurred_at")
+        .in("link_id", linkIds)
+        .order("occurred_at", { ascending: false });
       if (compErr) throw new Error(compErr.message);
 
+      const rows = comps ?? [];
+      const userIds = Array.from(new Set(rows.map((c: any) => c.user_id as string)));
+      const nameById = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: students } = await supabaseAdmin
+          .from("external_students")
+          .select("auth_user_id, name")
+          .in("auth_user_id", userIds);
+        for (const s of students ?? []) {
+          if (s.auth_user_id) nameById.set(s.auth_user_id, s.name);
+        }
+      }
+
       const seen = new Set<string>();
-      for (const c of comps ?? []) {
+      for (const c of rows) {
         const key = `${c.link_id}:${c.user_id}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        const s = (statsByLink[c.link_id] ??= { completedCount: 0, statusCounts: {} });
+        const s = (statsByLink[c.link_id] ??= {
+          completedCount: 0,
+          statusCounts: {},
+          people: [],
+        });
         const label = (c.remote_status || c.status || "unknown") as string;
         s.statusCounts[label] = (s.statusCounts[label] ?? 0) + 1;
         s.completedCount += 1;
+        s.people.push({
+          user_id: c.user_id,
+          name: nameById.get(c.user_id) ?? "이름 미확인",
+          status: label,
+          occurred_at: c.occurred_at ?? null,
+        });
       }
     }
 
     const enriched = linkList.map((l: any) => {
-      const s = statsByLink[l.id] ?? { completedCount: 0, statusCounts: {} };
+      const s = statsByLink[l.id] ?? { completedCount: 0, statusCounts: {}, people: [] };
       const target = l.student_count ?? 0;
       const statusCounts = { ...s.statusCounts };
       const initial = Math.max(0, target - s.completedCount);
@@ -76,6 +102,7 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
         completed_count: s.completedCount,
         target_count: target,
         status_counts: statusCounts,
+        completed_students: s.people,
       };
     });
 
