@@ -38,6 +38,7 @@ import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
