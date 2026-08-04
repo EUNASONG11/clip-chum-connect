@@ -37,6 +37,7 @@ type Row = {
   phone: string | null;
   branch: string | null;
   cohort: string | null;
+  cohorts: string[] | null;
   auth_user_id: string | null;
   must_change_password: boolean | null;
 };
@@ -59,8 +60,9 @@ function InstructorsPage() {
     const byCohort = (() => {
       if (cohortFilter.length === 0) return rows;
       return rows.filter((r) => {
-        const matchesNone = cohortFilter.includes("__none__") && !r.cohort;
-        const matchesCohort = !!r.cohort && cohortFilter.includes(r.cohort);
+        const list = r.cohorts ?? [];
+        const matchesNone = cohortFilter.includes("__none__") && list.length === 0;
+        const matchesCohort = list.some((c) => cohortFilter.includes(c));
         return matchesNone || matchesCohort;
       });
     })();
@@ -176,31 +178,25 @@ function InstructorsPage() {
                             {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
                           </td>
                           <td className="py-2 pr-2">
-                            <Select
-                              value={r.cohort ?? "__none__"}
-                              onValueChange={async (v) => {
+                            <CohortMultiSelect
+                              options={COHORT_OPTIONS}
+                              selected={r.cohorts ?? []}
+                              assignMode
+                              placeholder="미지정"
+                              allLabel="전체 기수"
+                              width="w-[150px]"
+                              onChange={async (next) => {
                                 try {
                                   await updateInstructorCohort({
-                                    data: { instructorId: r.id, cohort: v === "__none__" ? null : v },
+                                    data: { instructorId: r.id, cohorts: next },
                                   });
-                                  toast.success("기수가 저장되었습니다.");
                                   qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
                                   qc.invalidateQueries({ queryKey: ["admin", "users"] });
                                 } catch (e: any) {
                                   toast.error(e.message ?? "기수 저장 실패");
                                 }
                               }}
-                            >
-                              <SelectTrigger className="h-8 w-[110px]">
-                                <SelectValue placeholder="미지정" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__">미지정</SelectItem>
-                                {COHORT_OPTIONS.map((c) => (
-                                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            />
                           </td>
                           <td className="py-2 pr-2">
                             <Input
