@@ -181,11 +181,13 @@ function UsersPage() {
         ? rows
         : rows.filter((u) => (u.branch ?? "") === branchFilter);
     const byCohort =
-      tab !== "instructor" || cohortFilter === "__all__"
+      tab !== "instructor" || cohortFilter.length === 0
         ? byBranch
-        : cohortFilter === "__none__"
-          ? byBranch.filter((u) => !u.cohort)
-          : byBranch.filter((u) => u.cohort === cohortFilter);
+        : byBranch.filter((u) => {
+            const matchesNone = cohortFilter.includes("__none__") && !u.cohort;
+            const matchesCohort = !!u.cohort && cohortFilter.includes(u.cohort);
+            return matchesNone || matchesCohort;
+          });
     if (terms.length === 0) return byCohort;
     return byCohort.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
