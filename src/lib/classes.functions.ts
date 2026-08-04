@@ -1026,7 +1026,7 @@ export const listClassCategories = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
       .from("class_categories")
-      .select("id, name, color, sort_order, created_at")
+      .select("id, name, color, sort_order, cohort, created_at")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -1060,6 +1060,7 @@ export const createClassCategory = createServerFn({ method: "POST" })
     z.object({
       name: z.string().min(1).max(100),
       color: z.string().max(20).nullable().optional(),
+      cohort: z.string().max(20).nullable().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1078,10 +1079,11 @@ export const createClassCategory = createServerFn({ method: "POST" })
       .insert({
         name: data.name,
         color: data.color ?? null,
+        cohort: data.cohort ?? null,
         sort_order: nextOrder,
         created_by: context.userId,
       })
-      .select("id, name, color, sort_order")
+      .select("id, name, color, sort_order, cohort")
       .single();
     if (error) throw new Error(error.message);
     return row;
@@ -1095,6 +1097,7 @@ export const updateClassCategory = createServerFn({ method: "POST" })
       id: z.string().uuid(),
       name: z.string().min(1).max(100).optional(),
       color: z.string().max(20).nullable().optional(),
+      cohort: z.string().max(20).nullable().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1103,6 +1106,7 @@ export const updateClassCategory = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.color !== undefined) patch.color = data.color;
+    if (data.cohort !== undefined) patch.cohort = data.cohort;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("class_categories")
