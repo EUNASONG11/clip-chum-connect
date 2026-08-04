@@ -166,6 +166,25 @@ export function ExternalAssignmentPanel({
                       ),
                     )}
                   </div>
+                  {(l.completed_students ?? []).length > 0 && (
+                    <div className="mt-2 rounded-md bg-muted/50 p-2">
+                      <div className="mb-1 text-xs font-medium">완료 처리된 학생</div>
+                      <div className="flex flex-wrap gap-1">
+                        {(l.completed_students as any[]).map((p) => (
+                          <span
+                            key={p.user_id}
+                            className="rounded-full border bg-background px-2 py-0.5 text-xs"
+                          >
+                            {p.name}
+                            <span className="ml-1 text-muted-foreground">
+                              {STATUS_LABEL[p.status] ?? p.status}
+                              {p.occurred_at ? ` · ${String(p.occurred_at).slice(0, 10)}` : ""}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div className="mt-1 text-xs text-muted-foreground">
                     기간 {l.period_start} ~ {l.period_end} · 키 {l.external_id}
                   </div>
