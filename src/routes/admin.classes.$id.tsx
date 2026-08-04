@@ -1286,6 +1286,28 @@ function ClassDetailPage() {
                 <CardTitle>수강반 설정</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="s_name" className="mb-2 block">수강반 이름</Label>
+                    <Input
+                      id="s_name"
+                      value={settingsName}
+                      onChange={(e) => setSettingsName(e.target.value)}
+                      placeholder="예: 19기 정규반"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="s_desc" className="mb-2 block">설명</Label>
+                    <Textarea
+                      id="s_desc"
+                      value={settingsDesc}
+                      onChange={(e) => setSettingsDesc(e.target.value)}
+                      placeholder="수강반 설명 (선택)"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <Label className="mb-2 block">활성 기간</Label>
                   <p className="mb-3 text-xs text-muted-foreground">
