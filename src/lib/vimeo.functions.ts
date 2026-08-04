@@ -978,3 +978,22 @@ export const updateInstructorCohort = createServerFn({ method: "POST" })
   });
 
 
+
+// 로그인한 강사의 배정 기수 목록
+export const getMyCohorts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("instructors")
+      .select("cohort, cohorts")
+      .eq("auth_user_id", context.userId)
+      .maybeSingle();
+    const cohorts = Array.from(
+      new Set([
+        ...((((data as any)?.cohorts ?? []) as string[]).filter(Boolean)),
+        ...((data as any)?.cohort ? [(data as any).cohort as string] : []),
+      ]),
+    );
+    return { cohorts };
+  });

@@ -1,7 +1,7 @@
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 
 
 import { supabase } from "@/integrations/supabase/client";
+import { getMyCohorts } from "@/lib/vimeo.functions";
 
 
 export const Route = createFileRoute("/admin/classes/")({
@@ -64,7 +65,27 @@ function ClassesPage() {
   const [activeFrom, setActiveFrom] = useState("");
   const [activeTo, setActiveTo] = useState("");
   const [categoryId, setCategoryId] = useState<string>("__none__");
+  const [categoryAuto, setCategoryAuto] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("__all__");
+
+  // 로그인한 강사의 기수에 맞는 카테고리 자동 선택
+  const { data: myCohortData } = useQuery({
+    queryKey: ["me", "cohorts"],
+    queryFn: () => getMyCohorts(),
+    staleTime: 5 * 60 * 1000,
+  });
+  useEffect(() => {
+    if (categoryAuto) return;
+    if (categoryId !== "__none__") return;
+    const cohorts = myCohortData?.cohorts ?? [];
+    if (!cohorts.length || !(categories as any[]).length) return;
+    const match = (categories as any[]).find((c) => c.cohort && cohorts.includes(c.cohort));
+    if (match) {
+      setCategoryId(match.id);
+      setCategoryAuto(true);
+    }
+  }, [myCohortData, categories, categoryId, categoryAuto]);
+
   const [saving, setSaving] = useState(false);
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [thumbPreview, setThumbPreview] = useState<string | null>(null);
