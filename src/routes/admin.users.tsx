@@ -165,11 +165,14 @@ function UsersPage() {
   const cohortOptions = useMemo(() => {
     const set = new Set<string>();
     buckets.instructor.forEach((u) => {
-      const c = (u.cohort ?? "").trim();
-      if (c) set.add(c);
+      (((u as any).cohorts ?? []) as string[]).forEach((c) => {
+        const v = (c ?? "").trim();
+        if (v) set.add(v);
+      });
     });
     return Array.from(set).sort((a, b) => b.localeCompare(a, "ko"));
   }, [buckets.instructor]);
+
 
   const filtered = useMemo(() => {
     const rows = buckets[tab];
