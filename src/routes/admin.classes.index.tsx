@@ -67,6 +67,7 @@ function ClassesPage() {
   const [categoryId, setCategoryId] = useState<string>("__none__");
   const [categoryAuto, setCategoryAuto] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("__all__");
+  const [branch, setBranch] = useState<string>("__all_branches__");
 
   // 로그인한 강사의 기수에 맞는 카테고리 자동 선택
   const { data: myCohortData } = useQuery({
@@ -166,6 +167,7 @@ function ClassesPage() {
           active_from: alwaysActive ? null : activeFrom,
           active_to: alwaysActive ? null : activeTo,
           category_id: categoryId === "__none__" ? null : categoryId,
+          branch: branch === "__all_branches__" ? null : branch,
         },
       });
       if (thumbFile && row?.id) {
@@ -190,6 +192,7 @@ function ClassesPage() {
       setActiveFrom("");
       setActiveTo("");
       setCategoryId("__none__");
+      setBranch("__all_branches__");
       setThumbFile(null);
       setThumbPreview(null);
       setPickedInstructors([]);
@@ -361,6 +364,13 @@ function ClassesPage() {
                           }
                           return <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-700">진행중</span>;
                         })()}
+                        {c.branch ? (
+                          <BranchBadge branch={c.branch} />
+                        ) : (
+                          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                            모든 교육원
+                          </span>
+                        )}
                         {cat && (
                           <span
                             className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium"
@@ -396,7 +406,23 @@ function ClassesPage() {
                           <span>배정된 학생 없음</span>
                         )}
                       </p>
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
+                        <Select
+                          value={c.branch ?? "__all_branches__"}
+                          onValueChange={(v) => changeClassBranch(c.id, v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="교육원 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all_branches__">모든 교육원</SelectItem>
+                            {BRANCH_OPTIONS.map((b) => (
+                              <SelectItem key={b} value={b}>
+                                {b} 전용
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Select
                           value={c.category_id ?? "__none__"}
                           onValueChange={(v) => changeClassCategory(c.id, v)}
@@ -473,6 +499,25 @@ function ClassesPage() {
                     카테고리가 없습니다. "카테고리" 탭에서 먼저 추가하세요.
                   </p>
                 )}
+              </div>
+              <div>
+                <Label>공개 교육원</Label>
+                <Select value={branch} onValueChange={setBranch}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="교육원 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all_branches__">모든 교육원 (전체 공개)</SelectItem>
+                    {BRANCH_OPTIONS.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b} 전용
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  특정 교육원 전용으로 지정하면 해당 교육원 강사에게만 노출됩니다.
+                </p>
               </div>
               <div className="flex items-center gap-2">
                 <input
