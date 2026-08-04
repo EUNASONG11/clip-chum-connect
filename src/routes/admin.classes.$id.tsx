@@ -533,14 +533,14 @@ function ClassDetailPage() {
       />
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
-          <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>
-          <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
-          <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
-          <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
-          <TabsTrigger value="sms" className="whitespace-nowrap px-2 text-xs sm:text-sm">문자 이력</TabsTrigger>
-          <TabsTrigger value="settings" className="whitespace-nowrap px-2 text-xs sm:text-sm">설정</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학생 배정</TabsTrigger>
+          <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
+          <TabsTrigger value="videos" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">영상</TabsTrigger>
+          <TabsTrigger value="stats" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학습 현황</TabsTrigger>
+          <TabsTrigger value="history" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">배정 이력</TabsTrigger>
+          <TabsTrigger value="sms" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">문자 이력</TabsTrigger>
+          <TabsTrigger value="settings" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">설정</TabsTrigger>
         </TabsList>
 
 
