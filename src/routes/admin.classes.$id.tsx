@@ -134,6 +134,8 @@ function ClassDetailPage() {
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
   const [editingFolderName, setEditingFolderName] = useState("");
+  const [settingsName, setSettingsName] = useState("");
+  const [settingsDesc, setSettingsDesc] = useState("");
   const [settingsFrom, setSettingsFrom] = useState("");
   const [settingsTo, setSettingsTo] = useState("");
   const [settingsAlways, setSettingsAlways] = useState(false);
@@ -161,11 +163,21 @@ function ClassDetailPage() {
       setSettingsTo(clsAny.active_to ?? "");
       setSettingsCategory(clsAny.category_id ?? "__none__");
       setSettingsBranch(clsAny.branch ?? "__all_branches__");
+      setSettingsName(clsAny.name ?? "");
+      setSettingsDesc(clsAny.description ?? "");
     }
-  }, [clsAny?.active_from, clsAny?.active_to, clsAny?.category_id, clsAny?.branch]);
+  }, [
+    clsAny?.active_from,
+    clsAny?.active_to,
+    clsAny?.category_id,
+    clsAny?.branch,
+    clsAny?.name,
+    clsAny?.description,
+  ]);
 
 
   const saveSettings = async () => {
+    if (!settingsName.trim()) return toast.error("수강반 이름을 입력하세요.");
     if (!settingsAlways) {
       if (!settingsFrom || !settingsTo) return toast.error("시작일과 종료일을 모두 입력하거나 상시 활성을 체크하세요.");
       if (settingsFrom > settingsTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
@@ -175,6 +187,8 @@ function ClassDetailPage() {
       await updateClass({
         data: {
           id,
+          name: settingsName.trim(),
+          description: settingsDesc.trim() || null,
           active_from: settingsAlways ? null : settingsFrom,
           active_to: settingsAlways ? null : settingsTo,
           category_id: settingsCategory === "__none__" ? null : settingsCategory,
