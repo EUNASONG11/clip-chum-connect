@@ -52,7 +52,7 @@ function InstructorsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
-  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
+  const [cohortFilter, setCohortFilter] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
