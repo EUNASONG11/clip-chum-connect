@@ -42,7 +42,10 @@ import {
   listClassEnrollmentHistory,
   updateClass,
   listStudentBranches,
+  listClassCategories,
 } from "@/lib/classes.functions";
+
+const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getClassStudentStats, getStudentVideoDetail } from "@/lib/stats.functions";
@@ -134,6 +137,8 @@ function ClassDetailPage() {
   const [settingsFrom, setSettingsFrom] = useState("");
   const [settingsTo, setSettingsTo] = useState("");
   const [settingsAlways, setSettingsAlways] = useState(false);
+  const [settingsCategory, setSettingsCategory] = useState("__none__");
+  const [settingsBranch, setSettingsBranch] = useState("__all_branches__");
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
@@ -141,6 +146,11 @@ function ClassDetailPage() {
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [historyPage, setHistoryPage] = useState(1);
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin", "class-categories"],
+    queryFn: () => listClassCategories(),
+    staleTime: 60_000,
+  });
 
   const clsAny: any = cls;
   useEffect(() => {
@@ -149,8 +159,10 @@ function ClassDetailPage() {
       setSettingsAlways(always);
       setSettingsFrom(clsAny.active_from ?? "");
       setSettingsTo(clsAny.active_to ?? "");
+      setSettingsCategory(clsAny.category_id ?? "__none__");
+      setSettingsBranch(clsAny.branch ?? "__all_branches__");
     }
-  }, [clsAny?.active_from, clsAny?.active_to]);
+  }, [clsAny?.active_from, clsAny?.active_to, clsAny?.category_id, clsAny?.branch]);
 
 
   const saveSettings = async () => {
@@ -165,10 +177,13 @@ function ClassDetailPage() {
           id,
           active_from: settingsAlways ? null : settingsFrom,
           active_to: settingsAlways ? null : settingsTo,
+          category_id: settingsCategory === "__none__" ? null : settingsCategory,
+          branch: settingsBranch === "__all_branches__" ? null : settingsBranch,
         },
       });
       toast.success("저장되었습니다.");
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
+      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -1285,6 +1300,45 @@ function ClassDetailPage() {
                     </div>
                   )}
                 </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="mb-2 block">카테고리</Label>
+                    <Select value={settingsCategory} onValueChange={setSettingsCategory}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="카테고리 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미지정</SelectItem>
+                        {(categories as any[]).map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="mb-2 block">공개 교육원</Label>
+                    <Select value={settingsBranch} onValueChange={setSettingsBranch}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="교육원 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all_branches__">모든 교육원 (전체 공개)</SelectItem>
+                        {BRANCH_OPTIONS.map((b) => (
+                          <SelectItem key={b} value={b}>
+                            {b} 전용
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      특정 교육원 전용으로 설정하면 해당 교육원 강사만 조회할 수 있습니다.
+                    </p>
+                  </div>
+                </div>
+
                 <Button onClick={saveSettings} disabled={savingSettings}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>

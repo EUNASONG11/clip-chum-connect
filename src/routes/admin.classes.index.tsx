@@ -284,33 +284,8 @@ function ClassesPage() {
     }
   };
 
-  const changeClassCategory = async (classId: string, value: string) => {
-    try {
-      await updateClass({
-        data: { id: classId, category_id: value === "__none__" ? null : value },
-      });
-      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
-      toast.success("카테고리가 변경되었습니다.");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
 
-  const changeClassBranch = async (classId: string, value: string) => {
-    try {
-      await updateClass({
-        data: { id: classId, branch: value === "__all_branches__" ? null : value },
-      });
-      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
-      toast.success(
-        value === "__all_branches__"
-          ? "모든 교육원에 공개로 변경되었습니다."
-          : `${value} 전용으로 변경되었습니다.`,
-      );
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="space-y-6">
@@ -426,41 +401,8 @@ function ClassesPage() {
                           <span>배정된 학생 없음</span>
                         )}
                       </p>
-                      <div className="mt-2 space-y-2">
-                        <Select
-                          value={c.branch ?? "__all_branches__"}
-                          onValueChange={(v) => changeClassBranch(c.id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="교육원 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all_branches__">모든 교육원</SelectItem>
-                            {BRANCH_OPTIONS.map((b) => (
-                              <SelectItem key={b} value={b}>
-                                {b} 전용
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={c.category_id ?? "__none__"}
-                          onValueChange={(v) => changeClassCategory(c.id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="카테고리 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">미지정</SelectItem>
-                            {(categories as any[]).map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
+
 
                     <div className="mt-4 flex items-center gap-2">
                       <Button asChild size="sm" variant="outline" className="flex-1">
