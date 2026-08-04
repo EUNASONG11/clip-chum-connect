@@ -77,15 +77,8 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   useEffect(() => {
     if (!open || !studentsData) return;
-    // 기본: 미완료 학생 중 본인 전화번호가 있으면 본인, 없고 학부모만 있으면 학부모 선택
-    const init: Record<SelectionKey, boolean> = {};
-    studentsData
-      .filter((n: any) => n.status === "incomplete")
-      .forEach((n: any) => {
-        if (n.student_phone) init[`${n.user_id}:self`] = true;
-        else if (n.parent_phone) init[`${n.user_id}:parent`] = true;
-      });
-    setSelected(init);
+    // 기본값: 전체 체크 해제
+    setSelected({});
   }, [open, studentsData]);
 
   useEffect(() => {
