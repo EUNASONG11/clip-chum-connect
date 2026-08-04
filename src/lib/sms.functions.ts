@@ -374,8 +374,12 @@ export const sendClassSms = createServerFn({ method: "POST" })
     const isLms = byteLen(data.message) > 80;
     const results: Array<{ branch: string; count: number; ok: boolean; error?: string }> = [];
     const unknownBranches: string[] = [];
+    const batchId = crypto.randomUUID();
+    const logRows: LogRow[] = [];
 
     for (const [branch, list] of groups) {
+      let ok = true;
+      let errMsg: string | null = null;
       try {
         const creds = getBranchCreds(branch);
         if (!creds.smsServiceId || !creds.smsFrom) {
@@ -407,16 +411,36 @@ export const sendClassSms = createServerFn({ method: "POST" })
         }
         results.push({ branch, count: list.length, ok: true });
       } catch (err: any) {
+        ok = false;
+        errMsg = err.message ?? "오류";
         if (err.message?.includes("지원되지 않는")) unknownBranches.push(branch);
         results.push({ branch, count: list.length, ok: false, error: err.message });
       }
+      for (const r of list) {
+        logRows.push({
+          batch_id: batchId,
+          class_id: data.classId,
+          channel: "sms",
+          message: data.message,
+          user_id: r.user_id,
+          recipient_name: r.name ?? "",
+          phone: r.phone,
+          branch,
+          success: ok,
+          error_message: errMsg,
+          sent_by: context.userId,
+        });
+      }
     }
+
+    await writeSmsLogs(logRows);
 
     return {
       total: data.recipients.length,
       groups: results,
       unknownBranches,
     };
+
   });
 
 export const sendClassBrandTalk = createServerFn({ method: "POST" })
