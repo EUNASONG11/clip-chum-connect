@@ -188,7 +188,7 @@ export function ExternalAssignmentPanel({
                     </div>
                   )}
                   <div className="mt-1 text-xs text-muted-foreground">
-                    기간 {l.period_start} ~ {l.period_end} · 키 {l.external_id}
+                    기간 {l.period_start} ~ {l.period_end}
                   </div>
                   {l.last_error && (
                     <div className="mt-1 break-all text-xs text-destructive">{l.last_error}</div>
