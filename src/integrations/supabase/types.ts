@@ -254,6 +254,7 @@ export type Database = {
         Row: {
           active_from: string | null
           active_to: string | null
+          branch: string | null
           category_id: string | null
           created_at: string
           created_by: string
@@ -268,6 +269,7 @@ export type Database = {
         Insert: {
           active_from?: string | null
           active_to?: string | null
+          branch?: string | null
           category_id?: string | null
           created_at?: string
           created_by: string
@@ -282,6 +284,7 @@ export type Database = {
         Update: {
           active_from?: string | null
           active_to?: string | null
+          branch?: string | null
           category_id?: string | null
           created_at?: string
           created_by?: string
