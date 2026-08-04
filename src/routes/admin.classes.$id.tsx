@@ -479,13 +479,12 @@ function ClassDetailPage() {
       />
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="students" className="whitespace-nowrap px-2 text-xs sm:text-sm">학생 배정</TabsTrigger>
           <TabsTrigger value="instructors" className="whitespace-nowrap px-2 text-xs sm:text-sm">강사 배정</TabsTrigger>
           <TabsTrigger value="videos" className="whitespace-nowrap px-2 text-xs sm:text-sm">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-2 text-xs sm:text-sm">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-2 text-xs sm:text-sm">배정 이력</TabsTrigger>
-          <TabsTrigger value="assignment" className="whitespace-nowrap px-2 text-xs sm:text-sm">과제 연동</TabsTrigger>
           <TabsTrigger value="settings" className="whitespace-nowrap px-2 text-xs sm:text-sm">설정</TabsTrigger>
         </TabsList>
 
@@ -1252,48 +1251,48 @@ function ClassDetailPage() {
 
 
         <TabsContent value="settings">
-          <Card>
-            <CardHeader>
-              <CardTitle>수강반 설정</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="mb-2 block">활성 기간</Label>
-                <p className="mb-3 text-xs text-muted-foreground">
-                  이 기간 동안만 학생이 수강반에 접근할 수 있습니다. (관리자/강사는 항상 접근 가능)
-                </p>
-                <div className="mb-3 flex items-center gap-2">
-                  <input
-                    id="s_always"
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={settingsAlways}
-                    onChange={(e) => setSettingsAlways(e.target.checked)}
-                  />
-                  <Label htmlFor="s_always" className="cursor-pointer">상시 활성 (기간 제한 없음)</Label>
-                </div>
-                {!settingsAlways && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div>
-                      <Label htmlFor="s_from" className="text-xs">시작일</Label>
-                      <Input id="s_from" type="date" value={settingsFrom} onChange={(e) => setSettingsFrom(e.target.value)} />
-                    </div>
-                    <div>
-                      <Label htmlFor="s_to" className="text-xs">종료일</Label>
-                      <Input id="s_to" type="date" value={settingsTo} onChange={(e) => setSettingsTo(e.target.value)} />
-                    </div>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>수강반 설정</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="mb-2 block">활성 기간</Label>
+                  <p className="mb-3 text-xs text-muted-foreground">
+                    이 기간 동안만 학생이 수강반에 접근할 수 있습니다. (관리자/강사는 항상 접근 가능)
+                  </p>
+                  <div className="mb-3 flex items-center gap-2">
+                    <input
+                      id="s_always"
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={settingsAlways}
+                      onChange={(e) => setSettingsAlways(e.target.checked)}
+                    />
+                    <Label htmlFor="s_always" className="cursor-pointer">상시 활성 (기간 제한 없음)</Label>
                   </div>
-                )}
-              </div>
-              <Button onClick={saveSettings} disabled={savingSettings}>
-                {savingSettings ? "저장 중..." : "저장"}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  {!settingsAlways && (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <Label htmlFor="s_from" className="text-xs">시작일</Label>
+                        <Input id="s_from" type="date" value={settingsFrom} onChange={(e) => setSettingsFrom(e.target.value)} />
+                      </div>
+                      <div>
+                        <Label htmlFor="s_to" className="text-xs">종료일</Label>
+                        <Input id="s_to" type="date" value={settingsTo} onChange={(e) => setSettingsTo(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <Button onClick={saveSettings} disabled={savingSettings}>
+                  {savingSettings ? "저장 중..." : "저장"}
+                </Button>
+              </CardContent>
+            </Card>
 
-        <TabsContent value="assignment">
-          <ExternalAssignmentPanel classId={id} className={cls?.name ?? ""} />
+            <ExternalAssignmentPanel classId={id} className={cls?.name ?? ""} />
+          </div>
         </TabsContent>
       </Tabs>
 
