@@ -1289,7 +1289,12 @@ function ClassDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="assignment">
+          <ExternalAssignmentPanel classId={id} className={cls?.name ?? ""} />
+        </TabsContent>
       </Tabs>
+
 
     </div>
   );
