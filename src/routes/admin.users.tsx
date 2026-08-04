@@ -33,7 +33,7 @@ import {
   bulkCreateInstructorAccounts,
   updateInstructorCohort,
 } from "@/lib/vimeo.functions";
-import { COHORT_OPTIONS } from "@/routes/admin.instructors";
+import { COHORT_OPTIONS } from "@/lib/cohort";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
