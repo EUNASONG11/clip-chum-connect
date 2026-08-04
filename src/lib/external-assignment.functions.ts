@@ -37,7 +37,49 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
     const { data: links, error } = await query;
     if (error) throw new Error(error.message);
 
-    return { configured, links: links ?? [] };
+    const linkList = links ?? [];
+    const linkIds = linkList.map((l: any) => l.id as string);
+
+    // 링크별 완료 통보 집계 (학생 단위 중복 제거)
+    const statsByLink: Record<
+      string,
+      { completedCount: number; statusCounts: Record<string, number> }
+    > = {};
+
+    if (linkIds.length > 0) {
+      const { data: comps, error: compErr } = await context.supabase
+        .from("external_assignment_completions")
+        .select("link_id, user_id, status, remote_status")
+        .in("link_id", linkIds);
+      if (compErr) throw new Error(compErr.message);
+
+      const seen = new Set<string>();
+      for (const c of comps ?? []) {
+        const key = `${c.link_id}:${c.user_id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const s = (statsByLink[c.link_id] ??= { completedCount: 0, statusCounts: {} });
+        const label = (c.remote_status || c.status || "unknown") as string;
+        s.statusCounts[label] = (s.statusCounts[label] ?? 0) + 1;
+        s.completedCount += 1;
+      }
+    }
+
+    const enriched = linkList.map((l: any) => {
+      const s = statsByLink[l.id] ?? { completedCount: 0, statusCounts: {} };
+      const target = l.student_count ?? 0;
+      const statusCounts = { ...s.statusCounts };
+      const initial = Math.max(0, target - s.completedCount);
+      if (initial > 0) statusCounts["initial"] = (statusCounts["initial"] ?? 0) + initial;
+      return {
+        ...l,
+        completed_count: s.completedCount,
+        target_count: target,
+        status_counts: statusCounts,
+      };
+    });
+
+    return { configured, links: enriched };
   });
 
 /** 수강반 학생 전체를 외부 "과제 점검"에 과제로 등록 (수동 버튼) */

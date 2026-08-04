@@ -142,7 +142,21 @@ export function ExternalAssignmentPanel({
                     ) : (
                       <Badge variant="secondary">전송 완료</Badge>
                     )}
-                    <span className="text-xs text-muted-foreground">학생 {l.student_count}명</span>
+                    <Badge variant="outline">
+                      완료 {l.completed_count ?? 0} / 대상 {l.target_count ?? l.student_count}명
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {Object.entries((l.status_counts ?? {}) as Record<string, number>).map(
+                      ([status, count]) => (
+                        <span
+                          key={status}
+                          className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {STATUS_LABEL[status] ?? status} {count}명
+                        </span>
+                      ),
+                    )}
                   </div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     기간 {l.period_start} ~ {l.period_end} · 키 {l.external_id}
