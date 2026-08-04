@@ -59,14 +59,14 @@ export function CohortMultiSelect({
 
   const display = useMemo(() => {
     if (selected.length === 0) return placeholder;
-    if (selected.length === options.length + 1) return "기수 전체";
+    if (allSelected) return allLabel;
     const labels = selected
       .slice(0, 2)
       .map((v) => (v === "__none__" ? noneLabel : v));
     return (
       labels.join(", ") + (selected.length > 2 ? ` +${selected.length - 2}` : "")
     );
-  }, [selected, options.length, placeholder, noneLabel]);
+  }, [selected, allSelected, allLabel, placeholder, noneLabel]);
 
   return (
     <DropdownMenu>
@@ -96,14 +96,17 @@ export function CohortMultiSelect({
           checked={allSelected}
           onCheckedChange={toggleAll}
         >
-          기수 전체
+          {allLabel}
         </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={selected.includes("__none__")}
-          onCheckedChange={() => toggleValue("__none__")}
-        >
-          {noneLabel}
-        </DropdownMenuCheckboxItem>
+        {!assignMode && (
+          <DropdownMenuCheckboxItem
+            checked={selected.includes("__none__")}
+            onCheckedChange={() => toggleValue("__none__")}
+          >
+            {noneLabel}
+          </DropdownMenuCheckboxItem>
+        )}
+
         {options.map((option) => (
           <DropdownMenuCheckboxItem
             key={option}
