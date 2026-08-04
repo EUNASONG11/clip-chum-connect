@@ -101,7 +101,7 @@ function UsersPage() {
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
-  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
+  const [cohortFilter, setCohortFilter] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
 
