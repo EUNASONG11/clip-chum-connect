@@ -470,7 +470,11 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
     if (groups.size === 0) throw new Error("발송 가능한 수신자가 없습니다.");
 
     const results: Array<{ branch: string; count: number; ok: boolean; error?: string }> = [];
+    const batchId = crypto.randomUUID();
+    const logRows: LogRow[] = [];
     for (const [branch, list] of groups) {
+      let ok = true;
+      let errMsg: string | null = null;
       try {
         const creds = getBranchCreds(branch);
         if (!creds.btServiceId || !creds.btChannelId) {
@@ -505,8 +509,27 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
         }
         results.push({ branch, count: list.length, ok: true });
       } catch (err: any) {
+        ok = false;
+        errMsg = err.message ?? "오류";
         results.push({ branch, count: list.length, ok: false, error: err.message });
       }
+      for (const r of list) {
+        logRows.push({
+          batch_id: batchId,
+          class_id: data.classId,
+          channel: "brandtalk",
+          message: data.message,
+          user_id: r.user_id,
+          recipient_name: r.name ?? "",
+          phone: r.phone,
+          branch,
+          success: ok,
+          error_message: errMsg,
+          sent_by: context.userId,
+        });
+      }
     }
+    await writeSmsLogs(logRows);
     return { total: data.recipients.length, groups: results };
+
   });
