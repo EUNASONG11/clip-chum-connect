@@ -41,7 +41,7 @@ async function assertOwnClassOrAdmin(
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
-    .select("created_by, active_from, active_to")
+    .select("created_by, active_from, active_to, category_id")
     .eq("id", classId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -57,6 +57,24 @@ async function assertOwnClassOrAdmin(
     .is("deleted_at", null)
     .maybeSingle();
   if (assigned) return;
+  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사도 접근 허용
+  if ((data as any).category_id) {
+    const [{ data: cat }, { data: me }] = await Promise.all([
+      supabaseAdmin
+        .from("class_categories")
+        .select("cohort")
+        .eq("id", (data as any).category_id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
+    ]);
+    const catCohort = (cat as any)?.cohort as string | null | undefined;
+    if (catCohort && catCohort === ((me as any)?.cohort ?? null)) return;
+  }
   // 배정된 학생도 접근 허용 (단, 활성 기간 내에서만)
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
