@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { Video, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "로그인 — VimStream" }] }),
+  head: () => ({ meta: [{ title: "로그인 — e-Learning" }] }),
   component: AuthPage,
 });
 

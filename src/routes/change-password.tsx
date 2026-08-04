@@ -12,7 +12,7 @@ import { Eye, EyeOff, KeyRound } from "lucide-react";
 export const Route = createFileRoute("/change-password")({
   head: () => ({
     meta: [
-      { title: "비밀번호 변경 — VimStream" },
+      { title: "비밀번호 변경 — e-Learning" },
       { name: "description", content: "최초 로그인 시 비밀번호를 변경하세요." },
     ],
   }),
