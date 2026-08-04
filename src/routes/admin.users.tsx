@@ -33,11 +33,12 @@ import {
   bulkCreateInstructorAccounts,
   updateInstructorCohort,
 } from "@/lib/vimeo.functions";
-import { COHORT_OPTIONS } from "@/routes/admin.instructors";
+import { COHORT_OPTIONS } from "@/lib/cohort";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -101,7 +102,7 @@ function UsersPage() {
   const [tab, setTab] = useState<TabKey>("student");
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
-  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
+  const [cohortFilter, setCohortFilter] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
 
@@ -181,11 +182,13 @@ function UsersPage() {
         ? rows
         : rows.filter((u) => (u.branch ?? "") === branchFilter);
     const byCohort =
-      tab !== "instructor" || cohortFilter === "__all__"
+      tab !== "instructor" || cohortFilter.length === 0
         ? byBranch
-        : cohortFilter === "__none__"
-          ? byBranch.filter((u) => !u.cohort)
-          : byBranch.filter((u) => u.cohort === cohortFilter);
+        : byBranch.filter((u) => {
+            const matchesNone = cohortFilter.includes("__none__") && !u.cohort;
+            const matchesCohort = !!u.cohort && cohortFilter.includes(u.cohort);
+            return matchesNone || matchesCohort;
+          });
     if (terms.length === 0) return byCohort;
     return byCohort.filter((u) => {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
@@ -330,7 +333,7 @@ function UsersPage() {
           onValueChange={(v) => {
             setTab(v as TabKey);
             setSelectedIds(new Set());
-            setCohortFilter("__all__");
+            setCohortFilter([]);
           }}
         >
           <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
@@ -391,24 +394,15 @@ function UsersPage() {
               </SelectContent>
             </Select>
             {tab === "instructor" && (
-              <Select
-                value={cohortFilter}
-                onValueChange={(v) => {
+              <CohortMultiSelect
+                options={cohortOptions.length > 0 ? cohortOptions : COHORT_OPTIONS}
+                selected={cohortFilter}
+                onChange={(v) => {
                   setCohortFilter(v);
                   setPages({ admin: 1, instructor: 1, student: 1, pending: 1 });
                 }}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-40">
-                  <SelectValue placeholder="기수 전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">기수 전체</SelectItem>
-                  <SelectItem value="__none__">미지정</SelectItem>
-                  {cohortOptions.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="기수 전체"
+              />
             )}
             {/* <Button
               variant="outline"

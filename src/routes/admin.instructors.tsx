@@ -19,11 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-export const COHORT_OPTIONS = ["19기", "18기", "17기", "16기", "15기", "14기", "13기"];
+import { COHORT_OPTIONS } from "@/lib/cohort";
 import { AdminOnly } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 
 export const Route = createFileRoute("/admin/instructors")({
   head: () => ({ meta: [{ title: "강사 명부 — 관리자" }] }),
@@ -52,16 +52,18 @@ function InstructorsPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
-  const [cohortFilter, setCohortFilter] = useState<string>("__all__");
+  const [cohortFilter, setCohortFilter] = useState<string[]>([]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const byCohort =
-      cohortFilter === "__all__"
-        ? rows
-        : cohortFilter === "__none__"
-          ? rows.filter((r) => !r.cohort)
-          : rows.filter((r) => r.cohort === cohortFilter);
+    const byCohort = (() => {
+      if (cohortFilter.length === 0) return rows;
+      return rows.filter((r) => {
+        const matchesNone = cohortFilter.includes("__none__") && !r.cohort;
+        const matchesCohort = !!r.cohort && cohortFilter.includes(r.cohort);
+        return matchesNone || matchesCohort;
+      });
+    })();
     if (!needle) return byCohort;
     return byCohort.filter(
       (r) =>
@@ -137,21 +139,12 @@ function InstructorsPage() {
                 className="max-w-sm"
                 inputClassName="pl-8"
               />
-              <Select
-                value={cohortFilter}
-                onValueChange={setCohortFilter}
-              >
-                <SelectTrigger className="h-9 w-full sm:w-44">
-                  <SelectValue placeholder="기수 전체" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">기수 전체</SelectItem>
-                  <SelectItem value="__none__">미지정</SelectItem>
-                  {COHORT_OPTIONS.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CohortMultiSelect
+                options={COHORT_OPTIONS}
+                selected={cohortFilter}
+                onChange={setCohortFilter}
+                placeholder="기수 전체"
+              />
             </div>
 
             {isLoading ? (
