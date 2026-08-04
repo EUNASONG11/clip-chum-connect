@@ -42,7 +42,10 @@ import {
   listClassEnrollmentHistory,
   updateClass,
   listStudentBranches,
+  listClassCategories,
 } from "@/lib/classes.functions";
+
+const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getClassStudentStats, getStudentVideoDetail } from "@/lib/stats.functions";
