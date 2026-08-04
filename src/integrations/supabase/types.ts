@@ -589,6 +589,62 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_logs: {
+        Row: {
+          batch_id: string
+          branch: string | null
+          channel: string
+          class_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          phone: string
+          recipient_name: string
+          sent_by: string
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          batch_id: string
+          branch?: string | null
+          channel: string
+          class_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          phone: string
+          recipient_name?: string
+          sent_by: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          batch_id?: string
+          branch?: string | null
+          channel?: string
+          class_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          phone?: string
+          recipient_name?: string
+          sent_by?: string
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_logs_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_temp_password_history: {
         Row: {
           auth_user_id: string
