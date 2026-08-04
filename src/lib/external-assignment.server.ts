@@ -76,7 +76,9 @@ export async function pushAssignmentSync(payload: SyncPayload) {
 
 export type CompletePayload = {
   external_id: string;
-  student_ref: { student_id: string };
+  /** 마스터 students.id */
+  student_id: string;
+  assignment_type: string;
   status: string;
   memo?: string;
   occurred_at: string;
