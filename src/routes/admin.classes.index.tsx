@@ -284,33 +284,8 @@ function ClassesPage() {
     }
   };
 
-  const changeClassCategory = async (classId: string, value: string) => {
-    try {
-      await updateClass({
-        data: { id: classId, category_id: value === "__none__" ? null : value },
-      });
-      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
-      toast.success("카테고리가 변경되었습니다.");
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
 
-  const changeClassBranch = async (classId: string, value: string) => {
-    try {
-      await updateClass({
-        data: { id: classId, branch: value === "__all_branches__" ? null : value },
-      });
-      qc.invalidateQueries({ queryKey: ["admin", "classes"] });
-      toast.success(
-        value === "__all_branches__"
-          ? "모든 교육원에 공개로 변경되었습니다."
-          : `${value} 전용으로 변경되었습니다.`,
-      );
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="space-y-6">
