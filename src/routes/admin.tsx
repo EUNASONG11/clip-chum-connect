@@ -23,7 +23,7 @@ import { getMyStatus, claimAdminIfNone, ensureStudentRole } from "@/lib/vimeo.fu
 import { AdminRoleContext, useAdminRole } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin")({
-  head: () => ({ meta: [{ title: "관리자 — VimStream" }] }),
+  head: () => ({ meta: [{ title: "관리자 — e-Learning" }] }),
   component: AdminLayout,
 });
 

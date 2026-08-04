@@ -44,7 +44,7 @@ import {
 import { searchApprovedStudents } from "@/lib/teams.functions";
 
 export const Route = createFileRoute("/admin/teams")({
-  head: () => ({ meta: [{ title: "팀 관리 — VimStream" }] }),
+  head: () => ({ meta: [{ title: "팀 관리 — e-Learning" }] }),
   component: TeamsPage,
 });
 
