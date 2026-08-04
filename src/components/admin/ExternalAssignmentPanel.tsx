@@ -12,6 +12,14 @@ import {
   pushClassAssignmentToExternal,
 } from "@/lib/external-assignment.functions";
 
+const STATUS_LABEL: Record<string, string> = {
+  initial: "미완료",
+  review_completed: "완료 처리",
+  sent: "전송 완료",
+  failed: "전송 실패",
+  pending: "전송 대기",
+};
+
 function today(offsetDays = 0): string {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
