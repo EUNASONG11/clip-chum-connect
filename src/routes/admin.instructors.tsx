@@ -56,12 +56,14 @@ function InstructorsPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const byCohort =
-      cohortFilter === "__all__"
-        ? rows
-        : cohortFilter === "__none__"
-          ? rows.filter((r) => !r.cohort)
-          : rows.filter((r) => r.cohort === cohortFilter);
+    const byCohort = (() => {
+      if (cohortFilter.length === 0) return rows;
+      return rows.filter((r) => {
+        const matchesNone = cohortFilter.includes("__none__") && !r.cohort;
+        const matchesCohort = !!r.cohort && cohortFilter.includes(r.cohort);
+        return matchesNone || matchesCohort;
+      });
+    })();
     if (!needle) return byCohort;
     return byCohort.filter(
       (r) =>
