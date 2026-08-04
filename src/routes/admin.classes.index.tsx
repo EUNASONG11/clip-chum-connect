@@ -426,41 +426,8 @@ function ClassesPage() {
                           <span>배정된 학생 없음</span>
                         )}
                       </p>
-                      <div className="mt-2 space-y-2">
-                        <Select
-                          value={c.branch ?? "__all_branches__"}
-                          onValueChange={(v) => changeClassBranch(c.id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="교육원 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__all_branches__">모든 교육원</SelectItem>
-                            {BRANCH_OPTIONS.map((b) => (
-                              <SelectItem key={b} value={b}>
-                                {b} 전용
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Select
-                          value={c.category_id ?? "__none__"}
-                          onValueChange={(v) => changeClassCategory(c.id, v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="카테고리 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="__none__">미지정</SelectItem>
-                            {(categories as any[]).map((cat) => (
-                              <SelectItem key={cat.id} value={cat.id}>
-                                {cat.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
                     </div>
+
 
                     <div className="mt-4 flex items-center gap-2">
                       <Button asChild size="sm" variant="outline" className="flex-1">
