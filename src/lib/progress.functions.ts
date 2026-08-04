@@ -73,8 +73,20 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       .from("video_progress")
       .upsert(patch as any, { onConflict: "user_id,video_id" });
     if (error) throw new Error(error.message);
+
+    // 신규 완료 시 외부 "과제 점검"에 완료 통보 (best-effort)
+    if (nowCompleted && !alreadyCompleted) {
+      try {
+        const { notifyVideoCompletion } = await import("./external-assignment-notify.server");
+        await notifyVideoCompletion(context.userId, data.videoId);
+      } catch (e) {
+        console.error("[external-assignment] notify skipped", e instanceof Error ? e.message : e);
+      }
+    }
+
     return { watched_ratio: ratio, is_completed: nowCompleted };
   });
+
 
 // 최근 본 영상 (RLS로 접근 가능한 영상만)
 export const listRecentlyWatched = createServerFn({ method: "GET" })
