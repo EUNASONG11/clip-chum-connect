@@ -178,7 +178,9 @@ export function ExternalAssignmentPanel({
                             {p.name}
                             <span className="ml-1 text-muted-foreground">
                               {STATUS_LABEL[p.status] ?? p.status}
-                              {p.occurred_at ? ` · ${String(p.occurred_at).slice(0, 10)}` : ""}
+                              {l.last_synced_at || l.created_at
+                                ? ` · ${String(l.last_synced_at ?? l.created_at).slice(0, 10)}`
+                                : ""}
                             </span>
                           </span>
                         ))}
