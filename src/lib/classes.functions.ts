@@ -68,7 +68,7 @@ async function assertOwnClassOrAdmin(
         .maybeSingle(),
       supabaseAdmin
         .from("instructors")
-        .select("cohort, cohorts")
+        .select("cohort, cohorts, branch")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
@@ -167,7 +167,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (admin) {
       const { data, error } = await supabaseAdmin
         .from("classes")
-        .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
+        .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
@@ -188,7 +188,7 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null),
       supabaseAdmin
         .from("instructors")
-        .select("cohort, cohorts")
+        .select("cohort, cohorts, branch")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
@@ -216,13 +216,21 @@ export const listClasses = createServerFn({ method: "GET" })
     }
     const { data, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
       .or(orParts.join(","))
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+    // 교육원 전용 수강반은 본인 교육원(또는 본인이 만든/배정된 반)만 노출
+    const myBranch = ((me as any)?.branch ?? "").toString().trim();
+    const visible = (data ?? []).filter((c: any) => {
+      const b = (c.branch ?? "").toString().trim();
+      if (!b) return true; // 모든 교육원 공개
+      if (c.created_by === context.userId || idSet.has(c.id)) return true;
+      return !!myBranch && b === myBranch;
+    });
     // 활성 기간이 지난 수강반도 목록에는 노출 (상세 접근은 assert에서 차단)
-    const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
+    const withCreators = await withCreatorNames(supabaseAdmin, visible);
     return await withStudentNames(supabaseAdmin, withCreators);
   });
 
@@ -239,7 +247,7 @@ export const getClass = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
       .eq("id", data.id)
       .is("deleted_at", null)
       .maybeSingle();
@@ -260,6 +268,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         category_id: z.string().uuid().nullable().optional(),
+        branch: z.string().trim().max(100).nullable().optional(),
       })
       .parse(i),
   )
@@ -273,6 +282,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_from: data.active_from ?? null,
         active_to: data.active_to ?? null,
         category_id: data.category_id ?? null,
+        branch: data.branch ?? null,
         created_by: context.userId,
       })
       .select("*")
@@ -295,6 +305,7 @@ export const updateClass = createServerFn({ method: "POST" })
         active_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         category_id: z.string().uuid().nullable().optional(),
+        branch: z.string().trim().max(100).nullable().optional(),
       })
       .parse(i),
   )
@@ -308,6 +319,7 @@ export const updateClass = createServerFn({ method: "POST" })
     if (data.active_from !== undefined) patch.active_from = data.active_from;
     if (data.active_to !== undefined) patch.active_to = data.active_to;
     if (data.category_id !== undefined) patch.category_id = data.category_id;
+    if (data.branch !== undefined) patch.branch = (data.branch || null);
 
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
