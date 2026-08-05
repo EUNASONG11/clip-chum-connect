@@ -171,6 +171,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         : "전체 학생";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
