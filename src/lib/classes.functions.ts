@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import {
+  MAX_STUDENT_SEARCH_RESULTS,
+  PER_TOKEN_FETCH_LIMIT,
+  parseStudentSearchTokens,
+} from "@/lib/student-search";
+
 
 async function isAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
