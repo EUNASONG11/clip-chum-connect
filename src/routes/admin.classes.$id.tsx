@@ -438,36 +438,6 @@ function ClassDetailPage() {
     [filteredStudentStats, statsPage, statsPageSize],
   );
 
-  const filteredHistory = useMemo(() => {
-    const q = historySearch.trim();
-    if (!q) return history;
-    return (history as any[]).filter((h) => {
-      const hay = [
-        h.student_name,
-        h.student_email,
-        h.student_phone,
-        h.student_parent_phone,
-        h.actor_name,
-        h.action === "added" ? "배정" : "해제",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      return hay.toLowerCase().includes(q.toLowerCase());
-    });
-  }, [history, historySearch]);
-
-  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / historyPageSize));
-  useEffect(() => {
-    setHistoryPage(1);
-  }, [historySearch, filteredHistory.length, historyPageSize]);
-  const pagedHistory = useMemo(
-    () =>
-      (filteredHistory as any[]).slice(
-        (historyPage - 1) * historyPageSize,
-        historyPage * historyPageSize,
-      ),
-    [filteredHistory, historyPage, historyPageSize],
-  );
 
 
 
