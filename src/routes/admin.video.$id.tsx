@@ -331,37 +331,6 @@ function AdminVideoPage() {
                     )}
                   </button>
                 </div>
-                <div
-                  className={cn(
-                    "absolute inset-x-0 bottom-0 z-[110] flex items-center gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 transition-opacity duration-300 pointer-events-none",
-                    showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    revealFsControls();
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      revealFsControls();
-                      togglePlayPause();
-                    }}
-                    className="pointer-events-auto inline-flex items-center gap-2 rounded-xl bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
-                    aria-label={isPlaying ? "일시정지" : "재생"}
-                  >
-                    {isPlaying ? (
-                      <>
-                        <Pause className="h-5 w-5" /> 일시정지
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-5 w-5 fill-current" /> 재생
-                      </>
-                    )}
-                  </button>
-                </div>
               </>
 
             ) : (
