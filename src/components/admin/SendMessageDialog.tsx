@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, MessageSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos } from "@/lib/classes.functions";
@@ -46,6 +47,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: videos = [] } = useQuery({
@@ -122,10 +124,13 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const completedCount = students.filter((s: any) => s.status === "completed").length;
   const incompleteCount = students.filter((s: any) => s.status === "incomplete").length;
 
-  const submit = async () => {
+  const submit = () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
     if (selectedList.length === 0) return toast.error("수신자를 선택하세요.");
+    setConfirmOpen(true);
+  };
 
+  const doSend = async () => {
     setSending(true);
     try {
       const res =
@@ -149,6 +154,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
           `실패: ${failBranches.map((g: any) => `${g.branch}(${g.error ?? "오류"})`).join(", ")}`,
         );
       }
+      setConfirmOpen(false);
       if (failBranches.length === 0) onOpenChange(false);
     } catch (err: any) {
       toast.error(err.message ?? "전송 중 오류가 발생했습니다.");
@@ -165,6 +171,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         : "전체 학생";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
@@ -413,5 +420,60 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            문자를 전송할까요?
+          </DialogTitle>
+          <DialogDescription>
+            {channel === "sms" ? "SMS/LMS" : "카카오 브랜드톡"} 채널로 총{" "}
+            <strong>{selectedList.length}건</strong>을 발송합니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="rounded-md border bg-muted/40 p-3 text-sm">
+            <p className="mb-1 font-medium text-foreground">메시지 내용</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{message.trim()}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">수신자 목록 ({selectedList.length}명)</Label>
+            <ScrollArea className="h-48 rounded-md border">
+              <ul className="divide-y">
+                {selectedList.map((r, idx) => (
+                  <li key={`${r.user_id}-${r.phone}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                    <span className="text-sm font-medium">{r.name}</span>
+                    <div className="flex items-center gap-2">
+                      <BranchBadge branch={r.branch} />
+                      <span className="font-mono text-xs text-muted-foreground">{r.phone}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>
+            취소
+          </Button>
+          <Button onClick={doSend} disabled={sending}>
+            {sending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 전송 중...
+              </>
+            ) : (
+              `${selectedList.length}건 전송`
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
