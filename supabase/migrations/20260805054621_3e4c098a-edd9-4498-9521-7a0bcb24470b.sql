@@ -1,0 +1,15 @@
+CREATE INDEX IF NOT EXISTS videos_class_active_idx ON public.videos (class_id, sort_order) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS videos_deleted_at_idx ON public.videos (deleted_at DESC) WHERE deleted_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS video_progress_video_idx ON public.video_progress (video_id);
+CREATE INDEX IF NOT EXISTS class_students_user_idx ON public.class_students (user_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS bookmarks_video_idx ON public.bookmarks (video_id) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS comments_video_created_idx ON public.comments (video_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS external_students_name_idx ON public.external_students (name) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS instructors_name_idx ON public.instructors (name);
+CREATE INDEX IF NOT EXISTS class_enrollment_history_class_action_idx ON public.class_enrollment_history (class_id, action, created_at DESC);
+CREATE INDEX IF NOT EXISTS classes_created_by_idx ON public.classes (created_by) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS sms_logs_created_idx ON public.sms_logs (created_at DESC);
+ANALYZE public.videos;
+ANALYZE public.video_progress;
+ANALYZE public.class_students;
+ANALYZE public.external_students;
