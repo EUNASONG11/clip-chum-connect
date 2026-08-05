@@ -382,25 +382,8 @@ export const listClassStudents = createServerFn({ method: "GET" })
 
 
 // 이름 또는 전화번호로 학생 검색 (미러링된 external_students에서 조회)
-// 검색어가 너무 짧으면(사실상 전체 조회) 아무것도 조회하지 않고, 토큰별 조회 건수를 작게 제한한다.
-const MAX_STUDENT_SEARCH_RESULTS = 20;
-const PER_TOKEN_FETCH_LIMIT = 30;
+// 검색 규칙/제한은 @/lib/student-search 참조
 
-function parseStudentSearchTokens(query: string) {
-  const tokens = query.split(/\s+/).map((t) => t.trim()).filter(Boolean);
-  const parsed: { kind: "phone" | "name"; value: string }[] = [];
-  for (const token of tokens) {
-    const digits = token.replace(/[^0-9]/g, "");
-    const isPhone = digits.length > 0 && digits.length === token.replace(/[-\s]/g, "").length;
-    if (isPhone) {
-      // 숫자 검색은 4자리 이상만 허용 (너무 광범위한 매칭 방지)
-      if (digits.length >= 4) parsed.push({ kind: "phone", value: digits });
-    } else if (token.length >= 2) {
-      parsed.push({ kind: "name", value: token });
-    }
-  }
-  return parsed;
-}
 
 export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
