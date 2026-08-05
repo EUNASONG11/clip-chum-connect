@@ -261,21 +261,34 @@ async function writeSmsLogs(rows: LogRow[]) {
 
 export const listClassSmsLogs = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .inputValidator((i) =>
+    z.object({ classId: z.string().uuid(), limit: z.number().int().min(1).max(200).optional() }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructorOnClass(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 최근 발송 묶음(batch) 목록만 먼저 확보 → 해당 묶음의 수신자만 조회
+    const { data: batchRows, error: bErr } = await supabaseAdmin.rpc("class_sms_recent_batches", {
+      _class_id: data.classId,
+      _limit: data.limit ?? 30,
+    });
+    if (bErr) throw new Error(bErr.message);
+    const batchIds = ((batchRows ?? []) as any[]).map((b: any) => b.batch_id);
+    if (batchIds.length === 0) return [];
+
     const { data: rows, error } = await supabaseAdmin
       .from("sms_logs")
       .select(
         "id, batch_id, channel, message, user_id, recipient_name, phone, branch, success, error_message, sent_by, created_at",
       )
       .eq("class_id", data.classId)
-      .order("created_at", { ascending: false })
-      .limit(2000);
+      .in("batch_id", batchIds)
+      .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
     const list = (rows ?? []) as any[];
+
 
     const senderIds = Array.from(new Set(list.map((r) => r.sent_by).filter(Boolean)));
     const senderMap = new Map<string, string>();

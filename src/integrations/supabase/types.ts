@@ -960,12 +960,51 @@ export type Database = {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
       }
+      class_sms_recent_batches: {
+        Args: { _class_id: string; _limit?: number }
+        Returns: {
+          batch_id: string
+          last_at: string
+        }[]
+      }
+      class_stats_agg: {
+        Args: { _class_ids: string[] }
+        Returns: {
+          class_id: string
+          completed_cells: number
+          student_count: number
+          sum_ratio: number
+          total_cells: number
+          video_count: number
+        }[]
+      }
+      class_student_stats_agg: {
+        Args: { _class_id: string }
+        Returns: {
+          completed: number
+          enrolled_at: string
+          last_activity: string
+          sum_ratio: number
+          user_id: string
+          video_total: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      overview_stats_agg: {
+        Args: { _class_ids: string[] }
+        Returns: {
+          completed_count: number
+          student_count: number
+          sum_ratio: number
+          total_views: number
+          video_count: number
+        }[]
       }
     }
     Enums: {

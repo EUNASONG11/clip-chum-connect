@@ -83,47 +83,23 @@ export const getOverviewStats = createServerFn({ method: "GET" })
       };
     }
 
-    const [videos, students, progress] = await Promise.all([
-      supabaseAdmin.from("videos").select("id", { count: "exact", head: true }).in("class_id", classIds),
-      supabaseAdmin
-        .from("class_students")
-        .select("user_id")
-        .in("class_id", classIds)
-        .then((res: any) => {
-          const ids = new Set((res.data ?? []).map((r: any) => r.user_id));
-          return { count: ids.size };
-        }),
-      supabaseAdmin
-        .from("videos")
-        .select("id")
-        .in("class_id", classIds)
-        .then(async (res: any) => {
-          const ids = (res.data ?? []).map((v: any) => v.id);
-          if (ids.length === 0) return { data: [] };
-          return supabaseAdmin
-            .from("video_progress")
-            .select("watched_ratio, is_completed")
-            .in("video_id", ids);
-        }),
-    ]);
-
-    const progressRows = (progress as any).data ?? [];
-    const totalViews = progressRows.length;
-    const completed = progressRows.filter((r: any) => r.is_completed).length;
-    const avgRatio =
-      totalViews > 0
-        ? progressRows.reduce((sum: number, r: any) => sum + Number(r.watched_ratio ?? 0), 0) / totalViews
-        : 0;
+    const { data: agg, error: aggErr } = await supabaseAdmin.rpc("overview_stats_agg", {
+      _class_ids: classIds,
+    });
+    if (aggErr) throw new Error(aggErr.message);
+    const row: any = Array.isArray(agg) ? agg[0] : agg;
+    const totalViews = Number(row?.total_views ?? 0);
 
     return {
-      videoCount: videos.count ?? 0,
+      videoCount: Number(row?.video_count ?? 0),
       classCount: classIds.length,
-      studentCount: students.count ?? 0,
+      studentCount: Number(row?.student_count ?? 0),
       totalViews,
-      completedCount: completed,
-      avgWatchedRatio: avgRatio,
+      completedCount: Number(row?.completed_count ?? 0),
+      avgWatchedRatio: totalViews > 0 ? Number(row?.sum_ratio ?? 0) / totalViews : 0,
     };
   });
+
 
 // 수강반별 통계 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStats = createServerFn({ method: "GET" })
@@ -159,82 +135,30 @@ export const getClassStats = createServerFn({ method: "GET" })
 
     if (classIds.length === 0) return [];
 
-    const [{ data: videos }, { data: students }, { data: progress }, { data: history }] = await Promise.all([
-      supabaseAdmin.from("videos").select("id, class_id, created_at").in("class_id", classIds),
-      supabaseAdmin.from("class_students").select("class_id, user_id").in("class_id", classIds),
-      supabaseAdmin
-        .from("videos")
-        .select("id")
-        .in("class_id", classIds)
-        .then(async (res: any) => {
-          const videoIds = (res.data ?? []).map((v: any) => v.id);
-          if (videoIds.length === 0) return { data: [] };
-          return supabaseAdmin
-            .from("video_progress")
-            .select("video_id, user_id, watched_ratio, is_completed")
-            .in("video_id", videoIds);
-        }),
-      supabaseAdmin
-        .from("class_enrollment_history")
-        .select("class_id, user_id, action, created_at")
-        .in("class_id", classIds)
-        .eq("action", "added"),
-    ]);
+    const { data: agg, error: aggErr } = await supabaseAdmin.rpc("class_stats_agg", {
+      _class_ids: classIds,
+    });
+    if (aggErr) throw new Error(aggErr.message);
 
-    const videosByClass = new Map<string, { id: string; created_at: string }[]>();
-    (videos ?? []).forEach((v: any) => {
-      if (!v.class_id) return;
-      if (!videosByClass.has(v.class_id)) videosByClass.set(v.class_id, []);
-      videosByClass.get(v.class_id)!.push({ id: v.id, created_at: v.created_at });
-    });
-    const studentsByClass = new Map<string, string[]>();
-    (students ?? []).forEach((s: any) => {
-      if (!studentsByClass.has(s.class_id)) studentsByClass.set(s.class_id, []);
-      studentsByClass.get(s.class_id)!.push(s.user_id);
-    });
-    // 학생별 현재 배정 시작일 = 마지막 added 이벤트 시각
-    const enrollStart = new Map<string, string>();
-    (history ?? []).forEach((h: any) => {
-      const key = `${h.class_id}:${h.user_id}`;
-      const prev = enrollStart.get(key);
-      if (!prev || h.created_at > prev) enrollStart.set(key, h.created_at);
-    });
-    const progressByVideoUser = new Map<string, any>();
-    (progress ?? []).forEach((p: any) => {
-      progressByVideoUser.set(`${p.video_id}:${p.user_id}`, p);
-    });
+    const aggMap = new Map<string, any>(((agg ?? []) as any[]).map((r: any) => [r.class_id, r]));
 
     return (classes ?? []).map((c: any) => {
-      const vids = videosByClass.get(c.id) ?? [];
-      const studs = studentsByClass.get(c.id) ?? [];
-      let totalCells = 0;
-      let completedCells = 0;
-      let sumRatio = 0;
-      let cellsWithProgress = 0;
-      studs.forEach((uid: string) => {
-        const start = enrollStart.get(`${c.id}:${uid}`);
-        const eligible = start ? vids.filter((v) => v.created_at >= start) : vids;
-        totalCells += eligible.length;
-        eligible.forEach((v) => {
-          const p = progressByVideoUser.get(`${v.id}:${uid}`);
-          if (p) {
-            cellsWithProgress += 1;
-            sumRatio += Number(p.watched_ratio ?? 0);
-            if (p.is_completed) completedCells += 1;
-          }
-        });
-      });
+      const a: any = aggMap.get(c.id);
+      const totalCells = Number(a?.total_cells ?? 0);
+      const completedCells = Number(a?.completed_cells ?? 0);
+      const sumRatio = Number(a?.sum_ratio ?? 0);
       return {
         class_id: c.id,
         name: c.name,
-        video_count: vids.length,
-        student_count: studs.length,
+        video_count: Number(a?.video_count ?? 0),
+        student_count: Number(a?.student_count ?? 0),
         total_cells: totalCells,
         completed_cells: completedCells,
         completion_rate: totalCells > 0 ? completedCells / totalCells : 0,
         avg_watched_ratio: totalCells > 0 ? sumRatio / totalCells : 0,
       };
     });
+
   });
 
 
@@ -245,71 +169,35 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [{ data: videos }, { data: students }, { data: progress }, { data: history }] = await Promise.all([
-      supabaseAdmin.from("videos").select("id, title, created_at").eq("class_id", data.classId),
-      supabaseAdmin.from("class_students").select("user_id").eq("class_id", data.classId),
-      supabaseAdmin
-        .from("videos")
-        .select("id")
-        .eq("class_id", data.classId)
-        .then(async (res: any) => {
-          const ids = (res.data ?? []).map((v: any) => v.id);
-          if (ids.length === 0) return { data: [] };
-          return supabaseAdmin
-            .from("video_progress")
-            .select("video_id, user_id, watched_ratio, is_completed, updated_at")
-            .in("video_id", ids);
-        }),
-      supabaseAdmin
-        .from("class_enrollment_history")
-        .select("user_id, action, created_at")
-        .eq("class_id", data.classId)
-        .eq("action", "added"),
-    ]);
-    const videoList = (videos ?? []) as { id: string; created_at: string }[];
-    const videoIds = new Set(videoList.map((v) => v.id));
-    const studentIds = ((students ?? []) as any[]).map((s: any) => s.user_id);
+    const { data: agg, error: aggErr } = await supabaseAdmin.rpc("class_student_stats_agg", {
+      _class_id: data.classId,
+    });
+    if (aggErr) throw new Error(aggErr.message);
+    const rows = (agg ?? []) as any[];
+    const studentIds = rows.map((r: any) => r.user_id);
+
     const { data: ext } = await supabaseAdmin
       .from("external_students")
       .select("auth_user_id, name, phone")
       .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
     const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
 
-    // 학생별 현재 배정 시작일
-    const enrollStart = new Map<string, string>();
-    ((history ?? []) as any[]).forEach((h: any) => {
-      const prev = enrollStart.get(h.user_id);
-      if (!prev || h.created_at > prev) enrollStart.set(h.user_id, h.created_at);
-    });
-
-    const rel = ((progress ?? []) as any[]).filter((p: any) => videoIds.has(p.video_id));
-    return studentIds.map((uid) => {
-      const start = enrollStart.get(uid);
-      const eligibleVideoIds = new Set(
-        start ? videoList.filter((v) => v.created_at >= start).map((v) => v.id) : videoList.map((v) => v.id),
-      );
-      const eligibleTotal = eligibleVideoIds.size;
-      const mine = rel.filter((p: any) => p.user_id === uid && eligibleVideoIds.has(p.video_id));
-      const completed = mine.filter((p: any) => p.is_completed).length;
-      const avg = eligibleTotal > 0
-        ? mine.reduce((s: number, p: any) => s + Number(p.watched_ratio ?? 0), 0) / eligibleTotal
-        : 0;
-      const lastActivity = mine.reduce(
-        (max: string | null, p: any) => (!max || p.updated_at > max ? p.updated_at : max),
-        null as string | null,
-      );
-      const e: any = extMap.get(uid);
+    return rows.map((r: any) => {
+      const total = Number(r.video_total ?? 0);
+      const avg = total > 0 ? Number(r.sum_ratio ?? 0) / total : 0;
+      const e: any = extMap.get(r.user_id);
       return {
-        user_id: uid,
+        user_id: r.user_id,
         name: e?.name ?? "",
         phone: e?.phone ?? "",
-        video_total: eligibleTotal,
-        completed,
+        video_total: total,
+        completed: Number(r.completed ?? 0),
         avg_watched_ratio: Math.min(1, avg),
-        last_activity: lastActivity,
-        enrolled_at: start ?? null,
+        last_activity: r.last_activity ?? null,
+        enrolled_at: r.enrolled_at ?? null,
       };
     });
+
   });
 
 

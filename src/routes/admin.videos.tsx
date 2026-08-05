@@ -90,40 +90,77 @@ function VideosPage() {
     queryFn: () => listClasses(),
   });
 
-  const load = async () => {
-    const { data } = await supabase
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("__all__");
+  const [total, setTotal] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
+
+  const allowedIds = (classes as any[]).map((c) => c.id);
+
+  const buildQuery = (trash: boolean) => {
+    let q = supabase
       .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at")
-      .is("deleted_at", null)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
-    let list = (data as Row[] | null) ?? [];
-    if (!isAdmin) {
-      const allowed = new Set((classes as any[]).map((c) => c.id));
-      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+      .select(
+        trash
+          ? "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at"
+          : "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at",
+        { count: "exact" },
+      );
+    q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+    // 강사는 접근 가능한 수강반의 영상만 (DB에서 필터)
+    if (!isAdmin) q = q.in("class_id", allowedIds.length > 0 ? allowedIds : ["00000000-0000-0000-0000-000000000000"]);
+    if (classFilter !== "__all__") {
+      q = classFilter === NO_CLASS ? q.is("class_id", null) : q.eq("class_id", classFilter);
     }
-    setRows(list);
-    setEdits({});
+    return q;
   };
-  useEffect(() => { load(); }, [isAdmin, classes]);
+
+  const load = async () => {
+    if (!isAdmin && allowedIds.length === 0) {
+      setRows([]);
+      setTotal(0);
+      return;
+    }
+    setListLoading(true);
+    let q = buildQuery(false);
+    const term = search.trim();
+    if (term) q = q.ilike("title", `%${term}%`);
+    const from = (page - 1) * PAGE_SIZE;
+    const { data, count } = await q
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    setRows(((data as any[] | null) ?? []) as Row[]);
+    setTotal(count ?? 0);
+    setEdits({});
+    setListLoading(false);
+  };
+  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
+  useEffect(() => { setPage(1); }, [search, classFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const [trashRows, setTrashRows] = useState<Row[]>([]);
+  const [trashTotal, setTrashTotal] = useState(0);
   const [trashLoading, setTrashLoading] = useState(false);
   const loadTrash = async () => {
-    setTrashLoading(true);
-    const { data } = await supabase
-      .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at")
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false });
-    let list = ((data as any[] | null) ?? []) as (Row & { deleted_at: string })[];
-    if (!isAdmin) {
-      const allowed = new Set((classes as any[]).map((c) => c.id));
-      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    if (!isAdmin && allowedIds.length === 0) {
+      setTrashRows([]);
+      setTrashTotal(0);
+      return;
     }
-    setTrashRows(list as Row[]);
+    setTrashLoading(true);
+    const { data, count } = await buildQuery(true)
+      .order("deleted_at", { ascending: false })
+      .range(0, 49);
+    setTrashRows(((data as any[] | null) ?? []) as Row[]);
+    setTrashTotal(count ?? 0);
     setTrashLoading(false);
   };
+
   useEffect(() => { loadTrash(); }, [isAdmin, classes]);
 
   const restore = async (id: string) => {
@@ -221,14 +258,14 @@ function VideosPage() {
             <UploadIcon className="h-4 w-4" /> 영상 업로드
           </TabsTrigger>
           <TabsTrigger value="trash" className="gap-2">
-            <Trash2 className="h-4 w-4" /> 휴지통 ({trashRows.length})
+            <Trash2 className="h-4 w-4" /> 휴지통 ({trashTotal})
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="trash" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>휴지통 ({trashRows.length})</CardTitle>
+              <CardTitle>휴지통 ({trashTotal}{trashTotal > 50 ? ", 최근 50건 표시" : ""})</CardTitle>
             </CardHeader>
             <CardContent>
               {trashLoading ? (
@@ -289,13 +326,55 @@ function VideosPage() {
 
         <TabsContent value="list" className="pt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>등록된 영상 ({rows.length})</CardTitle>
+            <CardHeader className="gap-3">
+              <CardTitle>등록된 영상 ({total})</CardTitle>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <form
+                  className="flex flex-1 gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setSearch(searchInput);
+                  }}
+                >
+                  <Input
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="영상 제목 검색"
+                    className="max-w-xs"
+                  />
+                  <Button type="submit" variant="outline" size="sm">검색</Button>
+                  {search && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSearchInput(""); setSearch(""); }}
+                    >
+                      초기화
+                    </Button>
+                  )}
+                </form>
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                  <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체 수강반</SelectItem>
+                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                    {(classes as any[]).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
-              {rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">아직 없습니다.</p>
+              {listLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {search || classFilter !== "__all__" ? "조건에 맞는 영상이 없습니다." : "아직 없습니다."}
+                </p>
               ) : (
+
                 <ul className="divide-y">
                   {rows.map((r) => (
                     <li key={r.id} className="py-4">
@@ -522,7 +601,33 @@ function VideosPage() {
                   ))}
                 </ul>
               )}
+              {total > PAGE_SIZE && (
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <span className="text-xs text-muted-foreground">
+                    {page} / {totalPages} 페이지
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      이전
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      다음
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
+
           </Card>
         </TabsContent>
       </Tabs>
