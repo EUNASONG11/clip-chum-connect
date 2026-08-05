@@ -572,28 +572,53 @@ function VideoPage() {
               </div>
 
               {isPlayerExpanded ? (
-                <div
-                  className={cn(
-                    "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
-                    showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    revealFsControls();
-                  }}
-                >
-                  <button
-                    type="button"
+                <>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
+                      showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsPlayerExpanded(false);
+                      revealFsControls();
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                    aria-label="전체화면 닫기"
                   >
-                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsPlayerExpanded(false);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                      aria-label="전체화면 닫기"
+                    >
+                      <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                    </button>
+                  </div>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-center justify-center transition-opacity duration-300 pointer-events-none",
+                      showFsControls ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        revealFsControls();
+                        togglePlayPause();
+                      }}
+                      className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
+                      aria-label={isPlaying ? "일시정지" : "재생"}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
+                      ) : (
+                        <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
+                      )}
+                    </button>
+                  </div>
+                </>
               ) : (
                 <button
                   type="button"
