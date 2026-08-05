@@ -601,7 +601,33 @@ function VideosPage() {
                   ))}
                 </ul>
               )}
+              {total > PAGE_SIZE && (
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <span className="text-xs text-muted-foreground">
+                    {page} / {totalPages} 페이지
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      이전
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      다음
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
+
           </Card>
         </TabsContent>
       </Tabs>
