@@ -126,10 +126,8 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
   });
-  const { data: history = [] } = useQuery({
-    queryKey: ["admin", "class", id, "history"],
-    queryFn: () => listClassEnrollmentHistory({ data: { classId: id } }),
-  });
+  // 배정 이력: 서버 페이지네이션/검색 (아래 상태 선언 이후 쿼리 실행)
+
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingUnder, setCreatingUnder] = useState<string | null | undefined>(undefined);
