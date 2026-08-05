@@ -326,13 +326,55 @@ function VideosPage() {
 
         <TabsContent value="list" className="pt-4">
           <Card>
-            <CardHeader>
-              <CardTitle>등록된 영상 ({rows.length})</CardTitle>
+            <CardHeader className="gap-3">
+              <CardTitle>등록된 영상 ({total})</CardTitle>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <form
+                  className="flex flex-1 gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setSearch(searchInput);
+                  }}
+                >
+                  <Input
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="영상 제목 검색"
+                    className="max-w-xs"
+                  />
+                  <Button type="submit" variant="outline" size="sm">검색</Button>
+                  {search && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSearchInput(""); setSearch(""); }}
+                    >
+                      초기화
+                    </Button>
+                  )}
+                </form>
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                  <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체 수강반</SelectItem>
+                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                    {(classes as any[]).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent>
-              {rows.length === 0 ? (
-                <p className="text-sm text-muted-foreground">아직 없습니다.</p>
+              {listLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {search || classFilter !== "__all__" ? "조건에 맞는 영상이 없습니다." : "아직 없습니다."}
+                </p>
               ) : (
+
                 <ul className="divide-y">
                   {rows.map((r) => (
                     <li key={r.id} className="py-4">
