@@ -996,6 +996,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_video_class_instructor: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
+      }
       overview_stats_agg: {
         Args: { _class_ids: string[] }
         Returns: {
