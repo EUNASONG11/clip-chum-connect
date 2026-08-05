@@ -644,7 +644,7 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         else if (!actorRoleMap.has(uid)) actorRoleMap.set(uid, "other");
       }
     }
-    return rows.map((r: any) => {
+    const mapped = rows.map((r: any) => {
       const e: any = extMap.get(r.user_id);
       return {
         id: r.id as string,
@@ -661,7 +661,9 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         created_at: r.created_at as string,
       };
     });
+    return { rows: mapped, total };
   });
+
 
 // 수강반의 영상 목록 (관리자: 전체, 강사: 본인 수강반)
 export const listClassVideos = createServerFn({ method: "GET" })
