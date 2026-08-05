@@ -258,7 +258,7 @@ function VideosPage() {
             <UploadIcon className="h-4 w-4" /> 영상 업로드
           </TabsTrigger>
           <TabsTrigger value="trash" className="gap-2">
-            <Trash2 className="h-4 w-4" /> 휴지통 ({trashRows.length})
+            <Trash2 className="h-4 w-4" /> 휴지통 ({trashTotal})
           </TabsTrigger>
         </TabsList>
 
