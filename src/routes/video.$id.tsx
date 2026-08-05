@@ -654,7 +654,7 @@ function VideoPage() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => fullscreenRef.current()}
+                  onClick={() => setIsPlayerExpanded(true)}
                   className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
                   aria-label="전체화면"
                 >
