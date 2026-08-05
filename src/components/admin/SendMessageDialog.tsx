@@ -124,10 +124,13 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
   const completedCount = students.filter((s: any) => s.status === "completed").length;
   const incompleteCount = students.filter((s: any) => s.status === "incomplete").length;
 
-  const submit = async () => {
+  const submit = () => {
     if (!message.trim()) return toast.error("메시지를 입력하세요.");
     if (selectedList.length === 0) return toast.error("수신자를 선택하세요.");
+    setConfirmOpen(true);
+  };
 
+  const doSend = async () => {
     setSending(true);
     try {
       const res =
@@ -151,6 +154,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
           `실패: ${failBranches.map((g: any) => `${g.branch}(${g.error ?? "오류"})`).join(", ")}`,
         );
       }
+      setConfirmOpen(false);
       if (failBranches.length === 0) onOpenChange(false);
     } catch (err: any) {
       toast.error(err.message ?? "전송 중 오류가 발생했습니다.");
