@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Bookmark, Maximize2, MessageSquare } from "lucide-react";
+import { ArrowLeft, Bookmark, Maximize2, MessageSquare, Minimize2 } from "lucide-react";
 import { RoleGate } from "@/components/AdminRole";
 import { listVideoAllComments, listVideoAllBookmarks } from "@/lib/social.functions";
+import { cn } from "@/lib/utils";
 
 type Video = {
   id: string;
