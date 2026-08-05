@@ -90,40 +90,77 @@ function VideosPage() {
     queryFn: () => listClasses(),
   });
 
-  const load = async () => {
-    const { data } = await supabase
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [classFilter, setClassFilter] = useState<string>("__all__");
+  const [total, setTotal] = useState(0);
+  const [listLoading, setListLoading] = useState(false);
+
+  const allowedIds = (classes as any[]).map((c) => c.id);
+
+  const buildQuery = (trash: boolean) => {
+    let q = supabase
       .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at")
-      .is("deleted_at", null)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
-    let list = (data as Row[] | null) ?? [];
-    if (!isAdmin) {
-      const allowed = new Set((classes as any[]).map((c) => c.id));
-      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+      .select(
+        trash
+          ? "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at"
+          : "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at",
+        { count: "exact" },
+      );
+    q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
+    // 강사는 접근 가능한 수강반의 영상만 (DB에서 필터)
+    if (!isAdmin) q = q.in("class_id", allowedIds.length > 0 ? allowedIds : ["00000000-0000-0000-0000-000000000000"]);
+    if (classFilter !== "__all__") {
+      q = classFilter === NO_CLASS ? q.is("class_id", null) : q.eq("class_id", classFilter);
     }
-    setRows(list);
-    setEdits({});
+    return q;
   };
-  useEffect(() => { load(); }, [isAdmin, classes]);
+
+  const load = async () => {
+    if (!isAdmin && allowedIds.length === 0) {
+      setRows([]);
+      setTotal(0);
+      return;
+    }
+    setListLoading(true);
+    let q = buildQuery(false);
+    const term = search.trim();
+    if (term) q = q.ilike("title", `%${term}%`);
+    const from = (page - 1) * PAGE_SIZE;
+    const { data, count } = await q
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    setRows(((data as any[] | null) ?? []) as Row[]);
+    setTotal(count ?? 0);
+    setEdits({});
+    setListLoading(false);
+  };
+  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
+  useEffect(() => { setPage(1); }, [search, classFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const [trashRows, setTrashRows] = useState<Row[]>([]);
+  const [trashTotal, setTrashTotal] = useState(0);
   const [trashLoading, setTrashLoading] = useState(false);
   const loadTrash = async () => {
-    setTrashLoading(true);
-    const { data } = await supabase
-      .from("videos")
-      .select("id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at")
-      .not("deleted_at", "is", null)
-      .order("deleted_at", { ascending: false });
-    let list = ((data as any[] | null) ?? []) as (Row & { deleted_at: string })[];
-    if (!isAdmin) {
-      const allowed = new Set((classes as any[]).map((c) => c.id));
-      list = list.filter((r) => r.class_id && allowed.has(r.class_id));
+    if (!isAdmin && allowedIds.length === 0) {
+      setTrashRows([]);
+      setTrashTotal(0);
+      return;
     }
-    setTrashRows(list as Row[]);
+    setTrashLoading(true);
+    const { data, count } = await buildQuery(true)
+      .order("deleted_at", { ascending: false })
+      .range(0, 49);
+    setTrashRows(((data as any[] | null) ?? []) as Row[]);
+    setTrashTotal(count ?? 0);
     setTrashLoading(false);
   };
+
   useEffect(() => { loadTrash(); }, [isAdmin, classes]);
 
   const restore = async (id: string) => {
