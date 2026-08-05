@@ -47,6 +47,7 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: videos = [] } = useQuery({
