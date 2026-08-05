@@ -4,12 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
+import { cn } from "@/lib/utils";
 
 type Video = {
   id: string;
@@ -110,9 +111,24 @@ function VideoPage() {
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [showFsControls, setShowFsControls] = useState(true);
+  const fsControlsTimerRef = useRef<number | null>(null);
+
+  const revealFsControls = () => {
+    setShowFsControls(true);
+    if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+  };
 
   useEffect(() => {
-    if (!isPlayerExpanded) return;
+    if (!isPlayerExpanded) {
+      setShowFsControls(true);
+      return;
+    }
+    setShowFsControls(true);
+    if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const orientation = (screen as any).orientation;
@@ -129,6 +145,7 @@ function VideoPage() {
       if (orientation?.unlock) {
         try { orientation.unlock(); } catch {}
       }
+      if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     };
   }, [isPlayerExpanded]);
 
@@ -517,23 +534,49 @@ function VideoPage() {
                   : "relative overflow-hidden rounded-xl border bg-black"
               }
             >
-              <div ref={containerRef} className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}>
+              <div
+                ref={containerRef}
+                className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}
+                onClick={() => {
+                  if (isPlayerExpanded) revealFsControls();
+                }}
+              >
                 {/* iframe은 useEffect에서 동적으로 삽입됩니다. */}
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (isPlayerExpanded) {
-                    setIsPlayerExpanded(false);
-                  } else {
-                    fullscreenRef.current();
-                  }
-                }}
-                className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
-              >
-                <Maximize2 className="h-3.5 w-3.5" /> {isPlayerExpanded ? "닫기" : "전체화면"}
-              </button>
+
+              {isPlayerExpanded ? (
+                <div
+                  className={cn(
+                    "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
+                    showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsPlayerExpanded(false);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                    aria-label="전체화면 닫기"
+                  >
+                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fullscreenRef.current()}
+                  className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                  aria-label="전체화면"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                </button>
+              )}
             </div>
 
             <div className="mt-4 space-y-2">
