@@ -1175,7 +1175,7 @@ function ClassDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex min-w-0 items-center gap-2">
                   <History className="h-5 w-5 shrink-0" />
-                  <span className="truncate">배정 이력 ({filteredHistory.length}/{history.length})</span>
+                  <span className="truncate">배정 이력 ({historyTotal}건)</span>
                 </CardTitle>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <ClearableSearchInput
