@@ -4,12 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
+import { cn } from "@/lib/utils";
 
 type Video = {
   id: string;
