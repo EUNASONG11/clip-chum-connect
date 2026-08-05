@@ -419,5 +419,59 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-amber-500" />
+            문자를 전송할까요?
+          </DialogTitle>
+          <DialogDescription>
+            {channel === "sms" ? "SMS/LMS" : "카카오 브랜드톡"} 채널로 총{" "}
+            <strong>{selectedList.length}건</strong>을 발송합니다.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="rounded-md border bg-muted/40 p-3 text-sm">
+            <p className="mb-1 font-medium text-foreground">메시지 내용</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{message.trim()}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm">수신자 목록 ({selectedList.length}명)</Label>
+            <ScrollArea className="h-48 rounded-md border">
+              <ul className="divide-y">
+                {selectedList.map((r, idx) => (
+                  <li key={`${r.user_id}-${r.phone}-${idx}`} className="flex items-center justify-between px-3 py-2">
+                    <span className="text-sm font-medium">{r.name}</span>
+                    <div className="flex items-center gap-2">
+                      <BranchBadge branch={r.branch} />
+                      <span className="font-mono text-xs text-muted-foreground">{r.phone}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={sending}>
+            취소
+          </Button>
+          <Button onClick={doSend} disabled={sending}>
+            {sending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 전송 중...
+              </>
+            ) : (
+              `${selectedList.length}건 전송`
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
