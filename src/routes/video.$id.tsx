@@ -304,6 +304,10 @@ function VideoPage() {
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
+      playerRef.current = player;
+      player.on("play", () => setIsPlaying(true));
+      player.on("pause", () => setIsPlaying(false));
+      player.on("ended", () => setIsPlaying(false));
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
