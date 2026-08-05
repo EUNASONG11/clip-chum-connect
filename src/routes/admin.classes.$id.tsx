@@ -47,6 +47,8 @@ import {
   listStudentBranches,
   listClassCategories,
 } from "@/lib/classes.functions";
+import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
