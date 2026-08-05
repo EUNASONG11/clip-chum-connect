@@ -474,5 +474,6 @@ export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
