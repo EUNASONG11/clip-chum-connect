@@ -83,47 +83,23 @@ export const getOverviewStats = createServerFn({ method: "GET" })
       };
     }
 
-    const [videos, students, progress] = await Promise.all([
-      supabaseAdmin.from("videos").select("id", { count: "exact", head: true }).in("class_id", classIds),
-      supabaseAdmin
-        .from("class_students")
-        .select("user_id")
-        .in("class_id", classIds)
-        .then((res: any) => {
-          const ids = new Set((res.data ?? []).map((r: any) => r.user_id));
-          return { count: ids.size };
-        }),
-      supabaseAdmin
-        .from("videos")
-        .select("id")
-        .in("class_id", classIds)
-        .then(async (res: any) => {
-          const ids = (res.data ?? []).map((v: any) => v.id);
-          if (ids.length === 0) return { data: [] };
-          return supabaseAdmin
-            .from("video_progress")
-            .select("watched_ratio, is_completed")
-            .in("video_id", ids);
-        }),
-    ]);
-
-    const progressRows = (progress as any).data ?? [];
-    const totalViews = progressRows.length;
-    const completed = progressRows.filter((r: any) => r.is_completed).length;
-    const avgRatio =
-      totalViews > 0
-        ? progressRows.reduce((sum: number, r: any) => sum + Number(r.watched_ratio ?? 0), 0) / totalViews
-        : 0;
+    const { data: agg, error: aggErr } = await supabaseAdmin.rpc("overview_stats_agg", {
+      _class_ids: classIds,
+    });
+    if (aggErr) throw new Error(aggErr.message);
+    const row: any = Array.isArray(agg) ? agg[0] : agg;
+    const totalViews = Number(row?.total_views ?? 0);
 
     return {
-      videoCount: videos.count ?? 0,
+      videoCount: Number(row?.video_count ?? 0),
       classCount: classIds.length,
-      studentCount: students.count ?? 0,
+      studentCount: Number(row?.student_count ?? 0),
       totalViews,
-      completedCount: completed,
-      avgWatchedRatio: avgRatio,
+      completedCount: Number(row?.completed_count ?? 0),
+      avgWatchedRatio: totalViews > 0 ? Number(row?.sum_ratio ?? 0) / totalViews : 0,
     };
   });
+
 
 // 수강반별 통계 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStats = createServerFn({ method: "GET" })
