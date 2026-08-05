@@ -94,9 +94,11 @@ function AdminVideoPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
+  const playerRef = useRef<any>(null);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(true);
   const fsControlsTimerRef = useRef<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
