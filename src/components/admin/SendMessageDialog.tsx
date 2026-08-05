@@ -20,7 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, MessageSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos } from "@/lib/classes.functions";
