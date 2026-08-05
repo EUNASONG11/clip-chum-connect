@@ -1202,10 +1202,11 @@ function ClassDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">아직 이력이 없습니다.</p>
-              ) : filteredHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
+              {pagedHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {historySearchDebounced ? "검색 결과가 없습니다." : "아직 이력이 없습니다."}
+                </p>
+
               ) : (
                 <div>
                   <div className="overflow-x-auto">
