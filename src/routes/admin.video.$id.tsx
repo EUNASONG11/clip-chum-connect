@@ -126,7 +126,14 @@ function AdminVideoPage() {
   });
 
   useEffect(() => {
-    if (!isPlayerExpanded) return;
+    if (!isPlayerExpanded) {
+      setShowFsControls(true);
+      return;
+    }
+    setShowFsControls(true);
+    if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const orientation = (screen as any).orientation;
@@ -139,6 +146,7 @@ function AdminVideoPage() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKeyDown);
       if (orientation?.unlock) { try { orientation.unlock(); } catch {} }
+      if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     };
   }, [isPlayerExpanded]);
 
