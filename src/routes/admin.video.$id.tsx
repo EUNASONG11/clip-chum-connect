@@ -151,12 +151,14 @@ function AdminVideoPage() {
 
   useEffect(() => {
     if (!isPlayerExpanded) {
-      setShowFsControls(true);
+      if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+      setShowFsControls(false);
       return;
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
