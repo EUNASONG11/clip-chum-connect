@@ -195,6 +195,10 @@ function AdminVideoPage() {
             portrait: false,
             vimeo_logo: false,
           });
+      playerRef.current = player;
+      player.on("play", () => setIsPlaying(true));
+      player.on("pause", () => setIsPlaying(false));
+      player.on("ended", () => setIsPlaying(false));
       seekRef.current = (sec: number) => {
         player.setCurrentTime(sec).catch(() => {});
         player.play().catch(() => {});
