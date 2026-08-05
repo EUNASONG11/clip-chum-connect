@@ -278,8 +278,12 @@ function TeamDetailDialog({ teamId, onClose }: { teamId: string; onClose: () => 
   });
 
   const runSearch = async () => {
-    if (!query.trim()) return;
+    if (!isSearchableStudentQuery(query)) {
+      toast.info(STUDENT_SEARCH_HINT);
+      return;
+    }
     setSearching(true);
+
     try {
       const rows = await searchApprovedStudents({ data: { query: query.trim() } });
       const memberIds = new Set((team?.members ?? []).map((m: any) => m.user_id));
