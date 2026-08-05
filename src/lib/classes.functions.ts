@@ -382,6 +382,26 @@ export const listClassStudents = createServerFn({ method: "GET" })
 
 
 // 이름 또는 전화번호로 학생 검색 (미러링된 external_students에서 조회)
+// 검색어가 너무 짧으면(사실상 전체 조회) 아무것도 조회하지 않고, 토큰별 조회 건수를 작게 제한한다.
+const MAX_STUDENT_SEARCH_RESULTS = 20;
+const PER_TOKEN_FETCH_LIMIT = 30;
+
+function parseStudentSearchTokens(query: string) {
+  const tokens = query.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  const parsed: { kind: "phone" | "name"; value: string }[] = [];
+  for (const token of tokens) {
+    const digits = token.replace(/[^0-9]/g, "");
+    const isPhone = digits.length > 0 && digits.length === token.replace(/[-\s]/g, "").length;
+    if (isPhone) {
+      // 숫자 검색은 4자리 이상만 허용 (너무 광범위한 매칭 방지)
+      if (digits.length >= 4) parsed.push({ kind: "phone", value: digits });
+    } else if (token.length >= 2) {
+      parsed.push({ kind: "name", value: token });
+    }
+  }
+  return parsed;
+}
+
 export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -395,33 +415,34 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const tokens = data.query.split(/\s+/).map((t) => t.trim()).filter(Boolean);
+    const tokens = parseStudentSearchTokens(data.query);
     if (tokens.length === 0) return [];
 
-    const allRows: any[] = [];
+    const byId = new Map<string, any>();
     for (const token of tokens) {
-      const digits = token.replace(/[^0-9]/g, "");
+      if (byId.size >= MAX_STUDENT_SEARCH_RESULTS) break;
       let builder = supabaseAdmin
         .from("external_students")
         .select("auth_user_id, name, phone, parent_phone, school, grade, branch")
         .not("auth_user_id", "is", null)
         .eq("is_deleted", false)
-        .limit(200);
+        .order("name")
+        .limit(PER_TOKEN_FETCH_LIMIT);
       if (data.branch) builder = builder.eq("branch", data.branch);
-      if (digits.length >= 2 && digits.length === token.replace(/[-\s]/g, "").length) {
-        builder = builder.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`);
+      if (token.kind === "phone") {
+        builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
       } else {
-        builder = builder.ilike("name", `%${token}%`);
+        builder = builder.ilike("name", `%${token.value}%`);
       }
       const { data: rows, error } = await builder;
       if (error) throw new Error(error.message);
-      allRows.push(...(rows ?? []));
+      for (const r of rows ?? []) {
+        if (!byId.has(r.auth_user_id)) byId.set(r.auth_user_id, r);
+      }
     }
 
     // 승인 완료(student 역할)된 계정만 노출
-    const candidateIds: string[] = Array.from(
-      new Set((allRows ?? []).map((r: any) => r.auth_user_id as string).filter(Boolean)),
-    );
+    const candidateIds = Array.from(byId.keys());
     if (candidateIds.length === 0) return [];
     const { data: roleRows, error: roleErr } = await supabaseAdmin
       .from("user_roles")
@@ -432,19 +453,23 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     if (roleErr) throw new Error(roleErr.message);
     const approved = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
 
-    return (allRows ?? [])
-      .filter((r: any) => approved.has(r.auth_user_id))
-      .slice(0, 20)
-      .map((r: any) => ({
-        user_id: r.auth_user_id as string,
-        name: r.name as string,
-        phone: (r.phone as string) ?? "",
-        parent_phone: (r.parent_phone as string) ?? "",
-        school: (r.school as string) ?? "",
-        grade: (r.grade as string) ?? "",
-        branch: (r.branch as string) ?? "",
-      }));
+    return candidateIds
+      .filter((id) => approved.has(id))
+      .slice(0, MAX_STUDENT_SEARCH_RESULTS)
+      .map((id) => {
+        const r = byId.get(id);
+        return {
+          user_id: id,
+          name: r.name as string,
+          phone: (r.phone as string) ?? "",
+          parent_phone: (r.parent_phone as string) ?? "",
+          school: (r.school as string) ?? "",
+          grade: (r.grade as string) ?? "",
+          branch: (r.branch as string) ?? "",
+        };
+      });
   });
+
 
 // 교육원(branch) 목록 조회 - 학생 배정 필터 등에 사용
 export const listStudentBranches = createServerFn({ method: "GET" })
