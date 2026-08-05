@@ -960,6 +960,13 @@ export type Database = {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
       }
+      class_sms_recent_batches: {
+        Args: { _class_id: string; _limit?: number }
+        Returns: {
+          batch_id: string
+          last_at: string
+        }[]
+      }
       class_stats_agg: {
         Args: { _class_ids: string[] }
         Returns: {
