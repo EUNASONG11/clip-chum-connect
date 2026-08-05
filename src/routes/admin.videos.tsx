@@ -265,7 +265,7 @@ function VideosPage() {
         <TabsContent value="trash" className="pt-4">
           <Card>
             <CardHeader>
-              <CardTitle>휴지통 ({trashRows.length})</CardTitle>
+              <CardTitle>휴지통 ({trashTotal}{trashTotal > 50 ? ", 최근 50건 표시" : ""})</CardTitle>
             </CardHeader>
             <CardContent>
               {trashLoading ? (
