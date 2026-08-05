@@ -1271,7 +1271,7 @@ function ClassDetailPage() {
                   </div>
                   <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
                     <span className="text-xs text-muted-foreground">
-                      총 {filteredHistory.length}건 · {historyPage} / {historyTotalPages} 페이지
+                      총 {historyTotal}건 · {historyPage} / {historyTotalPages} 페이지
                     </span>
                     <div className="flex items-center gap-2">
                       <Button
