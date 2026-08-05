@@ -123,6 +123,22 @@ function VideoPage() {
     fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
   };
 
+  const togglePlayPause = async () => {
+    const player = playerRef.current;
+    if (!player) return;
+    try {
+      if (video?.source === "vimeo") {
+        const paused = await player.getPaused();
+        if (paused) { await player.play(); setIsPlaying(true); }
+        else { await player.pause(); setIsPlaying(false); }
+      } else if (video?.source === "youtube") {
+        const state = player.getPlayerState?.();
+        if (state === 1) { player.pauseVideo?.(); setIsPlaying(false); }
+        else { player.playVideo?.(); setIsPlaying(true); }
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     if (!isPlayerExpanded) {
       setShowFsControls(true);
