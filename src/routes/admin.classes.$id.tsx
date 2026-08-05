@@ -126,10 +126,8 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
   });
-  const { data: history = [] } = useQuery({
-    queryKey: ["admin", "class", id, "history"],
-    queryFn: () => listClassEnrollmentHistory({ data: { classId: id } }),
-  });
+  // 배정 이력: 서버 페이지네이션/검색 (아래 상태 선언 이후 쿼리 실행)
+
 
   const [newFolderName, setNewFolderName] = useState("");
   const [creatingUnder, setCreatingUnder] = useState<string | null | undefined>(undefined);
@@ -147,8 +145,33 @@ function ClassDetailPage() {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
   const [historySearch, setHistorySearch] = useState("");
+  const [historySearchDebounced, setHistorySearchDebounced] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [historyPage, setHistoryPage] = useState(1);
+  useEffect(() => {
+    const t = setTimeout(() => setHistorySearchDebounced(historySearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [historySearch]);
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearchDebounced, historyPageSize]);
+  const { data: historyData } = useQuery({
+    queryKey: ["admin", "class", id, "history", historyPage, historyPageSize, historySearchDebounced],
+    queryFn: () =>
+      listClassEnrollmentHistory({
+        data: {
+          classId: id,
+          page: historyPage,
+          pageSize: historyPageSize,
+          search: historySearchDebounced,
+        },
+      }),
+    placeholderData: (prev) => prev,
+  });
+  const pagedHistory = historyData?.rows ?? [];
+  const historyTotal = historyData?.total ?? 0;
+  const historyTotalPages = Math.max(1, Math.ceil(historyTotal / historyPageSize));
+
 
   const { data: categories = [] } = useQuery({
     queryKey: ["admin", "class-categories"],
@@ -415,36 +438,6 @@ function ClassDetailPage() {
     [filteredStudentStats, statsPage, statsPageSize],
   );
 
-  const filteredHistory = useMemo(() => {
-    const q = historySearch.trim();
-    if (!q) return history;
-    return (history as any[]).filter((h) => {
-      const hay = [
-        h.student_name,
-        h.student_email,
-        h.student_phone,
-        h.student_parent_phone,
-        h.actor_name,
-        h.action === "added" ? "배정" : "해제",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      return hay.toLowerCase().includes(q.toLowerCase());
-    });
-  }, [history, historySearch]);
-
-  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / historyPageSize));
-  useEffect(() => {
-    setHistoryPage(1);
-  }, [historySearch, filteredHistory.length, historyPageSize]);
-  const pagedHistory = useMemo(
-    () =>
-      (filteredHistory as any[]).slice(
-        (historyPage - 1) * historyPageSize,
-        historyPage * historyPageSize,
-      ),
-    [filteredHistory, historyPage, historyPageSize],
-  );
 
 
 
@@ -1182,7 +1175,7 @@ function ClassDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="flex min-w-0 items-center gap-2">
                   <History className="h-5 w-5 shrink-0" />
-                  <span className="truncate">배정 이력 ({filteredHistory.length}/{history.length})</span>
+                  <span className="truncate">배정 이력 ({historyTotal}건)</span>
                 </CardTitle>
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <ClearableSearchInput
@@ -1209,10 +1202,11 @@ function ClassDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {history.length === 0 ? (
-                <p className="text-sm text-muted-foreground">아직 이력이 없습니다.</p>
-              ) : filteredHistory.length === 0 ? (
-                <p className="text-sm text-muted-foreground">검색 결과가 없습니다.</p>
+              {pagedHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {historySearchDebounced ? "검색 결과가 없습니다." : "아직 이력이 없습니다."}
+                </p>
+
               ) : (
                 <div>
                   <div className="overflow-x-auto">
@@ -1277,7 +1271,7 @@ function ClassDetailPage() {
                   </div>
                   <div className="mt-3 flex flex-col items-center justify-between gap-2 border-t pt-3 sm:flex-row">
                     <span className="text-xs text-muted-foreground">
-                      총 {filteredHistory.length}건 · {historyPage} / {historyTotalPages} 페이지
+                      총 {historyTotal}건 · {historyPage} / {historyTotalPages} 페이지
                     </span>
                     <div className="flex items-center gap-2">
                       <Button

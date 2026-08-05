@@ -537,21 +537,66 @@ export const unassignStudent = createServerFn({ method: "POST" })
 
 
 
-// 수강반 배정 이력 조회 (추가/해제 히스토리)
+// 수강반 배정 이력 조회 (추가/해제 히스토리) - 서버 페이지네이션/검색
+const NIL_UUID = "00000000-0000-0000-0000-000000000000";
+
 export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(5).max(100).default(20),
+        search: z.string().max(200).optional().default(""),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
+
+    const q = (data.search ?? "").trim();
+    let query = supabaseAdmin
       .from("class_enrollment_history")
-      .select("id, user_id, action, actor_id, created_at")
-      .eq("class_id", data.classId)
+      .select("id, user_id, action, actor_id, created_at", { count: "exact" })
+      .eq("class_id", data.classId);
+
+    if (q) {
+      const like = `%${q}%`;
+      const [{ data: extMatch }, { data: instrMatch }] = await Promise.all([
+        supabaseAdmin
+          .from("external_students")
+          .select("auth_user_id")
+          .not("auth_user_id", "is", null)
+          .or(`name.ilike.${like},phone.ilike.${like},parent_phone.ilike.${like}`)
+          .limit(500),
+        supabaseAdmin
+          .from("instructors")
+          .select("auth_user_id")
+          .not("auth_user_id", "is", null)
+          .ilike("name", like)
+          .limit(500),
+      ]);
+      const studentIds = (extMatch ?? []).map((e: any) => e.auth_user_id as string);
+      const actorIds2 = (instrMatch ?? []).map((e: any) => e.auth_user_id as string);
+      const ors = [
+        `user_id.in.(${(studentIds.length ? studentIds : [NIL_UUID]).join(",")})`,
+        `actor_id.in.(${(actorIds2.length ? actorIds2 : [NIL_UUID]).join(",")})`,
+      ];
+      if ("배정".includes(q) || q.toLowerCase() === "added") ors.push("action.eq.added");
+      if ("해제".includes(q) || q.toLowerCase() === "removed") ors.push("action.eq.removed");
+      query = query.or(ors.join(","));
+    }
+
+    const from = (data.page - 1) * data.pageSize;
+    const { data: rows, count, error } = await query
       .order("created_at", { ascending: false })
-      .limit(500);
+      .range(from, from + data.pageSize - 1);
     if (error) throw new Error(error.message);
-    if (!rows || rows.length === 0) return [];
+    const total = count ?? 0;
+    if (!rows || rows.length === 0) return { rows: [], total };
+
     const userIds = Array.from(new Set(rows.map((r: any) => r.user_id)));
     const actorIds = Array.from(
       new Set(rows.map((r: any) => r.actor_id).filter(Boolean)),
@@ -561,8 +606,15 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
       .select("auth_user_id, name, phone, parent_phone, branch")
       .in("auth_user_id", userIds);
     const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
-    const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
+    const idsForEmail = Array.from(new Set([...userIds, ...actorIds])) as string[];
+    const emailPairs = await Promise.all(
+      idsForEmail.map(async (uid) => {
+        const { data: u } = await supabaseAdmin.auth.admin.getUserById(uid);
+        return [uid, u?.user?.email ?? ""] as [string, string];
+      }),
+    );
+    const emailMap = new Map(emailPairs);
+
     const actorMap = new Map<string, string>();
     const actorRoleMap = new Map<string, "admin" | "instructor" | "other">();
     if (actorIds.length > 0) {
@@ -592,7 +644,7 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         else if (!actorRoleMap.has(uid)) actorRoleMap.set(uid, "other");
       }
     }
-    return rows.map((r: any) => {
+    const mapped = rows.map((r: any) => {
       const e: any = extMap.get(r.user_id);
       return {
         id: r.id as string,
@@ -609,7 +661,9 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
         created_at: r.created_at as string,
       };
     });
+    return { rows: mapped, total };
   });
+
 
 // 수강반의 영상 목록 (관리자: 전체, 강사: 본인 수강반)
 export const listClassVideos = createServerFn({ method: "GET" })
