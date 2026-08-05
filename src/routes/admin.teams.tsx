@@ -42,6 +42,8 @@ import {
   updateTeam,
 } from "@/lib/teams.functions";
 import { searchApprovedStudents } from "@/lib/teams.functions";
+import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+
 
 export const Route = createFileRoute("/admin/teams")({
   head: () => ({ meta: [{ title: "팀 관리 — e-Learning" }] }),
