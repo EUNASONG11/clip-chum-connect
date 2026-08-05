@@ -207,7 +207,15 @@ function AdminVideoPage() {
     } else if (video.source === "youtube") {
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current) return;
-        const player = new YT.Player(iframeRef.current, {});
+        const player = new YT.Player(iframeRef.current, {
+          events: {
+            onReady: () => {
+              playerRef.current = player;
+              try { setIsPlaying(player.getPlayerState?.() === 1); } catch {}
+            },
+            onStateChange: (e: any) => setIsPlaying(e.data === 1),
+          },
+        });
         seekRef.current = (sec: number) => {
           try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {}
         };
