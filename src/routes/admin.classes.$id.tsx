@@ -28,6 +28,7 @@ import {
   getClass,
   listClassStudents,
   searchStudentsByNameOrPhone,
+
   assignStudent,
   unassignStudent,
   listClassVideos,
@@ -46,6 +47,8 @@ import {
   listStudentBranches,
   listClassCategories,
 } from "@/lib/classes.functions";
+import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
@@ -342,8 +345,12 @@ function ClassDetailPage() {
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!isSearchableStudentQuery(query)) {
+      toast.info(STUDENT_SEARCH_HINT);
+      return;
+    }
     setSearching(true);
+
     try {
       const rows = await searchStudentsByNameOrPhone({
         data: {

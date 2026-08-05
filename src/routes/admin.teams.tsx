@@ -42,6 +42,8 @@ import {
   updateTeam,
 } from "@/lib/teams.functions";
 import { searchApprovedStudents } from "@/lib/teams.functions";
+import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+
 
 export const Route = createFileRoute("/admin/teams")({
   head: () => ({ meta: [{ title: "팀 관리 — e-Learning" }] }),
@@ -278,8 +280,12 @@ function TeamDetailDialog({ teamId, onClose }: { teamId: string; onClose: () => 
   });
 
   const runSearch = async () => {
-    if (!query.trim()) return;
+    if (!isSearchableStudentQuery(query)) {
+      toast.info(STUDENT_SEARCH_HINT);
+      return;
+    }
     setSearching(true);
+
     try {
       const rows = await searchApprovedStudents({ data: { query: query.trim() } });
       const memberIds = new Set((team?.members ?? []).map((m: any) => m.user_id));

@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import {
+  MAX_STUDENT_SEARCH_RESULTS,
+  PER_TOKEN_FETCH_LIMIT,
+  parseStudentSearchTokens,
+} from "@/lib/student-search";
+
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
@@ -312,37 +318,52 @@ export const searchApprovedStudents = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const q = data.query.trim();
-    const digits = q.replace(/[^0-9]/g, "");
-    let builder = supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, phone, school, grade")
-      .not("auth_user_id", "is", null)
-      .eq("is_deleted", false)
-      .limit(50);
-    if (digits.length >= 2 && digits.length === q.replace(/[-\s]/g, "").length) {
-      builder = builder.ilike("phone", `%${digits}%`);
-    } else {
-      builder = builder.ilike("name", `%${q}%`);
+    const tokens = parseStudentSearchTokens(data.query);
+    if (tokens.length === 0) return [];
+
+    const byId = new Map<string, any>();
+    for (const token of tokens) {
+      if (byId.size >= MAX_STUDENT_SEARCH_RESULTS) break;
+      let builder = supabaseAdmin
+        .from("external_students")
+        .select("auth_user_id, name, phone, school, grade")
+        .not("auth_user_id", "is", null)
+        .eq("is_deleted", false)
+        .order("name")
+        .limit(PER_TOKEN_FETCH_LIMIT);
+      if (token.kind === "phone") {
+        builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
+      } else {
+        builder = builder.ilike("name", `%${token.value}%`);
+      }
+      const { data: rows, error } = await builder;
+      if (error) throw new Error(error.message);
+      for (const r of rows ?? []) {
+        if (!byId.has(r.auth_user_id)) byId.set(r.auth_user_id, r);
+      }
     }
-    const { data: rows, error } = await builder;
-    if (error) throw new Error(error.message);
-    const ids = (rows ?? []).map((r: any) => r.auth_user_id).filter(Boolean);
+
+    const ids = Array.from(byId.keys());
     if (ids.length === 0) return [];
     const { data: roles } = await supabaseAdmin
       .from("user_roles")
       .select("user_id")
       .eq("role", "student")
+      .is("deleted_at", null)
       .in("user_id", ids);
     const approved = new Set((roles ?? []).map((r: any) => r.user_id));
-    return (rows ?? [])
-      .filter((r: any) => approved.has(r.auth_user_id))
-      .slice(0, 20)
-      .map((r: any) => ({
-        user_id: r.auth_user_id as string,
-        name: r.name as string,
-        phone: (r.phone as string) ?? "",
-        school: (r.school as string) ?? "",
-        grade: (r.grade as string) ?? "",
-      }));
+    return ids
+      .filter((id) => approved.has(id))
+      .slice(0, MAX_STUDENT_SEARCH_RESULTS)
+      .map((id) => {
+        const r = byId.get(id);
+        return {
+          user_id: id,
+          name: r.name as string,
+          phone: (r.phone as string) ?? "",
+          school: (r.school as string) ?? "",
+          grade: (r.grade as string) ?? "",
+        };
+      });
   });
+
