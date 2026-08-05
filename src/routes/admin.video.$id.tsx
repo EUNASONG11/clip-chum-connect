@@ -235,7 +235,13 @@ function AdminVideoPage() {
                 : "relative overflow-hidden rounded-xl border bg-black"
             }
           >
-            <div ref={containerRef} className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}>
+            <div
+              ref={containerRef}
+              className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}
+              onClick={() => {
+                if (isPlayerExpanded) revealFsControls();
+              }}
+            >
               {video.source === "youtube" && (
                 <iframe
                   ref={iframeRef}
@@ -247,14 +253,40 @@ function AdminVideoPage() {
                 />
               )}
             </div>
-            <button
-              type="button"
-              onClick={() => setIsPlayerExpanded((v) => !v)}
-              className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
-              aria-label={isPlayerExpanded ? "전체화면 닫기" : "전체화면"}
-            >
-              <Maximize2 className="h-3.5 w-3.5" /> {isPlayerExpanded ? "닫기" : "전체화면"}
-            </button>
+
+            {isPlayerExpanded ? (
+              <div
+                className={cn(
+                  "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
+                  showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  revealFsControls();
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPlayerExpanded(false);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                  aria-label="전체화면 닫기"
+                >
+                  <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPlayerExpanded(true)}
+                className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
+                aria-label="전체화면"
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+              </button>
+            )}
           </div>
 
           <h1 className="mt-6 text-3xl font-bold">{video.title}</h1>
