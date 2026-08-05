@@ -96,15 +96,21 @@ function AdminVideoPage() {
   const seekRef = useRef<(sec: number) => void>(() => {});
   const playerRef = useRef<any>(null);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
-  const [showFsControls, setShowFsControls] = useState(true);
+  const [showFsControls, setShowFsControls] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
   };
+
+  const hideFsControls = () => {
+    if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+    setShowFsControls(false);
+  };
+
 
   const togglePlayPause = async () => {
     const player = playerRef.current;
@@ -145,12 +151,14 @@ function AdminVideoPage() {
 
   useEffect(() => {
     if (!isPlayerExpanded) {
-      setShowFsControls(true);
+      if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+      setShowFsControls(false);
       return;
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -286,6 +294,15 @@ function AdminVideoPage() {
 
             {isPlayerExpanded ? (
               <>
+                {!showFsControls && (
+                  <div
+                    className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      revealFsControls();
+                    }}
+                  />
+                )}
                 <div
                   className={cn(
                     "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
@@ -293,7 +310,7 @@ function AdminVideoPage() {
                   )}
                   onClick={(e) => {
                     e.stopPropagation();
-                    revealFsControls();
+                    hideFsControls();
                   }}
                 >
                   <button
@@ -311,7 +328,8 @@ function AdminVideoPage() {
                 <div
                   className={cn(
                     "absolute inset-0 z-[110] flex items-center justify-center transition-opacity duration-300 pointer-events-none",
-                    showFsControls ? "opacity-100" : "opacity-0"
+                    showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
+
                   )}
                 >
                   <button
