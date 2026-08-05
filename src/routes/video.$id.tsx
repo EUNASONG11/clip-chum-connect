@@ -437,6 +437,7 @@ function VideoPage() {
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
+              playerRef.current = player;
               try {
                 const d = player.getDuration?.();
                 durationRef.current = d ?? null;
@@ -444,10 +445,13 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
+                const state = player.getPlayerState?.();
+                setIsPlaying(state === 1);
               } catch {}
             },
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
+              setIsPlaying(e.data === 1);
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
