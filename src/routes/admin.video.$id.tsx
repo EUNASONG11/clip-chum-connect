@@ -103,7 +103,7 @@ function AdminVideoPage() {
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
   };
 
   const togglePlayPause = async () => {
@@ -150,7 +150,7 @@ function AdminVideoPage() {
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
