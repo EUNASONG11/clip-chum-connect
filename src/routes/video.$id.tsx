@@ -111,6 +111,14 @@ function VideoPage() {
   const [progressLoaded, setProgressLoaded] = useState(false);
   const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
+  const [showFsControls, setShowFsControls] = useState(true);
+  const fsControlsTimerRef = useRef<number | null>(null);
+
+  const revealFsControls = () => {
+    setShowFsControls(true);
+    if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+  };
 
   useEffect(() => {
     if (!isPlayerExpanded) return;
