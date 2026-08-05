@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -105,6 +105,8 @@ function VideoPage() {
   const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
+  const playerRef = useRef<any>(null);
+  const isPlayingRef = useRef(false);
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -113,11 +115,28 @@ function VideoPage() {
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(true);
   const fsControlsTimerRef = useRef<number | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+  };
+
+  const togglePlayPause = async () => {
+    const player = playerRef.current;
+    if (!player) return;
+    try {
+      if (video?.source === "vimeo") {
+        const paused = await player.getPaused();
+        if (paused) { await player.play(); setIsPlaying(true); }
+        else { await player.pause(); setIsPlaying(false); }
+      } else if (video?.source === "youtube") {
+        const state = player.getPlayerState?.();
+        if (state === 1) { player.pauseVideo?.(); setIsPlaying(false); }
+        else { player.playVideo?.(); setIsPlaying(true); }
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -285,6 +304,10 @@ function VideoPage() {
       const isSeekingRef = { current: false };
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
+      playerRef.current = player;
+      player.on("play", () => setIsPlaying(true));
+      player.on("pause", () => setIsPlaying(false));
+      player.on("ended", () => setIsPlaying(false));
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
@@ -414,6 +437,7 @@ function VideoPage() {
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
+              playerRef.current = player;
               try {
                 const d = player.getDuration?.();
                 durationRef.current = d ?? null;
@@ -421,10 +445,13 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
+                const state = player.getPlayerState?.();
+                setIsPlaying(state === 1);
               } catch {}
             },
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
+              setIsPlaying(e.data === 1);
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
@@ -545,28 +572,53 @@ function VideoPage() {
               </div>
 
               {isPlayerExpanded ? (
-                <div
-                  className={cn(
-                    "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
-                    showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    revealFsControls();
-                  }}
-                >
-                  <button
-                    type="button"
+                <>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
+                      showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsPlayerExpanded(false);
+                      revealFsControls();
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                    aria-label="전체화면 닫기"
                   >
-                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsPlayerExpanded(false);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                      aria-label="전체화면 닫기"
+                    >
+                      <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                    </button>
+                  </div>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-center justify-center transition-opacity duration-300 pointer-events-none",
+                      showFsControls ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        revealFsControls();
+                        togglePlayPause();
+                      }}
+                      className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
+                      aria-label={isPlaying ? "일시정지" : "재생"}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
+                      ) : (
+                        <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
+                      )}
+                    </button>
+                  </div>
+                </>
               ) : (
                 <button
                   type="button"
