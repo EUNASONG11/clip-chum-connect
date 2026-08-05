@@ -145,8 +145,33 @@ function ClassDetailPage() {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
   const [historySearch, setHistorySearch] = useState("");
+  const [historySearchDebounced, setHistorySearchDebounced] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(20);
   const [historyPage, setHistoryPage] = useState(1);
+  useEffect(() => {
+    const t = setTimeout(() => setHistorySearchDebounced(historySearch.trim()), 300);
+    return () => clearTimeout(t);
+  }, [historySearch]);
+  useEffect(() => {
+    setHistoryPage(1);
+  }, [historySearchDebounced, historyPageSize]);
+  const { data: historyData } = useQuery({
+    queryKey: ["admin", "class", id, "history", historyPage, historyPageSize, historySearchDebounced],
+    queryFn: () =>
+      listClassEnrollmentHistory({
+        data: {
+          classId: id,
+          page: historyPage,
+          pageSize: historyPageSize,
+          search: historySearchDebounced,
+        },
+      }),
+    placeholderData: (prev) => prev,
+  });
+  const pagedHistory = historyData?.rows ?? [];
+  const historyTotal = historyData?.total ?? 0;
+  const historyTotalPages = Math.max(1, Math.ceil(historyTotal / historyPageSize));
+
 
   const { data: categories = [] } = useQuery({
     queryKey: ["admin", "class-categories"],
