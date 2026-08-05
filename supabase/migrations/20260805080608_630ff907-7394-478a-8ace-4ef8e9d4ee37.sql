@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.is_video_class_instructor(uuid, uuid) FROM PUBLIC, anon, authenticated;
