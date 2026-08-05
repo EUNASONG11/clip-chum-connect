@@ -105,6 +105,8 @@ function VideoPage() {
   const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
+  const playerRef = useRef<any>(null);
+  const isPlayingRef = useRef(false);
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
@@ -113,6 +115,7 @@ function VideoPage() {
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(true);
   const fsControlsTimerRef = useRef<number | null>(null);
+  const [, forceRender] = useState({});
 
   const revealFsControls = () => {
     setShowFsControls(true);
