@@ -606,8 +606,15 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
       .select("auth_user_id, name, phone, parent_phone, branch")
       .in("auth_user_id", userIds);
     const extMap = new Map((ext ?? []).map((e: any) => [e.auth_user_id, e]));
-    const { data: users } = await supabaseAdmin.auth.admin.listUsers({ perPage: 200 });
-    const emailMap = new Map(users.users.map((u) => [u.id, u.email ?? ""]));
+    const idsForEmail = Array.from(new Set([...userIds, ...actorIds])) as string[];
+    const emailPairs = await Promise.all(
+      idsForEmail.map(async (uid) => {
+        const { data: u } = await supabaseAdmin.auth.admin.getUserById(uid);
+        return [uid, u?.user?.email ?? ""] as [string, string];
+      }),
+    );
+    const emailMap = new Map(emailPairs);
+
     const actorMap = new Map<string, string>();
     const actorRoleMap = new Map<string, "admin" | "instructor" | "other">();
     if (actorIds.length > 0) {
