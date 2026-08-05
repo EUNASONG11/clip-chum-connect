@@ -342,8 +342,12 @@ function ClassDetailPage() {
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!query.trim()) return;
+    if (!isSearchableStudentQuery(query)) {
+      toast.info(STUDENT_SEARCH_HINT);
+      return;
+    }
     setSearching(true);
+
     try {
       const rows = await searchStudentsByNameOrPhone({
         data: {
