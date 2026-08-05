@@ -115,7 +115,7 @@ function VideoPage() {
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(true);
   const fsControlsTimerRef = useRef<number | null>(null);
-  const [, forceRender] = useState({});
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
