@@ -103,7 +103,7 @@ function AdminVideoPage() {
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
   };
 
   const togglePlayPause = async () => {
@@ -150,7 +150,7 @@ function AdminVideoPage() {
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 3000);
+    // 재생 화면(iframe)이 클릭을 가로채므로 컨트롤은 계속 노출합니다.
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -333,7 +333,7 @@ function AdminVideoPage() {
                 </div>
                 <div
                   className={cn(
-                    "absolute inset-x-0 bottom-0 z-[110] flex items-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 transition-opacity duration-300",
+                    "absolute inset-x-0 bottom-0 z-[110] flex items-center gap-3 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-6 transition-opacity duration-300 pointer-events-none",
                     showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
                   )}
                   onClick={(e) => {
@@ -348,7 +348,7 @@ function AdminVideoPage() {
                       revealFsControls();
                       togglePlayPause();
                     }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
+                    className="pointer-events-auto inline-flex items-center gap-2 rounded-xl bg-black/70 px-4 py-2.5 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
                     aria-label={isPlaying ? "일시정지" : "재생"}
                   >
                     {isPlaying ? (
