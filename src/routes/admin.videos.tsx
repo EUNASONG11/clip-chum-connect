@@ -85,10 +85,12 @@ function VideosPage() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const { data: classes = [] } = useQuery({
+  const { data: classesData } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
   });
+  const classes = useMemo(() => (classesData ?? []) as any[], [classesData]);
+
 
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
