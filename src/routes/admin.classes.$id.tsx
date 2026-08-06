@@ -443,20 +443,36 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+  const [statsBranchFilter, setStatsBranchFilter] = useState<string>("all");
+  const statsBranchOptions = useMemo(() => {
+    const set = new Set<string>();
+    (studentStats as any[]).forEach((s) => {
+      const b = (s.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [studentStats]);
   const filteredStudentStats = useMemo(() => {
-    if (statsFilter === "all") return studentStats;
     return (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
-      return statsFilter === "completed" ? isCompleted : !isCompleted;
+      const okStatus =
+        statsFilter === "all" ? true : statsFilter === "completed" ? isCompleted : !isCompleted;
+      const okBranch =
+        statsBranchFilter === "all"
+          ? true
+          : statsBranchFilter === "none"
+            ? !(s.branch ?? "").trim()
+            : (s.branch ?? "").trim() === statsBranchFilter;
+      return okStatus && okBranch;
     });
-  }, [studentStats, statsFilter]);
+  }, [studentStats, statsFilter, statsBranchFilter]);
 
   const [statsPageSize, setStatsPageSize] = useState(20);
   const [statsPage, setStatsPage] = useState(1);
   const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
     setStatsPage(1);
-  }, [statsFilter, filteredStudentStats.length, statsPageSize]);
+  }, [statsFilter, statsBranchFilter, filteredStudentStats.length, statsPageSize]);
   const pagedStudentStats = useMemo(
     () =>
       (filteredStudentStats as any[]).slice(
@@ -1150,6 +1166,20 @@ function ClassDetailPage() {
                   <SelectItem value="all">전체</SelectItem>
                   <SelectItem value="completed">완료한 학생</SelectItem>
                   <SelectItem value="incomplete">미완료 학생</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statsBranchFilter} onValueChange={setStatsBranchFilter}>
+                <SelectTrigger className="h-8 w-full sm:w-40">
+                  <SelectValue placeholder="교육원" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">교육원 전체</SelectItem>
+                  {statsBranchOptions.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="none">교육원 미지정</SelectItem>
                 </SelectContent>
               </Select>
               <Select

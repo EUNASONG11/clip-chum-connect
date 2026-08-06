@@ -207,19 +207,10 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
       };
     });
 
-    // 로그인한 강사 본인의 교육원 학생을 우선 정렬
-    if (myBranch) {
-      list.sort((a, b) => {
-        const am = (a.branch ?? "").trim() === myBranch ? 0 : 1;
-        const bm = (b.branch ?? "").trim() === myBranch ? 0 : 1;
-        if (am !== bm) return am - bm;
-        return (a.name ?? "").localeCompare(b.name ?? "", "ko");
-      });
-    }
+    // 이름 기준 정렬 (교육원은 UI 필터로 선택)
+    list.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "ko"));
 
-    return list;
-
-
+    return list.map((r) => ({ ...r, my_branch: myBranch }));
   });
 
 
