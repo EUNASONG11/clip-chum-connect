@@ -269,7 +269,7 @@ function PlaybackSettings({
 
 
 export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
-  const { isAdmin, isInstructor } = useAdminRole();
+  useAdminRole();
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
@@ -482,16 +482,15 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
 
   return (
     <Tabs defaultValue="vimeo" className="w-full">
-      {isAdmin && (
-        <TabsList>
-          <TabsTrigger value="vimeo" className="gap-2">
-            <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
-          </TabsTrigger>
-          <TabsTrigger value="youtube" className="gap-2">
-            <Youtube className="h-4 w-4" /> YouTube 링크
-          </TabsTrigger>
-        </TabsList>
-      )}
+      <TabsList>
+        <TabsTrigger value="vimeo" className="gap-2">
+          <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
+        </TabsTrigger>
+        <TabsTrigger value="youtube" className="gap-2">
+          <Youtube className="h-4 w-4" /> YouTube 링크
+        </TabsTrigger>
+      </TabsList>
+
 
       <TabsContent value="vimeo" className="pt-4">
         <form onSubmit={upload} className="space-y-4">
@@ -591,8 +590,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         </form>
       </TabsContent>
 
-      {isAdmin && (
-        <TabsContent value="youtube" className="pt-4">
+      <TabsContent value="youtube" className="pt-4">
           <form onSubmit={addYt} className="space-y-4">
             <div>
               <Label htmlFor="yt-url">YouTube 링크</Label>
@@ -647,8 +645,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
           </form>
-        </TabsContent>
-      )}
+      </TabsContent>
     </Tabs>
   );
 }
