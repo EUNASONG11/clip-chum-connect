@@ -590,8 +590,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         </form>
       </TabsContent>
 
-      {isAdmin && (
-        <TabsContent value="youtube" className="pt-4">
+      <TabsContent value="youtube" className="pt-4">
           <form onSubmit={addYt} className="space-y-4">
             <div>
               <Label htmlFor="yt-url">YouTube 링크</Label>
