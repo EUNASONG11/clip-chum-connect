@@ -308,13 +308,24 @@ function ClassDetailPage() {
   };
 
   const handleAssignVideoToFolder = async (videoId: string, folderId: string | null) => {
+    const key = ["admin", "class", id, "videos"];
+    const prev = qc.getQueryData<any[]>(key);
+    // 낙관적 업데이트: 서버 응답 전에 화면에 즉시 반영
+    qc.setQueryData<any[]>(key, (old) =>
+      (old ?? []).map((v) => (v.id === videoId ? { ...v, folder_id: folderId } : v)),
+    );
     try {
       await setVideoFolder({ data: { videoId, folderId } });
-      refreshVideosAndFolders();
+      await Promise.all([
+        qc.refetchQueries({ queryKey: key, type: "active" }),
+        qc.refetchQueries({ queryKey: ["admin", "class", id, "folders"], type: "active" }),
+      ]);
     } catch (err: any) {
+      if (prev) qc.setQueryData(key, prev);
       toast.error(err.message);
     }
   };
+
 
   // 영상 드래그 앤 드롭으로 폴더 이동
   const [draggingVideoId, setDraggingVideoId] = useState<string | null>(null);
