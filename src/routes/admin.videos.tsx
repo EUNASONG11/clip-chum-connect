@@ -19,6 +19,7 @@ import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
 import { Upload as UploadIcon, Film } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/admin/videos")({
 type Row = {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   source: string;
   vimeo_video_id: string | null;
@@ -111,8 +113,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at"
-          : "id,title,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
@@ -213,6 +215,7 @@ function VideosPage() {
         data: {
           id: r.id,
           title: e.title,
+          description: e.description === undefined ? undefined : e.description,
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
@@ -452,6 +455,16 @@ function VideosPage() {
                                 value={value(r, "title") as string}
                                 onChange={(e) => patch(r.id, { title: e.target.value })}
                                 placeholder="영상 제목"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground">설명</label>
+                              <Textarea
+                                value={(value(r, "description") as string | null) ?? ""}
+                                onChange={(e) => patch(r.id, { description: e.target.value })}
+                                placeholder="영상 설명 (선택)"
+                                rows={3}
                                 className="mt-1"
                               />
                             </div>
