@@ -645,8 +645,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
           </form>
-        </TabsContent>
-      )}
+      </TabsContent>
     </Tabs>
   );
 }
