@@ -539,23 +539,40 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 type="file"
                 accept="video/*"
                 ref={fileRef}
-                className="hidden"
+                className="absolute h-0 w-0 opacity-0"
+                tabIndex={-1}
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               />
               <Button
                 type="button"
-                variant="outline"
+                variant={file ? "secondary" : "outline"}
                 onClick={() => fileRef.current?.click()}
+                disabled={uploading}
               >
-                파일 선택
+                {file ? "파일 변경" : "파일 선택"}
               </Button>
               {file ? (
-                <span className="rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
-                  {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
-                </span>
+                <>
+                  <span className="rounded-md bg-muted px-2.5 py-1 text-sm text-muted-foreground">
+                    {file.name} · {(file.size / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => {
+                      setFile(null);
+                      if (fileRef.current) fileRef.current.value = "";
+                    }}
+                  >
+                    선택 취소
+                  </Button>
+                </>
               ) : (
                 <span className="text-sm text-muted-foreground">선택된 파일 없음</span>
               )}
+
             </div>
           </div>
           {progress !== null && (
