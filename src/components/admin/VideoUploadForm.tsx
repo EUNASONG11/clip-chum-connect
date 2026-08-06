@@ -482,16 +482,16 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
 
   return (
     <Tabs defaultValue="vimeo" className="w-full">
-      <TabsList>
-        <TabsTrigger value="vimeo" className="gap-2">
-          <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
-        </TabsTrigger>
-        {isAdmin && (
+      {isAdmin && (
+        <TabsList>
+          <TabsTrigger value="vimeo" className="gap-2">
+            <UploadIcon className="h-4 w-4" /> 파일 업로드 (Vimeo)
+          </TabsTrigger>
           <TabsTrigger value="youtube" className="gap-2">
             <Youtube className="h-4 w-4" /> YouTube 링크
           </TabsTrigger>
-        )}
-      </TabsList>
+        </TabsList>
+      )}
 
       <TabsContent value="vimeo" className="pt-4">
         <form onSubmit={upload} className="space-y-4">
