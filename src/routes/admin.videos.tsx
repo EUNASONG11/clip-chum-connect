@@ -59,7 +59,9 @@ const statusMap: Record<string, string> = {
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
 
+let __r=0;
 function VideosPage() {
+  __r++; if(__r<12) console.log('RENDER',__r);
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
@@ -144,7 +146,7 @@ function VideosPage() {
     setEdits({});
     setListLoading(false);
   };
-  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
+  useEffect(() => { console.log('EFF_LOAD'); load(); }, [isAdmin, classes, page, search, classFilter]);
   useEffect(() => { setPage(1); }, [search, classFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -167,7 +169,7 @@ function VideosPage() {
     setTrashLoading(false);
   };
 
-  useEffect(() => { loadTrash(); }, [isAdmin, classes]);
+  useEffect(() => { console.log('EFF_TRASH'); loadTrash(); }, [isAdmin, classes]);
 
   const restore = async (id: string) => {
     try {
