@@ -444,6 +444,17 @@ function ClassDetailPage() {
     }
   };
   const [statsBranchFilter, setStatsBranchFilter] = useState<string>("all");
+  // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 자동 선택
+  useEffect(() => {
+    if (isAdmin) return;
+    if (!isInstructor) return;
+    if (statsBranchFilter !== "all") return;
+    const myBranch = (studentStats as any[])[0]?.my_branch;
+    if (!myBranch) return;
+    if (statsBranchOptions.includes(myBranch)) {
+      setStatsBranchFilter(myBranch);
+    }
+  }, [isAdmin, isInstructor, studentStats, statsBranchOptions, statsBranchFilter]);
   const statsBranchOptions = useMemo(() => {
     const set = new Set<string>();
     (studentStats as any[]).forEach((s) => {
