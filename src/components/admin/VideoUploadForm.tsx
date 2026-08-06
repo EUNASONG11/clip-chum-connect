@@ -86,9 +86,11 @@ function ThumbnailPicker({
           ref={ref}
           type="file"
           accept="image/*"
-          className="hidden"
+          className="absolute h-0 w-0 opacity-0"
+          tabIndex={-1}
           onChange={(e) => pick(e.target.files?.[0] ?? null)}
         />
+
         {preview && (
           <img
             src={preview}
