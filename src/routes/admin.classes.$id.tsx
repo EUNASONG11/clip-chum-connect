@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -319,6 +319,16 @@ function ClassDetailPage() {
   // 영상 드래그 앤 드롭으로 폴더 이동
   const [draggingVideoId, setDraggingVideoId] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null | undefined>(undefined);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const findFolderFromTouch = (clientX: number, clientY: number): string | null | undefined => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return undefined;
+    const folderEl = el.closest<HTMLElement>("[data-folder-id]");
+    if (folderEl) return folderEl.dataset.folderId ?? undefined;
+    if (el.closest("[data-unassigned-zone]")) return null;
+    return undefined;
+  };
 
   const handleDropOnFolder = async (folderId: string | null) => {
     const vid = draggingVideoId;
@@ -838,6 +848,40 @@ function ClassDetailPage() {
                         e.dataTransfer.setData("text/plain", v.id);
                       }}
                       onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
+                      onTouchStart={(e) => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = setTimeout(() => {
+                          setDraggingVideoId(v.id);
+                          setDragOverFolder((v.folder_id ?? null) as string | null);
+                          toast.info("이동할 폴더 위로 끌어다 놓으세요.");
+                        }, 500);
+                      }}
+                      onTouchMove={(e) => {
+                        if (!draggingVideoId) {
+                          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                          longPressTimer.current = null;
+                          return;
+                        }
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        setDragOverFolder(findFolderFromTouch(touch.clientX, touch.clientY));
+                      }}
+                      onTouchEnd={() => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                        if (draggingVideoId && dragOverFolder !== undefined) {
+                          handleDropOnFolder(dragOverFolder);
+                        } else {
+                          setDraggingVideoId(null);
+                          setDragOverFolder(undefined);
+                        }
+                      }}
+                      onTouchCancel={() => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                        setDraggingVideoId(null);
+                        setDragOverFolder(undefined);
+                      }}
                       className={`grid cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 active:cursor-grabbing sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3 ${
                         draggingVideoId === v.id ? "opacity-50" : ""
                       }`}
@@ -926,6 +970,7 @@ function ClassDetailPage() {
                 return (
                   <div
                     key={f.id}
+                    data-folder-id={f.id}
                     style={{ marginLeft: depth > 0 ? 16 : 0 }}
                     onDragOver={(e) => {
                       if (!draggingVideoId) return;
@@ -1045,6 +1090,7 @@ function ClassDetailPage() {
                   {rootFolders.map((f: any) => renderFolder(f, 0))}
                   {(unassignedVideos.length > 0 || draggingVideoId) && (
                     <div
+                      data-unassigned-zone
                       onDragOver={(e) => {
                         if (!draggingVideoId) return;
                         e.preventDefault();
