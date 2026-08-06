@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen } from "lucide-react";
+import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen, X } from "lucide-react";
 
 type FolderNode = { id: string; name: string; depth: number };
 
