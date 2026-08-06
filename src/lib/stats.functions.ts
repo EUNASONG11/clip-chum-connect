@@ -176,13 +176,21 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
     const rows = (agg ?? []) as any[];
     const studentIds = rows.map((r: any) => r.user_id);
 
-    const { data: ext } = await supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, phone")
-      .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
+    const [{ data: ext }, { data: me }] = await Promise.all([
+      supabaseAdmin
+        .from("external_students")
+        .select("auth_user_id, name, phone, branch")
+        .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]),
+      supabaseAdmin
+        .from("instructors")
+        .select("branch")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
+    ]);
     const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
+    const myBranch = ((me as any)?.branch ?? "").toString().trim();
 
-    return rows.map((r: any) => {
+    const list = rows.map((r: any) => {
       const total = Number(r.video_total ?? 0);
       const avg = total > 0 ? Number(r.sum_ratio ?? 0) / total : 0;
       const e: any = extMap.get(r.user_id);
@@ -190,6 +198,7 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         user_id: r.user_id,
         name: e?.name ?? "",
         phone: e?.phone ?? "",
+        branch: e?.branch ?? "",
         video_total: total,
         completed: Number(r.completed ?? 0),
         avg_watched_ratio: Math.min(1, avg),
@@ -197,6 +206,19 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         enrolled_at: r.enrolled_at ?? null,
       };
     });
+
+    // 로그인한 강사 본인의 교육원 학생을 우선 정렬
+    if (myBranch) {
+      list.sort((a, b) => {
+        const am = (a.branch ?? "").trim() === myBranch ? 0 : 1;
+        const bm = (b.branch ?? "").trim() === myBranch ? 0 : 1;
+        if (am !== bm) return am - bm;
+        return (a.name ?? "").localeCompare(b.name ?? "", "ko");
+      });
+    }
+
+    return list;
+
 
   });
 
