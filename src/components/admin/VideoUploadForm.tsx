@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen } from "lucide-react";
+import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen, X } from "lucide-react";
 
 type FolderNode = { id: string; name: string; depth: number };
 
@@ -559,14 +559,16 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                     disabled={uploading}
                     onClick={() => {
                       setFile(null);
                       if (fileRef.current) fileRef.current.value = "";
                     }}
+                    aria-label="선택 취소"
                   >
-                    선택 취소
+                    <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
