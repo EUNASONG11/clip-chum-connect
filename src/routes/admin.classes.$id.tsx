@@ -848,6 +848,40 @@ function ClassDetailPage() {
                         e.dataTransfer.setData("text/plain", v.id);
                       }}
                       onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
+                      onTouchStart={(e) => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = setTimeout(() => {
+                          setDraggingVideoId(v.id);
+                          setDragOverFolder((v.folder_id ?? null) as string | null);
+                          toast.info("이동할 폴더 위로 끌어다 놓으세요.");
+                        }, 500);
+                      }}
+                      onTouchMove={(e) => {
+                        if (!draggingVideoId) {
+                          if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                          longPressTimer.current = null;
+                          return;
+                        }
+                        e.preventDefault();
+                        const touch = e.touches[0];
+                        setDragOverFolder(findFolderFromTouch(touch.clientX, touch.clientY));
+                      }}
+                      onTouchEnd={() => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                        if (draggingVideoId && dragOverFolder !== undefined) {
+                          handleDropOnFolder(dragOverFolder);
+                        } else {
+                          setDraggingVideoId(null);
+                          setDragOverFolder(undefined);
+                        }
+                      }}
+                      onTouchCancel={() => {
+                        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+                        longPressTimer.current = null;
+                        setDraggingVideoId(null);
+                        setDragOverFolder(undefined);
+                      }}
                       className={`grid cursor-grab grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 active:cursor-grabbing sm:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] sm:gap-3 ${
                         draggingVideoId === v.id ? "opacity-50" : ""
                       }`}
