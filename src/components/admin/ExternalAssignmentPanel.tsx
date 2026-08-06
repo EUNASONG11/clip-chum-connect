@@ -93,12 +93,12 @@ export function ExternalAssignmentPanel({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="min-w-0 sm:col-span-2 lg:col-span-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="min-w-0 md:col-span-2 lg:col-span-3">
               <Label htmlFor="eap-name">과제명</Label>
               <Input
                 id="eap-name"
-                className="w-full"
+                className="w-full min-w-0"
                 value={assignmentType}
                 onChange={(e) => setAssignmentType(e.target.value)}
                 placeholder="예: 8월 1주 영상 과제"
@@ -109,7 +109,7 @@ export function ExternalAssignmentPanel({
               <Input
                 id="eap-start"
                 type="date"
-                className="w-full"
+                className="w-full min-w-0"
                 value={periodStart}
                 onChange={(e) => setPeriodStart(e.target.value)}
               />
@@ -119,17 +119,18 @@ export function ExternalAssignmentPanel({
               <Input
                 id="eap-end"
                 type="date"
-                className="w-full"
+                className="w-full min-w-0"
                 value={periodEnd}
                 onChange={(e) => setPeriodEnd(e.target.value)}
               />
             </div>
-            <div className="flex min-w-0 items-end sm:col-span-2 lg:col-span-1">
+            <div className="flex min-w-0 items-end md:col-span-2 lg:col-span-1">
               <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full">
                 {submitting ? "전송 중..." : "과제 내보내기"}
               </Button>
             </div>
           </div>
+
 
 
           <p className="text-xs text-muted-foreground">
