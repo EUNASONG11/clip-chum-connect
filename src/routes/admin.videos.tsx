@@ -59,7 +59,10 @@ const statusMap: Record<string, string> = {
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
 
+console.log("MODULE_LOADED_VIDEOS");
+let __r=0;
 function VideosPage() {
+  __r++; if(__r<6) console.log("RENDER",__r);
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
