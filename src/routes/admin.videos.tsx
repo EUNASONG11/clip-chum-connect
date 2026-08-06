@@ -69,7 +69,8 @@ function VideosPage() {
 
   const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(id));
 
-  useBlocker({
+  const _noop = () => {};
+  false && useBlocker({
     shouldBlockFn: () =>
       hasUnsavedChanges
         ? !window.confirm("변경사항이 저장되지 않았습니다. 페이지를 나가시겠습니까?")
