@@ -2,13 +2,15 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2 } from "lucide-react";
-import { addComment, deleteComment, listComments } from "@/lib/social.functions";
+import { Pencil, Trash2 } from "lucide-react";
+import { addComment, deleteComment, listComments, updateComment } from "@/lib/social.functions";
 import { toast } from "sonner";
 
 export function CommentsSection({ videoId }: { videoId: string }) {
   const qc = useQueryClient();
   const [body, setBody] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["comments", videoId],
     queryFn: () => listComments({ data: { videoId } }),
@@ -21,9 +23,23 @@ export function CommentsSection({ videoId }: { videoId: string }) {
     },
     onError: (e: any) => toast.error(e.message ?? "댓글 등록 실패"),
   });
+  const edit = useMutation({
+    mutationFn: (v: { id: string; body: string }) => updateComment({ data: v }),
+    onSuccess: () => {
+      setEditingId(null);
+      setEditBody("");
+      toast.success("댓글을 수정했습니다.");
+      qc.invalidateQueries({ queryKey: ["comments", videoId] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "댓글 수정 실패"),
+  });
   const del = useMutation({
     mutationFn: (id: string) => deleteComment({ data: { id } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["comments", videoId] }),
+    onSuccess: () => {
+      toast.success("댓글을 삭제했습니다.");
+      qc.invalidateQueries({ queryKey: ["comments", videoId] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "댓글 삭제 실패"),
   });
 
   return (
@@ -59,18 +75,51 @@ export function CommentsSection({ videoId }: { videoId: string }) {
                 <span className="font-medium text-foreground">{c.author_email || "익명"}</span>
                 <div className="flex items-center gap-2">
                   <span>{new Date(c.created_at).toLocaleString("ko-KR")}</span>
-                  {c.is_mine && (
-                    <button
-                      onClick={() => del.mutate(c.id)}
-                      className="text-destructive hover:opacity-70"
-                      aria-label="삭제"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  {c.is_mine && editingId !== c.id && (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditingId(c.id);
+                          setEditBody(c.body);
+                        }}
+                        className="hover:text-foreground"
+                        aria-label="수정"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm("이 댓글을 삭제할까요?")) del.mutate(c.id);
+                        }}
+                        disabled={del.isPending}
+                        className="text-destructive hover:opacity-70"
+                        aria-label="삭제"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
-              <p className="whitespace-pre-wrap text-sm">{c.body}</p>
+              {editingId === c.id ? (
+                <div className="space-y-2">
+                  <Textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={3} />
+                  <div className="flex justify-end gap-2">
+                    <Button size="sm" variant="outline" onClick={() => setEditingId(null)}>
+                      취소
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={!editBody.trim() || edit.isPending}
+                      onClick={() => edit.mutate({ id: c.id, body: editBody.trim() })}
+                    >
+                      {edit.isPending ? "저장 중..." : "저장"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap text-sm">{c.body}</p>
+              )}
             </li>
           ))}
         </ul>
@@ -78,3 +127,4 @@ export function CommentsSection({ videoId }: { videoId: string }) {
     </section>
   );
 }
+
