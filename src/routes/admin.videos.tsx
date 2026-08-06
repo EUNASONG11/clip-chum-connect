@@ -443,7 +443,7 @@ function VideosPage() {
                           }
                         }}
                       >
-                        <DialogContent className="max-w-lg">
+                        <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="truncate">{r.title}</DialogTitle>
                             <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
