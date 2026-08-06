@@ -199,6 +199,7 @@ export const listVideoAllComments = createServerFn({ method: "GET" })
       .from("comments")
       .select("id, body, user_id, created_at")
       .eq("video_id", data.videoId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const labels = await fetchUserLabels((rows ?? []).map((r: any) => r.user_id as string));
