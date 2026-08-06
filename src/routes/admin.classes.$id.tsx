@@ -319,6 +319,16 @@ function ClassDetailPage() {
   // 영상 드래그 앤 드롭으로 폴더 이동
   const [draggingVideoId, setDraggingVideoId] = useState<string | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null | undefined>(undefined);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const findFolderFromTouch = (clientX: number, clientY: number): string | null | undefined => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return undefined;
+    const folderEl = el.closest<HTMLElement>("[data-folder-id]");
+    if (folderEl) return folderEl.dataset.folderId ?? undefined;
+    if (el.closest("[data-unassigned-zone]")) return null;
+    return undefined;
+  };
 
   const handleDropOnFolder = async (folderId: string | null) => {
     const vid = draggingVideoId;
