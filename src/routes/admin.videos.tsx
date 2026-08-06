@@ -59,9 +59,7 @@ const statusMap: Record<string, string> = {
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
 
-let __r=0;
 function VideosPage() {
-  __r++; if(__r<12) console.log('RENDER',__r);
   const { isAdmin } = useAdminRole();
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
@@ -146,7 +144,7 @@ function VideosPage() {
     setEdits({});
     setListLoading(false);
   };
-  useEffect(() => { console.log('EFF_LOAD'); load(); }, [isAdmin, classes, page, search, classFilter]);
+  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
   useEffect(() => { setPage(1); }, [search, classFilter]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -169,7 +167,7 @@ function VideosPage() {
     setTrashLoading(false);
   };
 
-  useEffect(() => { console.log('EFF_TRASH'); loadTrash(); }, [isAdmin, classes]);
+  useEffect(() => { loadTrash(); }, [isAdmin, classes]);
 
   const restore = async (id: string) => {
     try {
@@ -256,6 +254,389 @@ function VideosPage() {
   };
 
   return (
-  return (<RoleGate><div>BISECT_OK {total}</div>
+    <RoleGate>
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list" className="gap-2">
+            <Film className="h-4 w-4" /> 등록된 영상
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="gap-2">
+            <UploadIcon className="h-4 w-4" /> 영상 업로드
+          </TabsTrigger>
+          <TabsTrigger value="trash" className="gap-2">
+            <Trash2 className="h-4 w-4" /> 휴지통 ({trashTotal})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="trash" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>휴지통 ({trashTotal}{trashTotal > 50 ? ", 최근 50건 표시" : ""})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trashLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : trashRows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">삭제된 영상이 없습니다.</p>
+              ) : (
+                <ul className="divide-y">
+                  {trashRows.map((r) => (
+                    <li key={r.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
+                        {r.thumbnail_url && (
+                          <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{r.title}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          삭제일{" "}
+                          {(r as any).deleted_at
+                            ? new Date((r as any).deleted_at).toLocaleString("ko-KR")
+                            : "-"}
+                          {r.class_id && (
+                            <>
+                              {" · "}
+                              {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => restore(r.id)}>
+                          <RotateCcw className="mr-1 h-4 w-4" /> 복원
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => purge(r.id, r.title)}>
+                          <Trash2 className="mr-1 h-4 w-4" /> 영구 삭제
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+
+        <TabsContent value="upload" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>새 영상 추가</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <VideoUploadForm onUploaded={() => load()} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="list" className="pt-4">
+          <Card>
+            <CardHeader className="gap-3">
+              <CardTitle>등록된 영상 ({total})</CardTitle>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <form
+                  className="flex flex-1 gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setSearch(searchInput);
+                  }}
+                >
+                  <Input
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="영상 제목 검색"
+                    className="max-w-xs"
+                  />
+                  <Button type="submit" variant="outline" size="sm">검색</Button>
+                  {search && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { setSearchInput(""); setSearch(""); }}
+                    >
+                      초기화
+                    </Button>
+                  )}
+                </form>
+                <Select value={classFilter} onValueChange={setClassFilter}>
+                  <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체 수강반</SelectItem>
+                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                    {(classes as any[]).map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {listLoading ? (
+                <p className="text-sm text-muted-foreground">불러오는 중...</p>
+              ) : rows.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {search || classFilter !== "__all__" ? "조건에 맞는 영상이 없습니다." : "아직 없습니다."}
+                </p>
+              ) : (
+
+                <ul className="divide-y">
+                  {rows.map((r) => (
+                    <li key={r.id} className="py-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                        <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
+                          {r.thumbnail_url && (
+                            <VideoThumb src={r.thumbnail_url} alt="" className="h-full w-full object-cover" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{r.title}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            <span className="uppercase">{r.source}</span>
+                            {" · "}상태:{" "}
+                            <span className={r.status === "ready" ? "text-green-600" : "text-amber-600"}>
+                              {statusLabel(r.status)}
+                            </span>
+                            {r.class_id && (
+                              <>
+                                {" · "}
+                                <span className="truncate">
+                                  {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
+                          {r.source === "vimeo" && (
+                            <Button size="sm" variant="ghost" onClick={() => refresh(r.id)} title="상태 새로고침">
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => setOpenId(r.id)}>
+                            <Settings2 className="mr-1 h-4 w-4" /> 설정
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => remove(r.id)} title="삭제">
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <Dialog
+                        open={openId === r.id}
+                        onOpenChange={(o) => {
+                          if (!o && dirty(r.id)) {
+                            const confirmed = window.confirm("변경사항이 저장되지 않았습니다. 닫으시겠습니까?");
+                            if (!confirmed) return;
+                          }
+                          setOpenId(o ? r.id : null);
+                          if (!o) {
+                            setEdits((prev) => {
+                              const next = { ...prev };
+                              delete next[r.id];
+                              return next;
+                            });
+                          }
+                        }}
+                      >
+                        <DialogContent className="max-w-lg">
+                          <DialogHeader>
+                            <DialogTitle className="truncate">{r.title}</DialogTitle>
+                            <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs text-muted-foreground">제목</label>
+                              <Input
+                                value={value(r, "title") as string}
+                                onChange={(e) => patch(r.id, { title: e.target.value })}
+                                placeholder="영상 제목"
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground">썸네일</label>
+                              <div className="mt-1">
+                                <VideoThumbnailUploader
+                                  videoId={r.id}
+                                  currentUrl={r.thumbnail_url}
+                                  onChange={(url) =>
+                                    setRows((prev) =>
+                                      prev.map((x) => (x.id === r.id ? { ...x, thumbnail_url: url } : x)),
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_100px]">
+                              <div>
+                                <label className="text-xs text-muted-foreground">수강반</label>
+                                <Select
+                                  value={(value(r, "class_id") as string | null) ?? NO_CLASS}
+                                  onValueChange={(v) => patch(r.id, { class_id: v === NO_CLASS ? null : v })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                                    {classes.map((c: any) => (
+                                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">순서</label>
+                                <Input
+                                  type="number"
+                                  value={value(r, "sort_order") as number}
+                                  onChange={(e) => patch(r.id, { sort_order: Number(e.target.value) })}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={value(r, "is_published") as boolean}
+                                  onCheckedChange={(v) => patch(r.id, { is_published: v })}
+                                />
+                                <span className="text-xs">공개</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  checked={value(r, "allow_seek") as boolean}
+                                  onCheckedChange={(v) => patch(r.id, { allow_seek: v })}
+                                />
+                                <span className="text-xs">건너뛰기 허용</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground">최대 배속</label>
+                                <Select
+                                  value={String(value(r, "max_playback_rate") as number)}
+                                  onValueChange={(v) => patch(r.id, { max_playback_rate: Number(v) })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {[1, 1.25, 1.5, 1.75, 2, 2.5, 3].map((v) => (
+                                      <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">수강 완료 기준</label>
+                                <Select
+                                  value={String(Math.round(Number(value(r, "completion_ratio") ?? 1) * 100))}
+                                  onValueChange={(v) => patch(r.id, { completion_ratio: Number(v) / 100 })}
+                                >
+                                  <SelectTrigger><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {[50, 60, 70, 80, 90, 95, 100].map((v) => (
+                                      <SelectItem key={v} value={String(v)}>{v}%</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="border-t pt-4">
+                              <div className="mb-2">
+                                <p className="text-sm font-medium">재시청 설정</p>
+                                <p className="text-xs text-muted-foreground">
+                                  수강 완료 이후 재시청 시 적용됩니다. 비워두면 처음 시청 설정과 동일하게 동작합니다.
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2 mb-3">
+                                <Switch
+                                  checked={(value(r, "rewatch_allow_seek") as boolean | null) ?? (value(r, "allow_seek") as boolean)}
+                                  onCheckedChange={(v) => patch(r.id, { rewatch_allow_seek: v })}
+                                />
+                                <span className="text-xs">재시청 시 건너뛰기 허용</span>
+                                {(edits[r.id]?.rewatch_allow_seek !== undefined || r.rewatch_allow_seek !== null) && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="ml-auto h-6 text-xs"
+                                    onClick={() => patch(r.id, { rewatch_allow_seek: null })}
+                                  >
+                                    처음 설정과 동일
+                                  </Button>
+                                )}
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">재시청 최대 배속</label>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Select
+                                    value={String((value(r, "rewatch_max_playback_rate") as number | null) ?? (value(r, "max_playback_rate") as number))}
+                                    onValueChange={(v) => patch(r.id, { rewatch_max_playback_rate: Number(v) })}
+                                  >
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      {[1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4].map((v) => (
+                                        <SelectItem key={v} value={String(v)}>{v}x</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {(edits[r.id]?.rewatch_max_playback_rate !== undefined || r.rewatch_max_playback_rate !== null) && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8 text-xs shrink-0"
+                                      onClick={() => patch(r.id, { rewatch_max_playback_rate: null })}
+                                    >
+                                      처음 설정과 동일
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          </div>
+                          <DialogFooter>
+                            <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
+                            <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
+                              <Save className="mr-1 h-4 w-4" /> 저장
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {total > PAGE_SIZE && (
+                <div className="mt-4 flex items-center justify-between border-t pt-4">
+                  <span className="text-xs text-muted-foreground">
+                    {page} / {totalPages} 페이지
+                  </span>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      이전
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={page >= totalPages}
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    >
+                      다음
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </RoleGate>
   );
 }
