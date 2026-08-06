@@ -269,7 +269,7 @@ function PlaybackSettings({
 
 
 export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, isInstructor } = useAdminRole();
   const { data: classes = [] } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
