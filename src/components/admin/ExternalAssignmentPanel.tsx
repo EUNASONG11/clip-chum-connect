@@ -93,35 +93,44 @@ export function ExternalAssignmentPanel({
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="min-w-0 sm:col-span-2 lg:col-span-3">
               <Label htmlFor="eap-name">과제명</Label>
               <Input
                 id="eap-name"
+                className="w-full"
                 value={assignmentType}
                 onChange={(e) => setAssignmentType(e.target.value)}
                 placeholder="예: 8월 1주 영상 과제"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="eap-start">시작일</Label>
               <Input
                 id="eap-start"
                 type="date"
+                className="w-full"
                 value={periodStart}
                 onChange={(e) => setPeriodStart(e.target.value)}
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <Label htmlFor="eap-end">종료일</Label>
-              <Input id="eap-end" type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+              <Input
+                id="eap-end"
+                type="date"
+                className="w-full"
+                value={periodEnd}
+                onChange={(e) => setPeriodEnd(e.target.value)}
+              />
             </div>
-            <div className="flex items-end">
+            <div className="flex min-w-0 items-end sm:col-span-2 lg:col-span-1">
               <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full">
                 {submitting ? "전송 중..." : "과제 내보내기"}
               </Button>
             </div>
           </div>
+
 
           <p className="text-xs text-muted-foreground">
             이 수강반에 배정된 학생 전체가 대상이 됩니다. 학생이 영상 시청을 완료하면 외부 과제 점검의 해당 항목이
