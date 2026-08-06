@@ -559,14 +559,16 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                   <Button
                     type="button"
                     variant="ghost"
-                    size="sm"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                     disabled={uploading}
                     onClick={() => {
                       setFile(null);
                       if (fileRef.current) fileRef.current.value = "";
                     }}
+                    aria-label="선택 취소"
                   >
-                    선택 취소
+                    <X className="h-4 w-4" />
                   </Button>
                 </>
               ) : (
