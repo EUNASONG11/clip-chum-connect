@@ -970,6 +970,7 @@ function ClassDetailPage() {
                 return (
                   <div
                     key={f.id}
+                    data-folder-id={f.id}
                     style={{ marginLeft: depth > 0 ? 16 : 0 }}
                     onDragOver={(e) => {
                       if (!draggingVideoId) return;
