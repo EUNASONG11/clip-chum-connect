@@ -443,20 +443,36 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+  const [statsBranchFilter, setStatsBranchFilter] = useState<string>("all");
+  const statsBranchOptions = useMemo(() => {
+    const set = new Set<string>();
+    (studentStats as any[]).forEach((s) => {
+      const b = (s.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [studentStats]);
   const filteredStudentStats = useMemo(() => {
-    if (statsFilter === "all") return studentStats;
     return (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
-      return statsFilter === "completed" ? isCompleted : !isCompleted;
+      const okStatus =
+        statsFilter === "all" ? true : statsFilter === "completed" ? isCompleted : !isCompleted;
+      const okBranch =
+        statsBranchFilter === "all"
+          ? true
+          : statsBranchFilter === "none"
+            ? !(s.branch ?? "").trim()
+            : (s.branch ?? "").trim() === statsBranchFilter;
+      return okStatus && okBranch;
     });
-  }, [studentStats, statsFilter]);
+  }, [studentStats, statsFilter, statsBranchFilter]);
 
   const [statsPageSize, setStatsPageSize] = useState(20);
   const [statsPage, setStatsPage] = useState(1);
   const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
     setStatsPage(1);
-  }, [statsFilter, filteredStudentStats.length, statsPageSize]);
+  }, [statsFilter, statsBranchFilter, filteredStudentStats.length, statsPageSize]);
   const pagedStudentStats = useMemo(
     () =>
       (filteredStudentStats as any[]).slice(
