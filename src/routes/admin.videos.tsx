@@ -19,6 +19,7 @@ import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
 import { Upload as UploadIcon, Film } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 export const Route = createFileRoute("/admin/videos")({
   component: VideosPage,
