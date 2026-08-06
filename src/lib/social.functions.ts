@@ -11,6 +11,7 @@ export const listComments = createServerFn({ method: "GET" })
       .from("comments")
       .select("id, body, user_id, created_at, updated_at")
       .eq("video_id", data.videoId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     if (!rows || rows.length === 0) return [];
@@ -41,17 +42,40 @@ export const addComment = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const updateComment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ id: z.string().uuid(), body: z.string().min(1).max(2000) }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: rows, error } = await context.supabase
+      .from("comments")
+      .update({ body: data.body })
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .is("deleted_at", null)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) throw new Error("본인 댓글만 수정할 수 있습니다.");
+    return { ok: true };
+  });
+
 export const deleteComment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { data: rows, error } = await context.supabase
       .from("comments")
       .update({ deleted_at: new Date().toISOString(), deleted_by: context.userId })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("user_id", context.userId)
+      .select("id");
     if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) throw new Error("본인 댓글만 삭제할 수 있습니다.");
     return { ok: true };
   });
+
+
 
 
 // ---------- Bookmarks ----------
@@ -175,6 +199,7 @@ export const listVideoAllComments = createServerFn({ method: "GET" })
       .from("comments")
       .select("id, body, user_id, created_at")
       .eq("video_id", data.videoId)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     const labels = await fetchUserLabels((rows ?? []).map((r: any) => r.user_id as string));
