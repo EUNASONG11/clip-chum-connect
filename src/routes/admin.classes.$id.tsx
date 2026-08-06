@@ -1090,6 +1090,7 @@ function ClassDetailPage() {
                   {rootFolders.map((f: any) => renderFolder(f, 0))}
                   {(unassignedVideos.length > 0 || draggingVideoId) && (
                     <div
+                      data-unassigned-zone
                       onDragOver={(e) => {
                         if (!draggingVideoId) return;
                         e.preventDefault();
