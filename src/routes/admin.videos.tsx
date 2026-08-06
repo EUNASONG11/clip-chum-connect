@@ -27,6 +27,7 @@ export const Route = createFileRoute("/admin/videos")({
 type Row = {
   id: string;
   title: string;
+  description: string | null;
   status: string;
   source: string;
   vimeo_video_id: string | null;
