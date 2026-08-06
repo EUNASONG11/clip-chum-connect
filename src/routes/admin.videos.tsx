@@ -459,6 +459,16 @@ function VideosPage() {
                               />
                             </div>
                             <div>
+                              <label className="text-xs text-muted-foreground">설명</label>
+                              <Textarea
+                                value={(value(r, "description") as string | null) ?? ""}
+                                onChange={(e) => patch(r.id, { description: e.target.value })}
+                                placeholder="영상 설명 (선택)"
+                                rows={3}
+                                className="mt-1"
+                              />
+                            </div>
+                            <div>
                               <label className="text-xs text-muted-foreground">썸네일</label>
                               <div className="mt-1">
                                 <VideoThumbnailUploader
