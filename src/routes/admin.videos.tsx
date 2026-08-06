@@ -1,5 +1,5 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -70,9 +70,13 @@ function VideosPage() {
   const hasUnsavedChanges = Object.keys(edits).some((id) => dirty(id));
 
   useBlocker({
-    condition: hasUnsavedChanges,
-    blockerFn: () => window.confirm("변경사항이 저장되지 않았습니다. 페이지를 나가시겠습니까?"),
+    shouldBlockFn: () =>
+      hasUnsavedChanges
+        ? !window.confirm("변경사항이 저장되지 않았습니다. 페이지를 나가시겠습니까?")
+        : false,
+    enableBeforeUnload: hasUnsavedChanges,
   });
+
 
   useEffect(() => {
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -85,10 +89,12 @@ function VideosPage() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [hasUnsavedChanges]);
 
-  const { data: classes = [] } = useQuery({
+  const { data: classesData } = useQuery({
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
   });
+  const classes = useMemo(() => (classesData ?? []) as any[], [classesData]);
+
 
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
