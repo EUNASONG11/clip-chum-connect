@@ -108,7 +108,7 @@ export const Route = createFileRoute("/admin/classes/$id")({
 function ClassDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, isInstructor } = useAdminRole();
   const { data: cls } = useQuery({
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
@@ -452,6 +452,17 @@ function ClassDetailPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [studentStats]);
+  // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 자동 선택
+  useEffect(() => {
+    if (isAdmin) return;
+    if (!isInstructor) return;
+    if (statsBranchFilter !== "all") return;
+    const myBranch = (studentStats as any[])[0]?.my_branch;
+    if (!myBranch) return;
+    if (statsBranchOptions.includes(myBranch)) {
+      setStatsBranchFilter(myBranch);
+    }
+  }, [isAdmin, isInstructor, studentStats, statsBranchOptions, statsBranchFilter]);
   const filteredStudentStats = useMemo(() => {
     return (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
