@@ -215,6 +215,7 @@ function VideosPage() {
         data: {
           id: r.id,
           title: e.title,
+          description: e.description === undefined ? undefined : e.description,
           class_id: e.class_id === undefined ? undefined : e.class_id,
           is_published: e.is_published,
           sort_order: e.sort_order,
