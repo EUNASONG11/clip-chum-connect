@@ -1168,6 +1168,20 @@ function ClassDetailPage() {
                   <SelectItem value="incomplete">미완료 학생</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={statsBranchFilter} onValueChange={setStatsBranchFilter}>
+                <SelectTrigger className="h-8 w-full sm:w-40">
+                  <SelectValue placeholder="교육원" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">교육원 전체</SelectItem>
+                  {statsBranchOptions.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="none">교육원 미지정</SelectItem>
+                </SelectContent>
+              </Select>
               <Select
                 value={String(statsPageSize)}
                 onValueChange={(v) => setStatsPageSize(Number(v))}
