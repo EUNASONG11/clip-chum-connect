@@ -444,6 +444,14 @@ function ClassDetailPage() {
     }
   };
   const [statsBranchFilter, setStatsBranchFilter] = useState<string>("all");
+  const statsBranchOptions = useMemo(() => {
+    const set = new Set<string>();
+    (studentStats as any[]).forEach((s) => {
+      const b = (s.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [studentStats]);
   // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 자동 선택
   useEffect(() => {
     if (isAdmin) return;
@@ -455,14 +463,6 @@ function ClassDetailPage() {
       setStatsBranchFilter(myBranch);
     }
   }, [isAdmin, isInstructor, studentStats, statsBranchOptions, statsBranchFilter]);
-  const statsBranchOptions = useMemo(() => {
-    const set = new Set<string>();
-    (studentStats as any[]).forEach((s) => {
-      const b = (s.branch ?? "").trim();
-      if (b) set.add(b);
-    });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
-  }, [studentStats]);
   const filteredStudentStats = useMemo(() => {
     return (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
