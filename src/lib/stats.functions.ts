@@ -183,12 +183,15 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
         .in("auth_user_id", studentIds.length > 0 ? studentIds : ["00000000-0000-0000-0000-000000000000"]),
       supabaseAdmin
         .from("instructors")
-        .select("branch")
+        .select("branch, all_branches")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
     const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
-    const myBranch = ((me as any)?.branch ?? "").toString().trim();
+    // 전체 교육원 조회 허용 강사는 교육원 자동 필터를 적용하지 않음
+    const myBranch = (me as any)?.all_branches === true
+      ? ""
+      : ((me as any)?.branch ?? "").toString().trim();
 
     const list = rows.map((r: any) => {
       const total = Number(r.video_total ?? 0);
