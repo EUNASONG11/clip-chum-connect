@@ -531,6 +531,7 @@ export type Database = {
       }
       instructors: {
         Row: {
+          all_branches: boolean
           auth_user_id: string | null
           branch: string | null
           cohort: string | null
@@ -550,6 +551,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          all_branches?: boolean
           auth_user_id?: string | null
           branch?: string | null
           cohort?: string | null
@@ -569,6 +571,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          all_branches?: boolean
           auth_user_id?: string | null
           branch?: string | null
           cohort?: string | null
