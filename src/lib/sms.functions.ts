@@ -284,6 +284,7 @@ export const listClassSmsLogs = createServerFn({ method: "POST" })
       )
       .eq("class_id", data.classId)
       .in("batch_id", batchIds)
+      .is("hidden_at", null)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
 
