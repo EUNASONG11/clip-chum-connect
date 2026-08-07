@@ -194,7 +194,7 @@ export const listClasses = createServerFn({ method: "GET" })
         .is("deleted_at", null),
       supabaseAdmin
         .from("instructors")
-        .select("cohort, cohorts, branch")
+        .select("cohort, cohorts, branch, all_branches")
         .eq("auth_user_id", context.userId)
         .maybeSingle(),
     ]);
