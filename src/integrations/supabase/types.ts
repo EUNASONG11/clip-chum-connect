@@ -600,6 +600,7 @@ export type Database = {
           class_id: string
           created_at: string
           error_message: string | null
+          hidden_at: string | null
           id: string
           message: string
           phone: string
@@ -615,6 +616,7 @@ export type Database = {
           class_id: string
           created_at?: string
           error_message?: string | null
+          hidden_at?: string | null
           id?: string
           message: string
           phone: string
@@ -630,6 +632,7 @@ export type Database = {
           class_id?: string
           created_at?: string
           error_message?: string | null
+          hidden_at?: string | null
           id?: string
           message?: string
           phone?: string
