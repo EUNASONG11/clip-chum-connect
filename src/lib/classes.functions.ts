@@ -229,9 +229,11 @@ export const listClasses = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     // 교육원 전용 수강반은 본인 교육원(또는 본인이 만든/배정된 반)만 노출
     const myBranch = ((me as any)?.branch ?? "").toString().trim();
+    const allBranches = (me as any)?.all_branches === true;
     const visible = (data ?? []).filter((c: any) => {
       const b = (c.branch ?? "").toString().trim();
       if (!b) return true; // 모든 교육원 공개
+      if (allBranches) return true; // 전체 교육원 조회 허용 강사
       if (c.created_by === context.userId || idSet.has(c.id)) return true;
       return !!myBranch && b === myBranch;
     });
