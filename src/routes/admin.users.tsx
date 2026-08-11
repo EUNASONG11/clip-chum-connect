@@ -39,6 +39,8 @@ import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
+import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
+
 
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -302,8 +304,10 @@ function UsersPage() {
           </span>
           <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <LocalStudentDialog onCreated={refetch} />
             {/* <Button
+
               size="sm"
               variant="outline"
               disabled={bulkBusy}

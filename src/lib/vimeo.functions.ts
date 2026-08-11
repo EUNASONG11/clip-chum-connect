@@ -997,3 +997,122 @@ export const getMyCohorts = createServerFn({ method: "GET" })
     );
     return { cohorts };
   });
+
+
+// ============= 자체(로컬) 학생 등록 — 외부 DB와 연동되지 않는 학생 =============
+// external_students.is_local = true 로 표시되며, 마스터 프로젝트 웹훅/백필의 영향을 받지 않습니다.
+export const createLocalStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        phone: z.string().trim().max(30).optional().default(""),
+        parentPhone: z.string().trim().max(30).optional().default(""),
+        branch: z.string().trim().max(50).optional().default(""),
+        school: z.string().trim().max(100).optional().default(""),
+        grade: z.string().trim().max(50).optional().default(""),
+        classTime: z.string().trim().max(100).optional().default(""),
+        tempPassword: z.string().trim().max(50).optional().default(""),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const digits = (v: string) => v.replace(/[^0-9]/g, "") || null;
+    const phone = digits(data.phone);
+    const parentPhone = digits(data.parentPhone);
+    const loginPhone = phone ?? parentPhone;
+    const tempPassword = data.tempPassword.trim() || null;
+
+    if (!loginPhone && !tempPassword) {
+      throw new Error("전화번호(본인 또는 학부모) 또는 임시 비밀번호 중 하나는 필요합니다.");
+    }
+
+    // 이름+전화번호 중복 방지 (로그인 식별자 충돌 방지)
+    if (loginPhone) {
+      const { data: dup } = await supabaseAdmin
+        .from("external_students")
+        .select("id")
+        .eq("name", data.name)
+        .or(`phone.eq.${loginPhone},parent_phone.eq.${loginPhone}`)
+        .limit(1);
+      if (dup && dup.length > 0) {
+        throw new Error("동일한 이름/전화번호의 학생이 이미 등록되어 있습니다.");
+      }
+    }
+    if (tempPassword) {
+      const { data: dupTemp } = await supabaseAdmin
+        .from("external_students")
+        .select("id")
+        .eq("name", data.name)
+        .eq("temp_password", tempPassword)
+        .limit(1);
+      if (dupTemp && dupTemp.length > 0) {
+        throw new Error("동일한 이름/임시 비밀번호가 이미 사용 중입니다.");
+      }
+    }
+
+    const externalId = crypto.randomUUID();
+    const localPart = loginPhone ?? externalId.replace(/-/g, "").slice(0, 12);
+    const email = `local-${localPart}@mirror.local`;
+    const password = tempPassword ?? loginPhone!.slice(-8);
+
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name: data.name,
+        phone,
+        parent_phone: parentPhone,
+        external_id: externalId,
+        source: "local",
+      },
+    });
+    if (createErr || !created?.user) {
+      throw new Error(createErr?.message ?? "계정 생성에 실패했습니다.");
+    }
+    const authUserId = created.user.id;
+
+    const { error: insErr } = await supabaseAdmin.from("external_students").insert({
+      external_id: externalId,
+      name: data.name,
+      phone,
+      parent_phone: parentPhone,
+      school: data.school.trim() || null,
+      grade: data.grade.trim() || null,
+      class_time: data.classTime.trim() || null,
+      enrollment_status: "재원",
+      branch: data.branch.trim() || null,
+      is_deleted: false,
+      is_local: true,
+      auth_user_id: authUserId,
+      temp_password: tempPassword,
+      synced_at: new Date().toISOString(),
+    });
+    if (insErr) {
+      await supabaseAdmin.auth.admin.deleteUser(authUserId);
+      throw new Error(insErr.message);
+    }
+
+    // 관리자가 직접 등록한 학생이므로 즉시 학생 권한 부여
+    const { error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .insert({ user_id: authUserId, role: "student" });
+    if (roleErr && !roleErr.message.includes("duplicate")) {
+      throw new Error(roleErr.message);
+    }
+
+    if (tempPassword) {
+      await supabaseAdmin.from("student_temp_password_history").insert({
+        auth_user_id: authUserId,
+        temp_password: tempPassword,
+        issued_by: context.userId,
+      });
+    }
+
+    return { ok: true, userId: authUserId, email, initialPassword: password };
+  });
