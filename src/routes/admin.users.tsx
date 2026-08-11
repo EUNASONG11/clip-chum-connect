@@ -39,6 +39,8 @@ import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
+import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
+
 
 import { Checkbox } from "@/components/ui/checkbox";
 
