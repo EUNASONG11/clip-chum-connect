@@ -483,6 +483,7 @@ export type Database = {
           grade: string | null
           id: string
           is_deleted: boolean
+          is_local: boolean
           name: string
           parent_phone: string | null
           phone: string | null
@@ -501,6 +502,7 @@ export type Database = {
           grade?: string | null
           id?: string
           is_deleted?: boolean
+          is_local?: boolean
           name: string
           parent_phone?: string | null
           phone?: string | null
@@ -519,6 +521,7 @@ export type Database = {
           grade?: string | null
           id?: string
           is_deleted?: boolean
+          is_local?: boolean
           name?: string
           parent_phone?: string | null
           phone?: string | null
