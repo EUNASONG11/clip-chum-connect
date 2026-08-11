@@ -13,7 +13,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createLocalStudent } from "@/lib/vimeo.functions";
+
+const BRANCHES = ["상동", "청라", "송도"];
 
 const EMPTY = {
   name: "",
@@ -22,7 +31,6 @@ const EMPTY = {
   branch: "",
   school: "",
   grade: "",
-  classTime: "",
   tempPassword: "",
 };
 
@@ -89,7 +97,21 @@ export function LocalStudentDialog({ onCreated }: { onCreated: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>교육원</Label>
-            <Input value={form.branch} onChange={set("branch")} placeholder="상동 / 청라 / 송도" />
+            <Select
+              value={form.branch}
+              onValueChange={(value) => setForm((prev) => ({ ...prev, branch: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="교육원 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {BRANCHES.map((b) => (
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1.5">
             <Label>학교</Label>
@@ -98,10 +120,6 @@ export function LocalStudentDialog({ onCreated }: { onCreated: () => void }) {
           <div className="space-y-1.5">
             <Label>학년</Label>
             <Input value={form.grade} onChange={set("grade")} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>수업 시간</Label>
-            <Input value={form.classTime} onChange={set("classTime")} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>임시 비밀번호 (전화번호가 없을 때)</Label>
