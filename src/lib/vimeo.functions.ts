@@ -1028,7 +1028,10 @@ export const createLocalStudent = createServerFn({ method: "POST" })
     const tempPassword = data.tempPassword.trim() || null;
 
     if (!loginPhone && !tempPassword) {
-      throw new Error("전화번호(본인 또는 학부모) 또는 임시 비밀번호 중 하나는 필요합니다.");
+      return {
+        ok: false as const,
+        error: "전화번호(본인 또는 학부모) 또는 임시 비밀번호 중 하나는 필요합니다.",
+      };
     }
 
     // 이름+전화번호 중복 방지 (로그인 식별자 충돌 방지)
@@ -1041,7 +1044,10 @@ export const createLocalStudent = createServerFn({ method: "POST" })
         .or(`phone.eq.${loginPhone},parent_phone.eq.${loginPhone}`)
         .limit(1);
       if (dup && dup.length > 0) {
-        throw new Error("동일한 이름/전화번호의 학생이 이미 등록되어 있습니다.");
+        return {
+          ok: false as const,
+          error: "동일한 이름과 전화번호로 등록된 활성 학생이 이미 있습니다.",
+        };
       }
     }
     if (tempPassword) {
@@ -1053,15 +1059,20 @@ export const createLocalStudent = createServerFn({ method: "POST" })
         .eq("temp_password", tempPassword)
         .limit(1);
       if (dupTemp && dupTemp.length > 0) {
-
-        throw new Error("동일한 이름/임시 비밀번호가 이미 사용 중입니다.");
+        return {
+          ok: false as const,
+          error: "동일한 이름과 임시 비밀번호가 이미 사용 중입니다.",
+        };
       }
     }
 
     const externalId = crypto.randomUUID();
     const localPart = loginPhone ?? externalId.replace(/-/g, "").slice(0, 12);
     const email = `local-${localPart}@mirror.local`;
-    const password = tempPassword ?? loginPhone!.slice(-8);
+    const password = tempPassword ?? loginPhone?.slice(-8);
+    if (!password) {
+      return { ok: false as const, error: "초기 비밀번호를 생성할 수 없습니다." };
+    }
 
     const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -1117,5 +1128,5 @@ export const createLocalStudent = createServerFn({ method: "POST" })
       });
     }
 
-    return { ok: true, userId: authUserId, email, initialPassword: password };
+    return { ok: true as const, userId: authUserId, email, initialPassword: password };
   });
