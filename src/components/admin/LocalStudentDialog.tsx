@@ -49,7 +49,11 @@ export function LocalStudentDialog({ onCreated }: { onCreated: () => void }) {
     }
     setBusy(true);
     try {
-      const res: any = await createLocalStudent({ data: form });
+      const res = await createLocalStudent({ data: form });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       toast.success(`학생이 등록되었습니다. 초기 비밀번호: ${res.initialPassword}`);
       setForm({ ...EMPTY });
       setOpen(false);
