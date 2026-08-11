@@ -1037,6 +1037,7 @@ export const createLocalStudent = createServerFn({ method: "POST" })
         .from("external_students")
         .select("id")
         .eq("name", data.name)
+        .eq("is_deleted", false)
         .or(`phone.eq.${loginPhone},parent_phone.eq.${loginPhone}`)
         .limit(1);
       if (dup && dup.length > 0) {
@@ -1048,9 +1049,11 @@ export const createLocalStudent = createServerFn({ method: "POST" })
         .from("external_students")
         .select("id")
         .eq("name", data.name)
+        .eq("is_deleted", false)
         .eq("temp_password", tempPassword)
         .limit(1);
       if (dupTemp && dupTemp.length > 0) {
+
         throw new Error("동일한 이름/임시 비밀번호가 이미 사용 중입니다.");
       }
     }
