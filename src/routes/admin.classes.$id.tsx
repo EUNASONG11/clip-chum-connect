@@ -452,17 +452,19 @@ function ClassDetailPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [studentStats]);
-  // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 자동 선택
+  // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 최초 1회만 자동 선택 (이후 수동 변경 유지)
+  const branchAutoAppliedRef = useRef(false);
   useEffect(() => {
+    if (branchAutoAppliedRef.current) return;
     if (isAdmin) return;
     if (!isInstructor) return;
-    if (statsBranchFilter !== "all") return;
     const myBranch = (studentStats as any[])[0]?.my_branch;
     if (!myBranch) return;
     if (statsBranchOptions.includes(myBranch)) {
+      branchAutoAppliedRef.current = true;
       setStatsBranchFilter(myBranch);
     }
-  }, [isAdmin, isInstructor, studentStats, statsBranchOptions, statsBranchFilter]);
+  }, [isAdmin, isInstructor, studentStats, statsBranchOptions]);
   const filteredStudentStats = useMemo(() => {
     return (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
