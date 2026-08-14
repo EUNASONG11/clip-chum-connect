@@ -511,9 +511,15 @@ function VideoPage() {
           },
         });
         seekRef.current = (sec: number) => {
-          if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
-          try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {}
+          let target = sec;
+          if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
+            logSeek(currentTimeRef.current, sec, true);
+            target = maxAllowedRef.current;
+          }
+          if (target > maxAllowedRef.current) maxAllowedRef.current = target;
+          try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
+
         fullscreenRef.current = () => {
           void (async () => {
             const opened =
