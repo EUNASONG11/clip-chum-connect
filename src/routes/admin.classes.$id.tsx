@@ -565,7 +565,7 @@ function ClassDetailPage() {
     }
   }, [isAdmin, isInstructor, studentStats, statsBranchOptions]);
   const filteredStudentStats = useMemo(() => {
-    return (studentStats as any[]).filter((s) => {
+    const filtered = (studentStats as any[]).filter((s) => {
       const isCompleted = s.video_total > 0 && s.completed === s.video_total;
       const okStatus =
         statsFilter === "all" ? true : statsFilter === "completed" ? isCompleted : !isCompleted;
@@ -577,7 +577,32 @@ function ClassDetailPage() {
             : (s.branch ?? "").trim() === statsBranchFilter;
       return okStatus && okBranch;
     });
-  }, [studentStats, statsFilter, statsBranchFilter]);
+    const sorted = [...filtered];
+    sorted.sort((a, b) => {
+      if (statsSort === "name") {
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      }
+      if (statsSort === "completed") {
+        if (b.completed !== a.completed) return b.completed - a.completed;
+        if (b.video_total !== a.video_total) return b.video_total - a.video_total;
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      }
+      if (statsSort === "ratio") {
+        if (b.avg_watched_ratio !== a.avg_watched_ratio) {
+          return b.avg_watched_ratio - a.avg_watched_ratio;
+        }
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      }
+      if (statsSort === "recent") {
+        const aTime = a.last_activity ? new Date(a.last_activity).getTime() : 0;
+        const bTime = b.last_activity ? new Date(b.last_activity).getTime() : 0;
+        if (bTime !== aTime) return bTime - aTime;
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      }
+      return 0;
+    });
+    return sorted;
+  }, [studentStats, statsFilter, statsBranchFilter, statsSort]);
 
   const [statsPageSize, setStatsPageSize] = useState(20);
   const [statsPage, setStatsPage] = useState(1);
