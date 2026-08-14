@@ -411,12 +411,18 @@ function VideoPage() {
       });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
       seekRef.current = (sec: number) => {
-        // 이어보기/최근 시청 클릭은 허용 (maxAllowed 갱신)
-        if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
-        lastTimeRef.current = sec;
-        player.setCurrentTime(sec).catch(() => {});
+        // 건너뛰기 금지 설정이면 아직 시청하지 않은 지점으로는 이동 불가
+        let target = sec;
+        if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
+          logSeek(currentTimeRef.current, sec, true);
+          target = maxAllowedRef.current;
+        }
+        if (target > maxAllowedRef.current) maxAllowedRef.current = target;
+        lastTimeRef.current = target;
+        player.setCurrentTime(target).catch(() => {});
         player.play().catch(() => {});
       };
+
       fullscreenRef.current = () => {
         void (async () => {
           try {
@@ -511,9 +517,15 @@ function VideoPage() {
           },
         });
         seekRef.current = (sec: number) => {
-          if (sec > maxAllowedRef.current) maxAllowedRef.current = sec;
-          try { player.seekTo?.(sec, true); player.playVideo?.(); } catch {}
+          let target = sec;
+          if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
+            logSeek(currentTimeRef.current, sec, true);
+            target = maxAllowedRef.current;
+          }
+          if (target > maxAllowedRef.current) maxAllowedRef.current = target;
+          try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
+
         fullscreenRef.current = () => {
           void (async () => {
             const opened =
