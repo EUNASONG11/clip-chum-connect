@@ -127,9 +127,14 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
             <span className="w-12 shrink-0 text-right text-sm tabular-nums">
               {Math.round(v.watched_ratio * 100)}%
             </span>
-            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+            <button
+              type="button"
+              onClick={() => setOpenWatchId((cur) => (cur === v.video_id ? null : v.video_id))}
+              className="w-24 shrink-0 rounded px-1 py-0.5 text-right text-xs text-muted-foreground tabular-nums hover:bg-muted"
+            >
               시청 {fmtDur(v.watched_seconds)}
-            </span>
+            </button>
+
             <button
               type="button"
               onClick={() =>
