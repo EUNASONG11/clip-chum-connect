@@ -494,16 +494,19 @@ function VideoPage() {
               // 큰 점프만 seek 로 간주 (정상 재생 중 상태 변화는 무시)
               const jump = t - lastTimeRef.current;
               if (jump > 4 && !allowSeek && t > maxAllowedRef.current + 2) {
+                logSeek(lastTimeRef.current, t, true);
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 isSeekingRef.current = false;
                 lastTimeRef.current = maxAllowedRef.current;
                 return;
               }
+              if (Math.abs(jump) > 4 && allowSeek) logSeek(lastTimeRef.current, t, false);
               if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
               lastTimeRef.current = t;
+
             },
           },
         });
