@@ -821,10 +821,12 @@ export type Database = {
           duration: number | null
           is_completed: boolean
           max_seconds: number
+          seek_attempts: number
           updated_at: string
           user_id: string
           video_id: string
           watched_ratio: number
+          watched_seconds: number
         }
         Insert: {
           completed_at?: string | null
@@ -832,10 +834,12 @@ export type Database = {
           duration?: number | null
           is_completed?: boolean
           max_seconds?: number
+          seek_attempts?: number
           updated_at?: string
           user_id: string
           video_id: string
           watched_ratio?: number
+          watched_seconds?: number
         }
         Update: {
           completed_at?: string | null
@@ -843,14 +847,54 @@ export type Database = {
           duration?: number | null
           is_completed?: boolean
           max_seconds?: number
+          seek_attempts?: number
           updated_at?: string
           user_id?: string
           video_id?: string
           watched_ratio?: number
+          watched_seconds?: number
         }
         Relationships: [
           {
             foreignKeyName: "video_progress_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_seek_events: {
+        Row: {
+          blocked: boolean
+          created_at: string
+          from_seconds: number
+          id: string
+          to_seconds: number
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          blocked?: boolean
+          created_at?: string
+          from_seconds?: number
+          id?: string
+          to_seconds?: number
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          blocked?: boolean
+          created_at?: string
+          from_seconds?: number
+          id?: string
+          to_seconds?: number
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_seek_events_video_id_fkey"
             columns: ["video_id"]
             isOneToOne: false
             referencedRelation: "videos"
