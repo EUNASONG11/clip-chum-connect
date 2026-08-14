@@ -97,6 +97,8 @@ function SeekEventList({ classId, userId, videoId }: { classId: string; userId: 
 
 function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
   const [openVideoId, setOpenVideoId] = useState<string | null>(null);
+  const [openWatchId, setOpenWatchId] = useState<string | null>(null);
+
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
@@ -127,9 +129,14 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
             <span className="w-12 shrink-0 text-right text-sm tabular-nums">
               {Math.round(v.watched_ratio * 100)}%
             </span>
-            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+            <button
+              type="button"
+              onClick={() => setOpenWatchId((cur) => (cur === v.video_id ? null : v.video_id))}
+              className="w-24 shrink-0 rounded px-1 py-0.5 text-right text-xs text-muted-foreground tabular-nums hover:bg-muted"
+            >
               시청 {fmtDur(v.watched_seconds)}
-            </span>
+            </button>
+
             <button
               type="button"
               onClick={() =>
@@ -150,6 +157,28 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
               {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
             </span>
           </div>
+          {openWatchId === v.video_id && (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1 border-t px-3 py-2 text-xs text-muted-foreground sm:grid-cols-4">
+              <span>
+                영상 길이 <b className="text-foreground tabular-nums">{v.duration ? fmtDur(v.duration) : "-"}</b>
+              </span>
+              <span>
+                실제 시청 <b className="text-foreground tabular-nums">{fmtDur(v.watched_seconds)}</b>
+                {v.duration ? ` (${Math.round((v.watched_seconds / v.duration) * 100)}%)` : ""}
+              </span>
+              <span>
+                도달 지점 <b className="text-foreground tabular-nums">{fmtDur(v.max_seconds)}</b>
+                {v.duration ? ` / ${fmtDur(v.duration)}` : ""}
+              </span>
+              <span>
+                완료 시각{" "}
+                <b className="text-foreground">
+                  {v.completed_at ? new Date(v.completed_at).toLocaleString("ko-KR") : "-"}
+                </b>
+              </span>
+            </div>
+          )}
+
           {openVideoId === v.video_id && (
             <div className="border-t">
               <SeekEventList classId={classId} userId={userId} videoId={v.video_id} />
