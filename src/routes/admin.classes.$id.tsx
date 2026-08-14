@@ -245,6 +245,7 @@ function ClassDetailPage() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
+  const [statsSort, setStatsSort] = useState<"name" | "completed" | "ratio" | "recent">("name");
   const [historySearch, setHistorySearch] = useState("");
   const [historySearchDebounced, setHistorySearchDebounced] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(20);
