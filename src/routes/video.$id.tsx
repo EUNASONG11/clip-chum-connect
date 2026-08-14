@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
+import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
