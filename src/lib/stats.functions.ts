@@ -251,7 +251,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
 
     const { data: progress } = await supabaseAdmin
       .from("video_progress")
-      .select("video_id, watched_ratio, max_seconds, current_seconds, duration, is_completed, completed_at, updated_at")
+      .select("video_id, watched_ratio, watched_seconds, seek_attempts, max_seconds, current_seconds, duration, is_completed, completed_at, updated_at")
       .eq("user_id", data.userId)
       .in("video_id", list.map((v: any) => v.id));
 
@@ -263,6 +263,8 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         title: v.title,
         duration: v.duration ?? p?.duration ?? null,
         watched_ratio: p ? Math.min(1, Number(p.watched_ratio ?? 0)) : 0,
+        watched_seconds: Number(p?.watched_seconds ?? 0),
+        seek_attempts: Number(p?.seek_attempts ?? 0),
         max_seconds: p?.max_seconds ?? 0,
         is_completed: !!p?.is_completed,
         completed_at: p?.completed_at ?? null,
@@ -270,3 +272,31 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
       };
     });
   });
+
+// 특정 학생의 특정 영상 건너뛰기 시도 상세 로그
+export const listStudentSeekEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        userId: z.string().uuid(),
+        videoId: z.string().uuid(),
+        limit: z.number().int().min(1).max(200).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("video_seek_events")
+      .select("id, from_seconds, to_seconds, blocked, created_at")
+      .eq("user_id", data.userId)
+      .eq("video_id", data.videoId)
+      .order("created_at", { ascending: false })
+      .limit(data.limit ?? 50);
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as any[];
+  });
+
