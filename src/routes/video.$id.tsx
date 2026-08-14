@@ -242,11 +242,31 @@ function VideoPage() {
       : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
+    // 실제 재생된 시간 누적 (전송 시 서버로 넘기고 초기화)
+    const watchedAccRef = { current: 0 };
+    const lastSeekLogRef = { current: 0 };
+    const logSeek = (from: number, to: number, blocked: boolean) => {
+      if (!isAuthed) return;
+      const now = Date.now();
+      if (now - lastSeekLogRef.current < 1500) return;
+      lastSeekLogRef.current = now;
+      logSeekAttempt({
+        data: {
+          videoId: id,
+          fromSeconds: Math.max(0, Math.floor(from)),
+          toSeconds: Math.max(0, Math.floor(to)),
+          blocked,
+        },
+      }).catch(() => {});
+    };
+
     const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
       if (!isAuthed) return;
       const now = Date.now();
       if (!force && !ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
+      const delta = watchedAccRef.current;
+      watchedAccRef.current = 0;
       try {
         const r = await upsertMyProgress({
           data: {
@@ -254,12 +274,14 @@ function VideoPage() {
             currentSeconds: Math.floor(currentSeconds),
             duration: duration ? Math.floor(duration) : null,
             endedEvent: ended,
+            watchedDelta: Math.min(600, Math.max(0, Math.round(delta))),
           },
         });
         setRatio(r.watched_ratio);
         if (r.is_completed) setCompleted(true);
       } catch {}
     };
+
 
     // 페이지 이탈/백그라운드 전환 직전에도 진도를 강제 저장
     const saveOnLeave = () => {
