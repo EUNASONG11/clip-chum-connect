@@ -132,7 +132,11 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
             <button
               type="button"
               onClick={() => setOpenWatchId((cur) => (cur === v.video_id ? null : v.video_id))}
-              className="w-24 shrink-0 rounded px-1 py-0.5 text-right text-xs text-muted-foreground tabular-nums hover:bg-muted"
+              className={`w-24 shrink-0 rounded px-1 py-0.5 text-right text-xs tabular-nums ${
+                openWatchId === v.video_id
+                  ? "bg-primary/20 text-primary hover:bg-primary/30"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+              }`}
             >
               시청 {fmtDur(v.watched_seconds)}
             </button>
