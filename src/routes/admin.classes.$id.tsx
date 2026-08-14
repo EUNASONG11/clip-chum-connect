@@ -53,9 +53,50 @@ import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-sea
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { getClassStudentStats, getStudentVideoDetail } from "@/lib/stats.functions";
+import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents } from "@/lib/stats.functions";
+
+function fmtDur(sec: number) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  if (m >= 60) return `${Math.floor(m / 60)}시간 ${m % 60}분`;
+  return m > 0 ? `${m}분 ${r}초` : `${r}초`;
+}
+
+function SeekEventList({ classId, userId, videoId }: { classId: string; userId: string; videoId: string }) {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["admin", "class", classId, "seek-events", userId, videoId],
+    queryFn: () => listStudentSeekEvents({ data: { classId, userId, videoId } }),
+  });
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" /> 불러오는 중...
+      </div>
+    );
+  }
+  if (data.length === 0) {
+    return <p className="px-3 py-2 text-xs text-muted-foreground">기록된 건너뛰기 시도가 없습니다.</p>;
+  }
+  return (
+    <ul className="space-y-1 px-3 py-2">
+      {data.map((e: any) => (
+        <li key={e.id} className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="tabular-nums">{new Date(e.created_at).toLocaleString("ko-KR")}</span>
+          <span className="tabular-nums">
+            {fmtDur(e.from_seconds)} → {fmtDur(e.to_seconds)}
+          </span>
+          <span className={e.blocked ? "text-destructive" : "text-muted-foreground"}>
+            {e.blocked ? "차단됨" : "허용"}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
+  const [openVideoId, setOpenVideoId] = useState<string | null>(null);
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
@@ -73,29 +114,53 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
   return (
     <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
       {data.map((v: any) => (
-        <div key={v.video_id} className="flex items-center gap-3 rounded-md bg-background px-3 py-2">
-          <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
-          <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
-            <div
-              className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
-              style={{ width: `${Math.round(v.watched_ratio * 100)}%` }}
-            />
+        <div key={v.video_id} className="rounded-md bg-background">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+            <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
+            <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
+              <div
+                className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
+                style={{ width: `${Math.round(v.watched_ratio * 100)}%` }}
+              />
+            </div>
+            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+              {Math.round(v.watched_ratio * 100)}%
+            </span>
+            <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+              시청 {fmtDur(v.watched_seconds)}
+            </span>
+            <button
+              type="button"
+              onClick={() =>
+                setOpenVideoId((cur) => (cur === v.video_id ? null : v.video_id))
+              }
+              className={`shrink-0 rounded px-2 py-0.5 text-xs ${
+                v.seek_attempts > 0
+                  ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              건너뛰기 {v.seek_attempts}회
+            </button>
+            <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
+              {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
+            </span>
+            <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
+              {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
+            </span>
           </div>
-          <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-            {Math.round(v.watched_ratio * 100)}%
-          </span>
-          <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
-            {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
-          </span>
-          <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
-            {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
-          </span>
+          {openVideoId === v.video_id && (
+            <div className="border-t">
+              <SeekEventList classId={classId} userId={userId} videoId={v.video_id} />
+            </div>
+          )}
         </div>
       ))}
     </div>
   );
 }
+
 
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";

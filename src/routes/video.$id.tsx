@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { getMyProgress, upsertMyProgress, listRecentlyWatched } from "@/lib/progress.functions";
+import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -242,11 +242,31 @@ function VideoPage() {
       : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
+    // 실제 재생된 시간 누적 (전송 시 서버로 넘기고 초기화)
+    const watchedAccRef = { current: 0 };
+    const lastSeekLogRef = { current: 0 };
+    const logSeek = (from: number, to: number, blocked: boolean) => {
+      if (!isAuthed) return;
+      const now = Date.now();
+      if (now - lastSeekLogRef.current < 1500) return;
+      lastSeekLogRef.current = now;
+      logSeekAttempt({
+        data: {
+          videoId: id,
+          fromSeconds: Math.max(0, Math.floor(from)),
+          toSeconds: Math.max(0, Math.floor(to)),
+          blocked,
+        },
+      }).catch(() => {});
+    };
+
     const send = async (currentSeconds: number, duration: number | null, ended = false, force = false) => {
       if (!isAuthed) return;
       const now = Date.now();
       if (!force && !ended && now - lastSentRef.current < 4500) return;
       lastSentRef.current = now;
+      const delta = watchedAccRef.current;
+      watchedAccRef.current = 0;
       try {
         const r = await upsertMyProgress({
           data: {
@@ -254,12 +274,14 @@ function VideoPage() {
             currentSeconds: Math.floor(currentSeconds),
             duration: duration ? Math.floor(duration) : null,
             endedEvent: ended,
+            watchedDelta: Math.min(600, Math.max(0, Math.round(delta))),
           },
         });
         setRatio(r.watched_ratio);
         if (r.is_completed) setCompleted(true);
       } catch {}
     };
+
 
     // 페이지 이탈/백그라운드 전환 직전에도 진도를 강제 저장
     const saveOnLeave = () => {
@@ -349,12 +371,15 @@ function VideoPage() {
         if (jump > 2) {
           isSeekingRef.current = true;
           if (!allowSeek && t > maxAllowedRef.current + 2) {
+            logSeek(lastTimeRef.current, t, true);
             player.setCurrentTime(maxAllowedRef.current).catch(() => {});
             lastTimeRef.current = maxAllowedRef.current;
             return;
           }
         }
         currentTimeRef.current = t;
+        // 실제 재생분만 누적 (정상 진행 구간)
+        if (jump > 0 && jump <= 2) watchedAccRef.current += jump;
         // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
           const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
@@ -368,15 +393,18 @@ function VideoPage() {
       player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
         if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
+          logSeek(lastTimeRef.current, d.seconds, true);
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
           lastTimeRef.current = maxAllowedRef.current;
         } else {
+          if (Math.abs(d.seconds - lastTimeRef.current) > 2) logSeek(lastTimeRef.current, d.seconds, false);
           if (allowSeek && d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
           lastTimeRef.current = d.seconds;
         }
         lastWallRef.current = Date.now();
         isSeekingRef.current = false;
       });
+
       player.on("pause", (d: any) => {
         currentTimeRef.current = d.seconds;
         send(d.seconds, durationCached);
@@ -466,16 +494,19 @@ function VideoPage() {
               // 큰 점프만 seek 로 간주 (정상 재생 중 상태 변화는 무시)
               const jump = t - lastTimeRef.current;
               if (jump > 4 && !allowSeek && t > maxAllowedRef.current + 2) {
+                logSeek(lastTimeRef.current, t, true);
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 isSeekingRef.current = false;
                 lastTimeRef.current = maxAllowedRef.current;
                 return;
               }
+              if (Math.abs(jump) > 4 && allowSeek) logSeek(lastTimeRef.current, t, false);
               if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) isSeekingRef.current = false;
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
               lastTimeRef.current = t;
+
             },
           },
         });
@@ -503,6 +534,8 @@ function VideoPage() {
               lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
+              // 실제 재생분만 누적 (정상 진행 구간, tick 3초 기준)
+              if (jump > 0 && jump <= 4) watchedAccRef.current += jump;
               // 정상 재생 진행분(실제 흐른 시간의 최대배속+0.5배)만큼 먼저 성장 허용
               if (jump <= 4 && t > maxAllowedRef.current) {
                 const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
@@ -510,12 +543,15 @@ function VideoPage() {
               }
               if (jump > 4) isSeekingRef.current = true;
               if (!allowSeek && t > maxAllowedRef.current + 2) {
+                logSeek(lastTimeRef.current, t, true);
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 lastTimeRef.current = maxAllowedRef.current;
               } else {
+                if (Math.abs(jump) > 4) logSeek(lastTimeRef.current, t, false);
                 if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
                 send(t, d);
               }
+
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
             } else {
