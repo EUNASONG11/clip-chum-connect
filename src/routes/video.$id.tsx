@@ -371,12 +371,15 @@ function VideoPage() {
         if (jump > 2) {
           isSeekingRef.current = true;
           if (!allowSeek && t > maxAllowedRef.current + 2) {
+            logSeek(lastTimeRef.current, t, true);
             player.setCurrentTime(maxAllowedRef.current).catch(() => {});
             lastTimeRef.current = maxAllowedRef.current;
             return;
           }
         }
         currentTimeRef.current = t;
+        // 실제 재생분만 누적 (정상 진행 구간)
+        if (jump > 0 && jump <= 2) watchedAccRef.current += jump;
         // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
         if (!isSeekingRef.current && t > maxAllowedRef.current) {
           const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
@@ -390,15 +393,18 @@ function VideoPage() {
       player.on("seeking", () => { isSeekingRef.current = true; });
       player.on("seeked", (d: any) => {
         if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
+          logSeek(lastTimeRef.current, d.seconds, true);
           player.setCurrentTime(maxAllowedRef.current).catch(() => {});
           lastTimeRef.current = maxAllowedRef.current;
         } else {
+          if (Math.abs(d.seconds - lastTimeRef.current) > 2) logSeek(lastTimeRef.current, d.seconds, false);
           if (allowSeek && d.seconds > maxAllowedRef.current) maxAllowedRef.current = d.seconds;
           lastTimeRef.current = d.seconds;
         }
         lastWallRef.current = Date.now();
         isSeekingRef.current = false;
       });
+
       player.on("pause", (d: any) => {
         currentTimeRef.current = d.seconds;
         send(d.seconds, durationCached);
