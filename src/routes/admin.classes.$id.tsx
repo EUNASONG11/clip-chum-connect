@@ -97,6 +97,8 @@ function SeekEventList({ classId, userId, videoId }: { classId: string; userId: 
 
 function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
   const [openVideoId, setOpenVideoId] = useState<string | null>(null);
+  const [openWatchId, setOpenWatchId] = useState<string | null>(null);
+
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
