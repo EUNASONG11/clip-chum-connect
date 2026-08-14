@@ -1327,8 +1327,9 @@ function ClassDetailPage() {
                   <AccordionItem key={s.user_id} value={s.user_id}>
                     <AccordionTrigger className="px-3 hover:no-underline">
                       <div className="grid w-full grid-cols-2 gap-2 pr-2 text-left text-sm sm:grid-cols-[1fr_80px_100px_150px]">
-                        <span className="truncate font-medium">
+                        <span className="inline-flex items-center gap-1 truncate font-medium">
                           {s.name || "-"}{s.phone ? ` (${s.phone})` : ""}
+                          <BranchBadge branch={s.branch} />
                         </span>
                         <span className="whitespace-nowrap">{s.completed} / {s.video_total}</span>
                         <span className="whitespace-nowrap">{Math.round(s.avg_watched_ratio * 100)}%</span>
