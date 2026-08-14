@@ -9,13 +9,64 @@ export const getMyProgress = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { data: row, error } = await context.supabase
       .from("video_progress")
-      .select("current_seconds, max_seconds, duration, watched_ratio, is_completed, completed_at, updated_at")
+      .select(
+        "current_seconds, max_seconds, duration, watched_ratio, watched_seconds, seek_attempts, is_completed, completed_at, updated_at",
+      )
       .eq("user_id", context.userId)
       .eq("video_id", data.videoId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return row;
   });
+
+// 건너뛰기 시도 로그 (차단 여부 포함) + 시도 횟수 누적
+export const logSeekAttempt = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        videoId: z.string().uuid(),
+        fromSeconds: z.number().min(0).max(200000),
+        toSeconds: z.number().min(0).max(200000),
+        blocked: z.boolean(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.from("video_seek_events").insert({
+      user_id: context.userId,
+      video_id: data.videoId,
+      from_seconds: Math.floor(data.fromSeconds),
+      to_seconds: Math.floor(data.toSeconds),
+      blocked: data.blocked,
+    });
+    if (error) throw new Error(error.message);
+
+    const { data: prev } = await context.supabase
+      .from("video_progress")
+      .select("seek_attempts")
+      .eq("user_id", context.userId)
+      .eq("video_id", data.videoId)
+      .maybeSingle();
+
+    if (prev) {
+      await context.supabase
+        .from("video_progress")
+        .update({ seek_attempts: Number(prev.seek_attempts ?? 0) + 1 })
+        .eq("user_id", context.userId)
+        .eq("video_id", data.videoId);
+    } else {
+      await context.supabase.from("video_progress").insert({
+        user_id: context.userId,
+        video_id: data.videoId,
+        current_seconds: Math.floor(data.fromSeconds),
+        max_seconds: Math.floor(data.fromSeconds),
+        seek_attempts: 1,
+      } as any);
+    }
+    return { ok: true };
+  });
+
 
 // 진도 upsert (서버에서 max_seconds 단조 증가, 완료 판정)
 export const upsertMyProgress = createServerFn({ method: "POST" })
