@@ -534,6 +534,8 @@ function VideoPage() {
               lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
+              // 실제 재생분만 누적 (정상 진행 구간, tick 3초 기준)
+              if (jump > 0 && jump <= 4) watchedAccRef.current += jump;
               // 정상 재생 진행분(실제 흐른 시간의 최대배속+0.5배)만큼 먼저 성장 허용
               if (jump <= 4 && t > maxAllowedRef.current) {
                 const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
@@ -541,12 +543,15 @@ function VideoPage() {
               }
               if (jump > 4) isSeekingRef.current = true;
               if (!allowSeek && t > maxAllowedRef.current + 2) {
+                logSeek(lastTimeRef.current, t, true);
                 try { player.seekTo?.(maxAllowedRef.current, true); } catch {}
                 lastTimeRef.current = maxAllowedRef.current;
               } else {
+                if (Math.abs(jump) > 4) logSeek(lastTimeRef.current, t, false);
                 if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
                 send(t, d);
               }
+
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
             } else {
