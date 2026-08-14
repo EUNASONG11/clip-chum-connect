@@ -1319,6 +1319,17 @@ function ClassDetailPage() {
                   <SelectItem value="none">교육원 미지정</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={statsSort} onValueChange={(v) => setStatsSort(v as any)}>
+                <SelectTrigger className="h-8 w-full sm:w-40">
+                  <SelectValue placeholder="정렬" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">이름순</SelectItem>
+                  <SelectItem value="completed">완료순</SelectItem>
+                  <SelectItem value="ratio">시청률순</SelectItem>
+                  <SelectItem value="recent">최근 학습순</SelectItem>
+                </SelectContent>
+              </Select>
               <Select
                 value={String(statsPageSize)}
                 onValueChange={(v) => setStatsPageSize(Number(v))}
