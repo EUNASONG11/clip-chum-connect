@@ -609,7 +609,7 @@ function ClassDetailPage() {
   const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
     setStatsPage(1);
-  }, [statsFilter, statsBranchFilter, filteredStudentStats.length, statsPageSize]);
+  }, [statsFilter, statsBranchFilter, statsSort, filteredStudentStats.length, statsPageSize]);
   const pagedStudentStats = useMemo(
     () =>
       (filteredStudentStats as any[]).slice(
