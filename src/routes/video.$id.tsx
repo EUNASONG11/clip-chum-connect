@@ -521,11 +521,9 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
-                // 자막은 기본 OFF
-                if (!captionsOnRef.current) {
-                  try { player.unloadModule?.("captions"); } catch {}
-                  try { player.unloadModule?.("cc"); } catch {}
-                }
+                // 자막은 기본 OFF (플레이어 준비 직후 + 약간의 지연 후 재적용)
+                captionsRef.current?.(captionsOnRef.current);
+                window.setTimeout(() => captionsRef.current?.(captionsOnRef.current), 800);
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
@@ -548,7 +546,10 @@ function VideoPage() {
               }
               if (Math.abs(jump) > 4 && allowSeek) logSeek(lastTimeRef.current, t, false);
               if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
-              if (e.data === 1) isSeekingRef.current = false;
+              if (e.data === 1) {
+                isSeekingRef.current = false;
+                if (!captionsOnRef.current) captionsRef.current?.(false);
+              }
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
               lastTimeRef.current = t;
@@ -565,18 +566,33 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
-        // 자막 켜기/끄기
-        captionsRef.current = (on: boolean) => {
+        // 자막 켜기/끄기 (모듈 + track 옵션을 함께 제어해야 실제로 반영됨)
+        const applyCaptions = (on: boolean) => {
           try {
             if (on) {
               player.loadModule?.("captions");
               player.loadModule?.("cc");
+              window.setTimeout(() => {
+                try {
+                  const list =
+                    player.getOption?.("captions", "tracklist") ||
+                    player.getOption?.("cc", "tracklist");
+                  const first = list?.[0];
+                  if (first) {
+                    player.setOption?.("captions", "track", first);
+                    player.setOption?.("cc", "track", first);
+                  }
+                } catch {}
+              }, 400);
             } else {
-              player.unloadModule?.("captions");
-              player.unloadModule?.("cc");
+              try { player.setOption?.("captions", "track", {}); } catch {}
+              try { player.setOption?.("cc", "track", {}); } catch {}
+              try { player.unloadModule?.("captions"); } catch {}
+              try { player.unloadModule?.("cc"); } catch {}
             }
           } catch {}
         };
+        captionsRef.current = applyCaptions;
 
 
 
