@@ -584,6 +584,32 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
+        // 되감기(이미 본 구간 다시 보기)는 항상 허용
+        rewindRef.current = (back = 10) => {
+          try {
+            const t = player.getCurrentTime?.() ?? 0;
+            const target = Math.max(0, t - back);
+            lastTimeRef.current = target;
+            currentTimeRef.current = target;
+            isSeekingRef.current = false;
+            player.seekTo?.(target, true);
+            player.playVideo?.();
+          } catch {}
+        };
+        // 자막 켜기/끄기
+        captionsRef.current = (on: boolean) => {
+          try {
+            if (on) {
+              player.loadModule?.("captions");
+              player.loadModule?.("cc");
+            } else {
+              player.unloadModule?.("captions");
+              player.unloadModule?.("cc");
+            }
+          } catch {}
+        };
+
+
 
         fullscreenRef.current = () => {
           void (async () => {
