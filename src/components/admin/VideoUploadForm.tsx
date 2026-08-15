@@ -302,6 +302,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
   const [ytPlayback, setYtPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [ytWeekLabel, setYtWeekLabel] = useState<string | null>(weekLabelFromDate());
 
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class-folders", classId],
