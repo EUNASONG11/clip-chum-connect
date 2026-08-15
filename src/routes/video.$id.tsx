@@ -108,7 +108,9 @@ function VideoPage() {
   const captionsRef = useRef<(on: boolean) => void>(() => {});
   const captionsOnRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
+  const [captionsAvailable, setCaptionsAvailable] = useState<boolean | null>(null);
   const toggleCaptions = () => {
+    if (captionsAvailable !== true) return;
     const next = !captionsOnRef.current;
     captionsOnRef.current = next;
     setCaptionsOn(next);
@@ -362,6 +364,12 @@ function VideoPage() {
         } catch {}
         // 자막(자동 생성 포함)은 기본 OFF — 학생이 필요할 때만 켤 수 있게
         try { await (player as any).disableTextTrack?.(); } catch {}
+        try {
+          const tracks = (await (player as any).getTextTracks?.()) ?? [];
+          setCaptionsAvailable(tracks.length > 0);
+        } catch {
+          setCaptionsAvailable(false);
+        }
       });
       // 자막 켜기/끄기
       captionsRef.current = (on: boolean) => {
@@ -513,24 +521,31 @@ function VideoPage() {
           } catch {}
         };
         let captionsRetryTimer: number | null = null;
-        const selectYouTubeCaptionTrack = (retries = 12) => {
+        const selectYouTubeCaptionTrack = (retries = 12, activate = true) => {
           try {
             const list = player.getOption?.("captions", "tracklist") ?? [];
             const preferred =
               list.find?.((track: any) => track.languageCode === "ko" || track.languageCode === "ko-KR") ??
               list[0];
             if (preferred) {
-              // YouTube가 반환한 트랙 객체를 그대로 다시 전달해야 자동 생성(ASR) 자막도 켜진다.
-              player.setOption?.("captions", "track", preferred);
+              setCaptionsAvailable(true);
+              if (activate) {
+                // YouTube가 반환한 트랙 객체를 그대로 다시 전달해야 자동 생성(ASR) 자막도 켜진다.
+                player.setOption?.("captions", "track", preferred);
+              } else {
+                player.setOption?.("captions", "track", {});
+              }
               return;
             }
 
             if (retries > 0) {
               if (captionsRetryTimer) window.clearTimeout(captionsRetryTimer);
               captionsRetryTimer = window.setTimeout(
-                () => selectYouTubeCaptionTrack(retries - 1),
+                () => selectYouTubeCaptionTrack(retries - 1, activate),
                 500,
               );
+            } else {
+              setCaptionsAvailable(false);
             }
           } catch {}
         };
@@ -561,9 +576,9 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
-                // 자막은 기본 OFF (플레이어 준비 직후 + 약간의 지연 후 재적용)
-                captionsRef.current?.(captionsOnRef.current);
-                window.setTimeout(() => captionsRef.current?.(captionsOnRef.current), 800);
+                // 모듈을 한 번 로드해 실제 트랙 유무를 확인하되, 기본 상태는 OFF로 유지한다.
+                player.loadModule?.("captions");
+                selectYouTubeCaptionTrack(12, captionsOnRef.current);
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
@@ -744,13 +759,14 @@ function VideoPage() {
                           revealFsControls();
                           toggleCaptions();
                         }}
+                         disabled={captionsAvailable !== true}
                         className={cn(
                           "inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95",
                           captionsOn ? "bg-primary/90" : "bg-black/85"
                         )}
-                        aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                         aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
                       >
-                        <Subtitles className="h-5 w-5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                         <Subtitles className="h-5 w-5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
                       </button>
                       <button
                         type="button"
@@ -795,13 +811,14 @@ function VideoPage() {
                   <button
                     type="button"
                     onClick={toggleCaptions}
+                     disabled={captionsAvailable !== true}
                     className={cn(
                       "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
                       captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
                     )}
-                    aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                     aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
                   >
-                    <Subtitles className="h-3.5 w-3.5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                     <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
                   </button>
                   <button
                     type="button"
