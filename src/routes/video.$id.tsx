@@ -733,24 +733,54 @@ function VideoPage() {
                       hideFsControls();
                     }}
                   >
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          revealFsControls();
+                          toggleCaptions();
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95",
+                          captionsOn ? "bg-primary/90" : "bg-black/85"
+                        )}
+                        aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                      >
+                        <Subtitles className="h-5 w-5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsPlayerExpanded(false);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                        aria-label="전체화면 닫기"
+                      >
+                        <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
+                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
+                    )}
+                  >
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsPlayerExpanded(false);
+                        revealFsControls();
+                        rewindRef.current?.(10);
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                      aria-label="전체화면 닫기"
+                      className="pointer-events-auto rounded-full bg-black/70 p-4 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-5"
+                      aria-label="10초 뒤로"
                     >
-                      <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                      <RotateCcw className="h-7 w-7 sm:h-8 sm:w-8" />
                     </button>
-                  </div>
-                  <div
-                    className={cn(
-                      "absolute inset-0 z-[110] flex items-center justify-center transition-opacity duration-300 pointer-events-none",
-                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
-                    )}
-                  >
+
 
                     <button
                       type="button"
