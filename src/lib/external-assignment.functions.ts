@@ -438,10 +438,12 @@ export const listClassWeeksForAssignment = createServerFn({ method: "GET" })
     const linkByWeek = new Map<string, any>();
     for (const l of links ?? []) if (l.week_label) linkByWeek.set(l.week_label as string, l);
 
-    const byWeek = new Map<string, { week_label: string | null; videos: { id: string; title: string }[] }>();
-    for (const v of videos ?? []) {
-      const key = (v as any).week_label ?? "";
-      const bucket = byWeek.get(key) ?? { week_label: (v as any).week_label ?? null, videos: [] };
+    type WeekBucket = { week_label: string | null; videos: { id: string; title: string }[] };
+    const byWeek = new Map<string, WeekBucket>();
+    for (const v of (videos ?? []) as any[]) {
+      const key = (v.week_label as string | null) ?? "";
+      const bucket: WeekBucket =
+        byWeek.get(key) ?? { week_label: (v.week_label as string | null) ?? null, videos: [] };
       bucket.videos.push({ id: v.id as string, title: v.title as string });
       byWeek.set(key, bucket);
     }
