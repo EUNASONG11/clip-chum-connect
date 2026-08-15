@@ -69,7 +69,7 @@ function formatDuration(sec: number | null) {
 function getVimeoEmbedUrl(video: Video) {
   if (!video.player_embed_url) return null;
   const separator = video.player_embed_url.includes("?") ? "&" : "?";
-  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0&texttrack=false`;
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0`;
 }
 
 async function requestElementFullscreen(element: Element | null) {
@@ -372,8 +372,10 @@ function VideoPage() {
               return;
             }
             const tracks = (await (player as any).getTextTracks?.()) ?? [];
-            const first = tracks[0];
-            if (first) await (player as any).enableTextTrack?.(first.language, first.kind);
+            const preferred = tracks.find((track: any) => track.language === "ko") ?? tracks[0];
+            if (preferred) {
+              await (player as any).enableTextTrack?.(preferred.language, preferred.kind);
+            }
           } catch {}
         })();
       };
@@ -510,6 +512,37 @@ function VideoPage() {
             if (typeof r === "number" && r > maxRate) player.setPlaybackRate?.(maxRate);
           } catch {}
         };
+        let captionsRetryTimer: number | null = null;
+        const applyYouTubeCaptions = (on: boolean, retries = 6) => {
+          try {
+            player.loadModule?.("captions");
+            if (!on) {
+              player.setOption?.("captions", "track", {});
+              return;
+            }
+
+            const list = player.getOption?.("captions", "tracklist") ?? [];
+            const preferred =
+              list.find?.((track: any) => track.languageCode === "ko" || track.languageCode === "ko-KR") ??
+              list[0];
+            if (preferred) {
+              player.setOption?.("captions", "track", {
+                languageCode: preferred.languageCode,
+                ...(preferred.translationLanguage ? { translationLanguage: preferred.translationLanguage } : {}),
+              });
+              return;
+            }
+
+            // YouTube는 자막 모듈 준비가 늦는 경우가 있어 트랙 목록이 생길 때까지 재시도한다.
+            if (retries > 0) {
+              if (captionsRetryTimer) window.clearTimeout(captionsRetryTimer);
+              captionsRetryTimer = window.setTimeout(
+                () => applyYouTubeCaptions(on, retries - 1),
+                350,
+              );
+            }
+          } catch {}
+        };
         const player = new YT.Player(iframeRef.current, {
           events: {
             onReady: () => {
@@ -528,6 +561,7 @@ function VideoPage() {
                 setIsPlaying(state === 1);
               } catch {}
             },
+            onApiChange: () => applyYouTubeCaptions(captionsOnRef.current),
 
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
@@ -566,33 +600,7 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
-        // 자막 켜기/끄기 (모듈 + track 옵션을 함께 제어해야 실제로 반영됨)
-        const applyCaptions = (on: boolean) => {
-          try {
-            if (on) {
-              player.loadModule?.("captions");
-              player.loadModule?.("cc");
-              window.setTimeout(() => {
-                try {
-                  const list =
-                    player.getOption?.("captions", "tracklist") ||
-                    player.getOption?.("cc", "tracklist");
-                  const first = list?.[0];
-                  if (first) {
-                    player.setOption?.("captions", "track", first);
-                    player.setOption?.("cc", "track", first);
-                  }
-                } catch {}
-              }, 400);
-            } else {
-              try { player.setOption?.("captions", "track", {}); } catch {}
-              try { player.setOption?.("cc", "track", {}); } catch {}
-              try { player.unloadModule?.("captions"); } catch {}
-              try { player.unloadModule?.("cc"); } catch {}
-            }
-          } catch {}
-        };
-        captionsRef.current = applyCaptions;
+        captionsRef.current = (on: boolean) => applyYouTubeCaptions(on);
 
 
 
