@@ -25,14 +25,29 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     .maybeSingle();
   if (!student?.external_id) return;
 
-  const { data: links } = await supabaseAdmin
+  // 1순위: 해당 영상에 연결된 과제, 없으면 수강반 단위 과제(구버전)
+  const { data: videoLinks } = await supabaseAdmin
     .from("external_assignment_links")
     .select("id, external_id, assignment_type")
     .eq("class_id", video.class_id)
+    .eq("video_id", videoId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(1);
-  if (!links || links.length === 0) return;
+
+  let links = videoLinks ?? [];
+  if (links.length === 0) {
+    const { data: classLinks } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("id, external_id, assignment_type")
+      .eq("class_id", video.class_id)
+      .is("video_id", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    links = classLinks ?? [];
+  }
+  if (links.length === 0) return;
 
   const occurredAt = new Date().toISOString();
 
