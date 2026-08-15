@@ -78,6 +78,19 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
       }
     }
 
+    // 영상별 과제인 경우 영상 제목 표시
+    const videoIds = Array.from(
+      new Set(linkList.map((l: any) => l.video_id as string | null).filter((v): v is string => !!v)),
+    );
+    const videoTitleById = new Map<string, string>();
+    if (videoIds.length > 0) {
+      const { data: vids } = await context.supabase
+        .from("videos")
+        .select("id, title")
+        .in("id", videoIds);
+      for (const v of vids ?? []) videoTitleById.set(v.id, v.title);
+    }
+
     const enriched = linkList.map((l: any) => {
       const s = statsByLink[l.id] ?? { completedCount: 0, statusCounts: {}, people: [] };
       const target = l.student_count ?? 0;
@@ -86,6 +99,7 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
       if (initial > 0) statusCounts["initial"] = (statusCounts["initial"] ?? 0) + initial;
       return {
         ...l,
+        video_title: l.video_id ? (videoTitleById.get(l.video_id) ?? null) : null,
         completed_count: s.completedCount,
         target_count: target,
         status_counts: statusCounts,
@@ -94,6 +108,146 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
     });
 
     return { configured, links: enriched };
+  });
+
+/** 수강반 영상 목록 (외부 과제 내보내기 대상 선택용) */
+export const listClassVideosForAssignment = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+    const { data: videos, error } = await context.supabase
+      .from("videos")
+      .select("id, title, sort_order, created_at")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return videos ?? [];
+  });
+
+/** 선택한 영상별로 외부 "과제 점검"에 과제를 각각 생성 */
+export const pushVideoAssignmentsToExternal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        videoIds: z.array(z.string().uuid()).min(1).max(50),
+        periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        titlePrefix: z.string().trim().max(100).optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { data: klass, error: classErr } = await context.supabase
+      .from("classes")
+      .select("id, name")
+      .eq("id", data.classId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (classErr) throw new Error(classErr.message);
+    if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
+
+    const { data: videos, error: vidErr } = await context.supabase
+      .from("videos")
+      .select("id, title")
+      .eq("class_id", data.classId)
+      .in("id", data.videoIds)
+      .is("deleted_at", null);
+    if (vidErr) throw new Error(vidErr.message);
+    if (!videos || videos.length === 0) throw new Error("선택한 영상을 찾을 수 없습니다.");
+
+    const { data: enrolled, error: enrollErr } = await context.supabase
+      .from("class_students")
+      .select("user_id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    if (enrollErr) throw new Error(enrollErr.message);
+    const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
+    if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: students } = await supabaseAdmin
+      .from("external_students")
+      .select("external_id, auth_user_id")
+      .in("auth_user_id", userIds)
+      .eq("is_deleted", false);
+
+    const externalStudentIds = Array.from(
+      new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
+    );
+    if (externalStudentIds.length === 0) {
+      throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
+    }
+
+    const { pushAssignmentSync } = await import("./external-assignment.server");
+    const prefix = data.titlePrefix?.trim() || klass.name;
+
+    const results: { videoId: string; title: string; ok: boolean; error?: string }[] = [];
+
+    for (const v of videos) {
+      const externalId = `class-${data.classId}-video-${v.id}`;
+      const assignmentType = `${prefix} - ${v.title}`.slice(0, 200);
+
+      let remoteAssignmentTypeId: string | null = null;
+      let lastError: string | null = null;
+      try {
+        const res = await pushAssignmentSync({
+          external_id: externalId,
+          assignment_type: assignmentType,
+          scope: "individual",
+          target: { class_name: klass.name, video_title: v.title },
+          period: { start: data.periodStart, end: data.periodEnd },
+          students: externalStudentIds,
+        });
+        remoteAssignmentTypeId = res.remoteAssignmentTypeId;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+      }
+
+      const { error: upsertErr } = await supabaseAdmin
+        .from("external_assignment_links")
+        .upsert(
+          {
+            source: "elearning",
+            external_id: externalId,
+            class_id: data.classId,
+            video_id: v.id,
+            assignment_type: assignmentType,
+            scope: "individual",
+            period_start: data.periodStart,
+            period_end: data.periodEnd,
+            remote_assignment_type_id: remoteAssignmentTypeId,
+            student_count: externalStudentIds.length,
+            last_synced_at: lastError ? null : new Date().toISOString(),
+            last_error: lastError,
+            created_by: context.userId,
+            deleted_at: null,
+            deleted_by: null,
+          },
+          { onConflict: "source,external_id" },
+        );
+      if (upsertErr) throw new Error(upsertErr.message);
+
+      results.push({
+        videoId: v.id,
+        title: v.title,
+        ok: !lastError,
+        ...(lastError ? { error: lastError } : {}),
+      });
+    }
+
+    return {
+      ok: results.every((r) => r.ok),
+      studentCount: externalStudentIds.length,
+      skipped: userIds.length - externalStudentIds.length,
+      results,
+    };
   });
 
 /** 수강반 학생 전체를 외부 "과제 점검"에 과제로 등록 (수동 버튼) */
