@@ -108,7 +108,10 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
     const nextMax = Math.max(prevMax, cappedCurrent);
     const ratio = duration && duration > 0 ? Math.min(1, nextMax / duration) : 0;
     const alreadyCompleted = prev?.is_completed ?? false;
-    const nowCompleted = alreadyCompleted || !!data.endedEvent || ratio >= completionRatio;
+    // 완료 기준 판정 시 0.5%p 허용 오차 (예: 기준 100% → 99.5% 이상이면 완료 처리)
+    const effectiveRatio = Math.max(0, completionRatio - 0.005);
+    const nowCompleted = alreadyCompleted || !!data.endedEvent || ratio >= effectiveRatio;
+
     // 실제 시청 시간 누적 (1회 전송당 최대 30초까지만 인정)
     const prevWatched = Number(prev?.watched_seconds ?? 0);
     const nextWatched = prevWatched + Math.min(30, Math.max(0, Math.floor(data.watchedDelta ?? 0)));
