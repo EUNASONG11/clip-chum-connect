@@ -15,7 +15,7 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
 
     let query = context.supabase
       .from("external_assignment_links")
-      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, class_id, video_id, created_at")
+      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, class_id, video_id, week_label, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
