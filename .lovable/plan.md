@@ -1,78 +1,61 @@
-# 전체 소프트 삭제 전환 계획
+# 주차 단위 외부 과제 점검 자동 연동
 
-기존 물리 삭제를 전 테이블 소프트 삭제로 바꾸고, 관리자 전용 "휴지통" 화면에서 복원/영구삭제할 수 있게 만듭니다. Vimeo 원본은 소프트 삭제 시 보존하고, 영구삭제(휴지통에서 삭제) 시에만 Vimeo API를 호출합니다.
+외부 프로그램이 "8월 1주차"처럼 월/주 단위로 과제 점검을 만드는 구조에 맞춰,
+이러닝 쪽 영상에 주차를 직접 지정하고 **주차 단위로 외부 과제를 1건 생성**합니다.
+그 주차에 속한 영상을 학생이 **전부 완료**하면 자동으로 완료 통보가 나갑니다.
 
-## 1. DB 스키마 (마이그레이션 1건)
+## 1. 영상에 주차 지정
 
-모든 대상 테이블에 공통 컬럼 추가:
-- `deleted_at timestamptz NULL`
-- `deleted_by uuid NULL`
-- `WHERE deleted_at IS NULL` 부분 인덱스
+- 영상마다 주차 값을 저장합니다. 형식은 `2026-08-1` (연-월-주차 번호) 로 저장하고,
+  화면에는 `8월 1주차`로 표기합니다.
+- 입력 위치
+  - 영상 업로드 화면: 연/월/주차 선택 (기본값은 오늘 날짜 기준 주차)
+  - 영상 설정 팝업: 기존 영상의 주차 수정/해제
+- 영상 목록과 학습 현황에 `8월 1주차` 뱃지를 표시해 누락된 영상을 바로 알 수 있게 합니다.
+- 주차가 비어 있는 영상은 외부 연동 대상에서 제외됩니다(기존 방식 영향 없음).
 
-대상 테이블:
-- `videos`, `classes`, `class_folders`, `class_categories`
-- `teams`, `team_members`, `team_messages`
-- `comments`, `bookmarks`
-- `class_students`, `class_instructors`
-- `user_roles` (사용자 삭제 = 역할 소프트 삭제 + auth 계정은 보존)
+## 2. 주차별 외부 과제 생성
 
-RLS 정책 갱신:
-- 모든 SELECT 정책에 `deleted_at IS NULL` 추가 (관리자용 별도 정책 예외)
-- 관리자 전용 SELECT 정책 신설: `has_role(auth.uid(), 'admin') AND deleted_at IS NOT NULL` — 휴지통 조회용
-- 기존 DELETE 정책은 유지(영구삭제용, 관리자만)
+외부 과제 패널을 "영상 선택" 대신 "주차 선택" 방식으로 바꿉니다.
 
-`class_enrollment_history` 트리거는 소프트 삭제도 'removed'로 기록하도록 UPDATE 트리거 추가.
+- 해당 수강반의 영상을 주차별로 묶어 목록으로 보여줍니다.
+  예: `8월 1주차 · 영상 2개 · 미연동` / `8월 2주차 · 영상 1개 · 연동됨(3/12 완료)`
+- 주차를 고르고 내보내면 그 주차에 대해 외부 과제 **1건**만 생성/갱신됩니다.
+  - 과제명 기본값: `{수강반명} 8월 1주차 영상 과제`
+  - 과제 기간 기본값: 그 주차의 토·일 날짜 (필요하면 수정 가능)
+  - 외부 고유키를 주차 기준으로 고정해 같은 주차를 다시 내보내도 중복 생성되지 않습니다.
+- 새 영상이 같은 주차에 추가되면, 그 주차를 다시 내보내지 않아도 완료 판정에 자동 포함됩니다.
 
-## 2. 서버 함수 변경
+## 3. 완료 판정 (전부 완료 기준)
 
-### 소프트 삭제로 전환
-- `deleteVideo` → `UPDATE videos SET deleted_at=now(), deleted_by=uid` (Vimeo 호출 제거)
-- `deleteClass`, `deleteFolder`, `deleteCategory`
-- `deleteTeam`, `removeTeamMember`
-- `deleteComment`, `deleteBookmark`
-- `unassignStudentFromClass`, `unassignInstructorFromClass`
-- `deleteUser` → `user_roles.deleted_at` 세팅 (auth 계정 보존, 재활성화 가능)
+- 학생이 영상 하나를 완료할 때, 그 영상이 속한 주차의 **모든 활성 영상**을 완료했는지 확인합니다.
+- 전부 완료면 그 주차 과제를 `review_completed`로 외부에 통보합니다. 일부만 완료면 통보하지 않습니다.
+- 배정 시점 이후 영상만 세는 기존 규칙을 그대로 따릅니다(신규생 불이익 없음).
+- 주차 과제가 이미 완료 통보된 뒤에 그 주차에 영상이 추가되면 다시 미완료로 바뀔 수 있으므로,
+  한 번 보낸 완료는 되돌리지 않고 유지합니다(외부에 완료 취소 API가 없음).
+- 기존 "완료 재통보" 버튼은 주차 기준으로 동작하도록 맞춥니다(누락분 일괄 보정).
 
-### 신규 서버 함수 (관리자 전용, `requireSupabaseAuth` + admin 체크)
-- `listTrash({ entity, page, search })` — 엔터티별 소프트삭제 목록
-- `restoreItem({ entity, id })` — `deleted_at = NULL`
-- `purgeItem({ entity, id })` — 실제 DELETE. `videos`인 경우에만 Vimeo API 호출
+## 4. 기존 데이터 처리
 
-### 모든 조회 함수에 `WHERE deleted_at IS NULL` 추가
-- `listVideos`, `listClasses`, `listFolders`, `listCategories`
-- `listUsers`, `listTeams`, `getTeamMembers`
-- `getComments`, `getBookmarks`
-- `getClassStudents`, `getClassInstructors`
-- `can_access_video` 함수도 갱신
+- 지금까지 영상별로 만들어진 연동 이력은 그대로 남겨두고, 새 주차 방식과 구분해 표시합니다.
+- 이미 올라간 영상들은 주차 값이 비어 있으므로, 관리자가 주차를 지정한 뒤 내보내면 됩니다.
+- 외부 시스템에 남은 이전 과제는 삭제 API가 없어 외부에서 직접 정리해야 합니다.
 
-## 3. UI
+## 기술 세부사항
 
-### 관리자 사이드바에 "휴지통" 메뉴 추가 (`/admin/trash`)
-- 상단 탭: 영상 / 수강반 / 폴더 / 카테고리 / 팀 / 댓글·북마크 / 배정 / 사용자
-- 각 탭: 이름·삭제자·삭제일 + `복원` / `영구 삭제` 버튼
-- 페이지네이션(20개/페이지), 검색
-
-### 기존 삭제 UX
-- 확인 다이얼로그 문구를 "휴지통으로 이동" 으로 변경
-- 성공 토스트에 "휴지통에서 복원할 수 있습니다" 안내
-
-## 4. 기술 세부
-
-- 관리 화면에서 소프트 삭제된 항목은 안 보이도록 서버측 필터링(클라 필터 X)
-- 휴지통은 관리자 권한 필수 — `has_role` 체크
-- 영상 영구 삭제 시 Vimeo 삭제 실패해도 DB는 삭제(경고 토스트)
-- 사용자 소프트 삭제 시 로그인 차단: 로그인 시점에 `user_roles.deleted_at` 체크
-- `class_enrollment_history`는 감사 로그이므로 소프트 삭제 대상 아님(현재도 삭제 불가 정책 유지)
-- `external_students`는 마스터에서 미러링되는 명부라 기존 `is_deleted` 동작 유지
-
-## 5. 작업 순서
-
-1. 마이그레이션 실행 (컬럼/인덱스/RLS/트리거)
-2. 조회 함수 필터 추가 + 삭제 함수 소프트로 전환
-3. 휴지통 서버 함수 3종 신설
-4. `/admin/trash` 라우트 및 UI 구현
-5. 사이드바에 메뉴 추가
-6. 로그인 로직에 `user_roles.deleted_at` 차단 추가
-7. 타입체크 및 주요 삭제/복원 플로우 검증
-
-승인해 주시면 마이그레이션부터 순차적으로 진행하겠습니다.
+- 마이그레이션
+  - `public.videos`에 `week_label text` 추가 (`YYYY-MM-W` 형식, nullable) + 조회용 인덱스
+  - `public.external_assignment_links`에 `week_label text` 추가, `video_id`는 유지(구버전 호환)
+  - 신규 외부 고유키: `class-{classId}-week-{YYYY-MM-W}`
+- `src/lib/week.ts` (신규): 날짜 ↔ `YYYY-MM-W` 변환, 주차 라벨 포맷, 주차의 시작/종료 날짜 계산
+- `src/lib/external-assignment.functions.ts`
+  - `listClassWeeksForAssignment`: 수강반 영상을 주차별 집계 + 연동/완료 현황 반환
+  - `pushWeekAssignmentsToExternal`: 선택 주차별 upsert (`week_label` 저장)
+  - `resyncCompletionsToExternal`: 주차 완료 판정 로직 재사용
+  - 기존 `pushVideoAssignmentsToExternal`은 남겨두되 UI에서 제거
+- `src/lib/external-assignment-notify.server.ts`
+  - 링크 조회 우선순위를 `week_label` → `video_id` → 수강반 단위로 변경
+  - 주차 내 전체 영상 완료 여부를 `video_progress.is_completed`로 검사 후 통보
+- UI: `src/components/admin/ExternalAssignmentPanel.tsx`(주차 선택),
+  `src/components/admin/VideoUploadForm.tsx`(주차 입력),
+  `src/routes/admin.classes.$id.tsx`(설정 팝업 주차 입력 + 주차 뱃지)
