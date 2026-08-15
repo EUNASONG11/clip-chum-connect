@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, RotateCcw, Subtitles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, Subtitles } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -105,7 +105,6 @@ function VideoPage() {
   const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
-  const rewindRef = useRef<(sec?: number) => void>(() => {});
   const captionsRef = useRef<(on: boolean) => void>(() => {});
   const captionsOnRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
@@ -458,24 +457,6 @@ function VideoPage() {
         player.setCurrentTime(target).catch(() => {});
         player.play().catch(() => {});
       };
-      // 되감기(이미 본 구간 다시 보기)는 항상 허용
-      rewindRef.current = (back = 10) => {
-        void (async () => {
-          try {
-            const t = await player.getCurrentTime();
-            const target = Math.max(0, t - back);
-            lastTimeRef.current = target;
-            currentTimeRef.current = target;
-            isSeekingRef.current = false;
-            lastWallRef.current = Date.now();
-            await player.setCurrentTime(target);
-            await player.play().catch(() => {});
-          } catch {}
-        })();
-      };
-
-
-
       fullscreenRef.current = () => {
         void (async () => {
           try {
@@ -583,18 +564,6 @@ function VideoPage() {
           }
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
-        };
-        // 되감기(이미 본 구간 다시 보기)는 항상 허용
-        rewindRef.current = (back = 10) => {
-          try {
-            const t = player.getCurrentTime?.() ?? 0;
-            const target = Math.max(0, t - back);
-            lastTimeRef.current = target;
-            currentTimeRef.current = target;
-            isSeekingRef.current = false;
-            player.seekTo?.(target, true);
-            player.playVideo?.();
-          } catch {}
         };
         // 자막 켜기/끄기
         captionsRef.current = (on: boolean) => {
@@ -773,20 +742,6 @@ function VideoPage() {
                       onClick={(e) => {
                         e.stopPropagation();
                         revealFsControls();
-                        rewindRef.current?.(10);
-                      }}
-                      className="pointer-events-auto rounded-full bg-black/70 p-4 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-5"
-                      aria-label="10초 뒤로"
-                    >
-                      <RotateCcw className="h-7 w-7 sm:h-8 sm:w-8" />
-                    </button>
-
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        revealFsControls();
                         togglePlayPause();
                       }}
                       className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
@@ -813,14 +768,6 @@ function VideoPage() {
                     aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
                   >
                     <Subtitles className="h-3.5 w-3.5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => rewindRef.current?.(10)}
-                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                    aria-label="10초 뒤로"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> 10초 뒤로
                   </button>
                   <button
                     type="button"
