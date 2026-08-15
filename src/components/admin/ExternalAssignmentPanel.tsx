@@ -224,6 +224,11 @@ export function ExternalAssignmentPanel({
                 <li key={l.id} className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{l.assignment_type}</span>
+                    {l.video_title ? (
+                      <Badge variant="outline">영상: {l.video_title}</Badge>
+                    ) : (
+                      <Badge variant="outline">수강반 단위</Badge>
+                    )}
                     {l.last_error ? (
                       <Badge variant="destructive">전송 실패</Badge>
                     ) : (
