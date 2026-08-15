@@ -458,6 +458,23 @@ function VideoPage() {
         player.setCurrentTime(target).catch(() => {});
         player.play().catch(() => {});
       };
+      // 되감기(이미 본 구간 다시 보기)는 항상 허용
+      rewindRef.current = (back = 10) => {
+        void (async () => {
+          try {
+            const t = await player.getCurrentTime();
+            const target = Math.max(0, t - back);
+            lastTimeRef.current = target;
+            currentTimeRef.current = target;
+            isSeekingRef.current = false;
+            lastWallRef.current = Date.now();
+            await player.setCurrentTime(target);
+            await player.play().catch(() => {});
+          } catch {}
+        })();
+      };
+
+
 
       fullscreenRef.current = () => {
         void (async () => {
