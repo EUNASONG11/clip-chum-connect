@@ -1,27 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-
-async function assertStaff(context: { supabase: any; userId: string }) {
-  const { data: isAdmin } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "admin",
-  });
-  if (isAdmin) return "admin" as const;
-  const { data: isInstructor } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "instructor",
-  });
-  if (isInstructor) return "instructor" as const;
-  throw new Error("관리자 또는 강사만 사용할 수 있습니다.");
-}
+import { assertExternalAssignmentStaff } from "./external-assignment-auth.server";
 
 /** 연동 설정 여부 + 수강반별 내보낸 과제 목록 */
 export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid().optional() }).parse(i ?? {}))
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertExternalAssignmentStaff(context as any);
 
     const configured =
       !!process.env["EXTERNAL_ASSIGNMENT_BASE_URL"] && !!process.env["EXTERNAL_SYNC_API_KEY"];
@@ -124,7 +111,11 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertStaff(context as any);
+    await assertExternalAssignmentStaff(context as any);
+
+    if (data.assignmentType === "이러닝 영상 시청") {
+      throw new Error("'이러닝 영상 시청' 과제는 외부로 내보낼 수 없습니다.");
+    }
 
     // 수강반 확인 (RLS로 접근 권한 검증됨)
     const { data: klass, error: classErr } = await context.supabase
@@ -154,14 +145,30 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
       .in("auth_user_id", userIds)
       .eq("is_deleted", false);
 
-    const externalStudentIds = (students ?? [])
-      .map((s) => s.external_id)
-      .filter((v): v is string => !!v);
+    const externalStudentIds = Array.from(
+      new Set(
+        (students ?? [])
+          .map((s) => s.external_id)
+          .filter((v): v is string => !!v),
+      ),
+    );
     if (externalStudentIds.length === 0) {
       throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
     }
 
-    const externalId = data.externalId ?? `class-${data.classId.slice(0, 8)}-${data.periodStart}`;
+    // 외부 과제 정의는 수강반당 1건만 유지한다. 이미 내보낸 활성 링크가 있으면
+    // 기간이 바뀌어도 같은 외부 고유키를 재사용하여 외부 DB에서 upsert되도록 한다.
+    const { data: existingLink } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("external_id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const externalId =
+      data.externalId ?? existingLink?.external_id ?? `class-${data.classId}`;
 
     const { pushAssignmentSync } = await import("./external-assignment.server");
 
