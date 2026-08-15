@@ -29,7 +29,9 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     .from("external_assignment_links")
     .select("id, external_id, assignment_type")
     .eq("class_id", video.class_id)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
   if (!links || links.length === 0) return;
 
   const occurredAt = new Date().toISOString();
