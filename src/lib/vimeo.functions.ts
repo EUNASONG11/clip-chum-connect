@@ -707,6 +707,8 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         completion_ratio: data.completion_ratio ?? 1,
         rewatch_allow_seek: data.rewatch_allow_seek ?? null,
         rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+        week_label: data.week_label ?? null,
+
 
       })
       .select("*")
