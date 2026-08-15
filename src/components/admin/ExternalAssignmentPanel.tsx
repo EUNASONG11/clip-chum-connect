@@ -12,6 +12,8 @@ import {
   getExternalAssignmentStatus,
   listClassVideosForAssignment,
   pushVideoAssignmentsToExternal,
+  resyncCompletionsToExternal,
+
 } from "@/lib/external-assignment.functions";
 
 const STATUS_LABEL: Record<string, string> = {
