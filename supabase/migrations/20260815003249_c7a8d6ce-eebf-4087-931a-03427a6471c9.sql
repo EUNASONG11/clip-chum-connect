@@ -1,0 +1,1 @@
+UPDATE public.external_assignment_links SET deleted_at = now() WHERE id = '67e3ce23-84e0-4d82-8e1e-a124470fec36' AND deleted_at IS NULL;
