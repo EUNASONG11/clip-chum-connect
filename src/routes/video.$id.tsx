@@ -105,7 +105,10 @@ function VideoPage() {
   const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
-  const playerRef = useRef<any>(null);
+  const rewindRef = useRef<(sec?: number) => void>(() => {});
+  const captionsRef = useRef<(on: boolean) => void>(() => {});
+  const [captionsOn, setCaptionsOn] = useState(false);
+
   const isPlayingRef = useRef(false);
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
