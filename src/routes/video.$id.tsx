@@ -802,16 +802,38 @@ function VideoPage() {
                 </>
 
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsPlayerExpanded(true)}
-                  className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                  aria-label="전체화면"
-                >
-                  <Maximize2 className="h-3.5 w-3.5" /> 전체화면
-                </button>
+                <div className="absolute top-2 right-2 z-[110] flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleCaptions}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
+                      captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
+                    )}
+                    aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                  >
+                    <Subtitles className="h-3.5 w-3.5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => rewindRef.current?.(10)}
+                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                    aria-label="10초 뒤로"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> 10초 뒤로
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPlayerExpanded(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                    aria-label="전체화면"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                  </button>
+                </div>
               )}
             </div>
+
 
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
