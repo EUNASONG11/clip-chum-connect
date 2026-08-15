@@ -521,7 +521,7 @@ function VideoPage() {
           } catch {}
         };
         let captionsRetryTimer: number | null = null;
-        const selectYouTubeCaptionTrack = (retries = 12) => {
+        const selectYouTubeCaptionTrack = (retries = 12, activate = true) => {
           try {
             const list = player.getOption?.("captions", "tracklist") ?? [];
             const preferred =
@@ -529,15 +529,19 @@ function VideoPage() {
               list[0];
             if (preferred) {
               setCaptionsAvailable(true);
-              // YouTube가 반환한 트랙 객체를 그대로 다시 전달해야 자동 생성(ASR) 자막도 켜진다.
-              player.setOption?.("captions", "track", preferred);
+              if (activate) {
+                // YouTube가 반환한 트랙 객체를 그대로 다시 전달해야 자동 생성(ASR) 자막도 켜진다.
+                player.setOption?.("captions", "track", preferred);
+              } else {
+                player.setOption?.("captions", "track", {});
+              }
               return;
             }
 
             if (retries > 0) {
               if (captionsRetryTimer) window.clearTimeout(captionsRetryTimer);
               captionsRetryTimer = window.setTimeout(
-                () => selectYouTubeCaptionTrack(retries - 1),
+                () => selectYouTubeCaptionTrack(retries - 1, activate),
                 500,
               );
             } else {
@@ -572,9 +576,9 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
-                // 자막은 기본 OFF (플레이어 준비 직후 + 약간의 지연 후 재적용)
-                captionsRef.current?.(captionsOnRef.current);
-                window.setTimeout(() => captionsRef.current?.(captionsOnRef.current), 800);
+                // 모듈을 한 번 로드해 실제 트랙 유무를 확인하되, 기본 상태는 OFF로 유지한다.
+                player.loadModule?.("captions");
+                selectYouTubeCaptionTrack(12, captionsOnRef.current);
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
