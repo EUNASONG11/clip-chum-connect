@@ -39,7 +39,7 @@ export function ExternalAssignmentPanel({
   const fetchVideos = useServerFn(listClassVideosForAssignment);
   const pushVideos = useServerFn(pushVideoAssignmentsToExternal);
 
-  const [titlePrefix, setTitlePrefix] = useState(className);
+  const [titlePrefix, setTitlePrefix] = useState(`${className} 영상 과제`);
   const [periodStart, setPeriodStart] = useState(today());
   const [periodEnd, setPeriodEnd] = useState(today(6));
   const [selected, setSelected] = useState<string[]>([]);
