@@ -107,7 +107,15 @@ function VideoPage() {
   const fullscreenRef = useRef<() => void>(() => {});
   const rewindRef = useRef<(sec?: number) => void>(() => {});
   const captionsRef = useRef<(on: boolean) => void>(() => {});
+  const captionsOnRef = useRef(false);
   const [captionsOn, setCaptionsOn] = useState(false);
+  const toggleCaptions = () => {
+    const next = !captionsOnRef.current;
+    captionsOnRef.current = next;
+    setCaptionsOn(next);
+    captionsRef.current?.(next);
+  };
+
   const playerRef = useRef<any>(null);
 
 
