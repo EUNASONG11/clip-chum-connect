@@ -108,6 +108,8 @@ function VideoPage() {
   const rewindRef = useRef<(sec?: number) => void>(() => {});
   const captionsRef = useRef<(on: boolean) => void>(() => {});
   const [captionsOn, setCaptionsOn] = useState(false);
+  const playerRef = useRef<any>(null);
+
 
   const isPlayingRef = useRef(false);
   const [ratio, setRatio] = useState(0);
