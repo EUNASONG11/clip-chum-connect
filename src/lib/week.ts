@@ -1,7 +1,7 @@
 /**
  * 주차 라벨 유틸 (월 기준 주차)
  * 저장 형식: "YYYY-MM-W"  예) "2026-08-1" = 2026년 8월 1주차
- * 주차 계산: 해당 월의 1일이 포함된 주를 1주차로 보고, 일요일 시작 주 기준으로 계산
+ * 주차 계산: 해당 월의 1일이 포함된 주를 1주차로 보고, 월요일 시작 주(월~일) 기준으로 계산
  */
 
 export const WEEK_LABEL_RE = /^\d{4}-\d{2}-[1-5]$/;
@@ -34,7 +34,7 @@ export function weekLabelFromDate(input: Date | string = new Date()): string {
   const d = typeof input === "string" ? new Date(`${input}T00:00:00`) : new Date(input);
   const year = d.getFullYear();
   const month = d.getMonth() + 1;
-  const firstDow = new Date(year, d.getMonth(), 1).getDay(); // 0=일
+  const firstDow = (new Date(year, d.getMonth(), 1).getDay() + 6) % 7; // 0=월 … 6=일
   const week = Math.min(5, Math.floor((d.getDate() + firstDow - 1) / 7) + 1);
   return makeWeekLabel(year, month, week);
 }
@@ -46,7 +46,7 @@ function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** 주차의 시작(일)/종료(토) 날짜. 월 경계를 넘지 않도록 잘라냄 */
+/** 주차의 시작(월)/종료(일) 날짜. 월 경계를 넘지 않도록 잘라냄 */
 export function weekRange(label: string): { start: string; end: string } {
   const p = parseWeekLabel(label);
   if (!p) {
@@ -55,7 +55,7 @@ export function weekRange(label: string): { start: string; end: string } {
   }
   const monthStart = new Date(p.year, p.month - 1, 1);
   const monthEnd = new Date(p.year, p.month, 0);
-  const firstDow = monthStart.getDay();
+  const firstDow = (monthStart.getDay() + 6) % 7; // 0=월
   let startDay = (p.week - 1) * 7 - firstDow + 1;
   if (startDay < 1) startDay = 1;
   const start = new Date(p.year, p.month - 1, startDay);
