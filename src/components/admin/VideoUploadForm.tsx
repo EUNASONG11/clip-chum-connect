@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen, X } from "lucide-react";
+import { WeekPicker } from "@/components/admin/WeekPicker";
+import { weekLabelFromDate } from "@/lib/week";
 
 type FolderNode = { id: string; name: string; depth: number };
 
@@ -285,6 +287,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [weekLabel, setWeekLabel] = useState<string | null>(weekLabelFromDate());
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [ytThumbFile, setYtThumbFile] = useState<File | null>(null);
   const [resetKey, setResetKey] = useState(0);
@@ -299,6 +302,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
   const [ytPlayback, setYtPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [ytWeekLabel, setYtWeekLabel] = useState<string | null>(weekLabelFromDate());
 
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class-folders", classId],
@@ -347,6 +351,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: classId === NO_CLASS || folderId === NO_FOLDER ? null : folderId,
           is_published: isPublished,
           sort_order: sortOrder,
+          week_label: weekLabel,
           ...playback,
         },
       });
@@ -367,6 +372,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setIsPublished(false);
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
+      setWeekLabel(weekLabelFromDate());
       setFile(null);
       setThumbFile(null);
       setResetKey((k) => k + 1);
@@ -395,6 +401,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: ytClassId === NO_CLASS || ytFolderId === NO_FOLDER ? null : ytFolderId,
           is_published: ytPublished,
           sort_order: ytSort,
+          week_label: ytWeekLabel,
           ...ytPlayback,
         },
       });
@@ -414,6 +421,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
+      setYtWeekLabel(weekLabelFromDate());
       setYtThumbFile(null);
       setResetKey((k) => k + 1);
       onUploaded?.();
@@ -528,6 +536,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
+          <WeekPicker id="up-week" value={weekLabel} onChange={setWeekLabel} />
           <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
           <ThumbnailPicker key={`up-${resetKey}`} id="up" file={thumbFile} onChange={setThumbFile} />
           <div>
@@ -639,6 +648,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
+            <WeekPicker id="yt-week" value={ytWeekLabel} onChange={setYtWeekLabel} />
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
             <Button type="submit" disabled={ytSaving}>

@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo } from "@/lib/classes.functions";
+import { WeekPicker } from "@/components/admin/WeekPicker";
+import { formatWeekLabel } from "@/lib/week";
 import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -42,6 +44,7 @@ type Row = {
   rewatch_allow_seek: boolean | null;
   rewatch_max_playback_rate: number | null;
   completion_ratio: number;
+  week_label: string | null;
   created_at: string;
 };
 
@@ -113,8 +116,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at,deleted_at"
-          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,created_at",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
@@ -224,6 +227,7 @@ function VideosPage() {
           rewatch_allow_seek: e.rewatch_allow_seek,
           rewatch_max_playback_rate: e.rewatch_max_playback_rate,
           completion_ratio: e.completion_ratio,
+          week_label: e.week_label === undefined ? undefined : e.week_label,
         },
       });
       toast.success("저장되었습니다.");
@@ -394,7 +398,14 @@ function VideosPage() {
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{r.title}</p>
+                          <p className="truncate font-medium">
+                            {r.title}
+                            {r.week_label && (
+                              <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-normal text-primary">
+                                {formatWeekLabel(r.week_label)}
+                              </span>
+                            )}
+                          </p>
                           <p className="truncate text-xs text-muted-foreground">
                             <span className="uppercase">{r.source}</span>
                             {" · "}상태:{" "}
@@ -458,6 +469,11 @@ function VideosPage() {
                                 className="mt-1"
                               />
                             </div>
+                            <WeekPicker
+                              id={`week-${r.id}`}
+                              value={(value(r, "week_label") as string | null) ?? null}
+                              onChange={(v) => patch(r.id, { week_label: v })}
+                            />
                             <div>
                               <label className="text-xs text-muted-foreground">설명</label>
                               <Textarea

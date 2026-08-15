@@ -129,6 +129,8 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         completion_ratio: z.number().min(0).max(1).optional(),
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().nullable().optional(),
+        week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+
 
       })
       .parse(input),
@@ -164,6 +166,8 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         completion_ratio: data.completion_ratio ?? 1,
         rewatch_allow_seek: data.rewatch_allow_seek ?? null,
         rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+        week_label: data.week_label ?? null,
+
 
       })
       .select("*")
@@ -670,6 +674,8 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         completion_ratio: z.number().min(0).max(1).optional(),
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().nullable().optional(),
+        week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+
 
       })
       .parse(input),
@@ -701,6 +707,8 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         completion_ratio: data.completion_ratio ?? 1,
         rewatch_allow_seek: data.rewatch_allow_seek ?? null,
         rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
+        week_label: data.week_label ?? null,
+
 
       })
       .select("*")

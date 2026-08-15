@@ -1,18 +1,53 @@
 /**
  * 영상 시청 완료 → 외부 "과제 점검" 완료 통보 (서버 전용, best-effort).
  * 실패해도 학생의 진도 저장을 막지 않도록 호출부에서 try/catch 합니다.
+ *
+ * 연결 우선순위:
+ *  1) 주차 과제 (videos.week_label ↔ external_assignment_links.week_label)
+ *     → 해당 주차의 모든 활성 영상을 완료했을 때만 통보
+ *  2) 영상별 과제 (구버전)
+ *  3) 수강반 단위 과제 (구버전)
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isExternalAssignmentConfigured, pushAssignmentComplete } from "./external-assignment.server";
+import { formatWeekLabel } from "./week";
 
 const COMPLETED_STATUS = "review_completed";
+
+type LinkRow = { id: string; external_id: string; assignment_type: string };
+
+/** 주차 과제 완료 조건: 해당 주차의 활성 영상을 모두 완료했는지 */
+async function weekFullyCompleted(
+  userId: string,
+  classId: string,
+  weekLabel: string,
+): Promise<{ ok: boolean; total: number; done: number }> {
+  const { data: weekVideos } = await supabaseAdmin
+    .from("videos")
+    .select("id")
+    .eq("class_id", classId)
+    .eq("week_label", weekLabel)
+    .is("deleted_at", null);
+
+  const ids = (weekVideos ?? []).map((v) => v.id as string);
+  if (ids.length === 0) return { ok: false, total: 0, done: 0 };
+
+  const { data: progress } = await supabaseAdmin
+    .from("video_progress")
+    .select("video_id, is_completed")
+    .eq("user_id", userId)
+    .in("video_id", ids);
+
+  const done = (progress ?? []).filter((p) => p.is_completed).length;
+  return { ok: done >= ids.length, total: ids.length, done };
+}
 
 export async function notifyVideoCompletion(userId: string, videoId: string): Promise<void> {
   if (!isExternalAssignmentConfigured()) return;
 
   const { data: video } = await supabaseAdmin
     .from("videos")
-    .select("id, class_id, title")
+    .select("id, class_id, title, week_label")
     .eq("id", videoId)
     .maybeSingle();
   if (!video?.class_id) return;
@@ -25,28 +60,57 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     .maybeSingle();
   if (!student?.external_id) return;
 
-  // 1순위: 해당 영상에 연결된 과제, 없으면 수강반 단위 과제(구버전)
-  const { data: videoLinks } = await supabaseAdmin
-    .from("external_assignment_links")
-    .select("id, external_id, assignment_type")
-    .eq("class_id", video.class_id)
-    .eq("video_id", videoId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  let links: LinkRow[] = [];
+  let memo = `이러닝: "${video.title}" 시청 완료`;
 
-  let links = videoLinks ?? [];
+  // 1순위: 주차 과제
+  const weekLabel = (video as any).week_label as string | null;
+  if (weekLabel) {
+    const { data: weekLinks } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("id, external_id, assignment_type")
+      .eq("class_id", video.class_id)
+      .eq("week_label", weekLabel)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if ((weekLinks ?? []).length > 0) {
+      const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
+      if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
+      links = (weekLinks ?? []) as LinkRow[];
+      memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
+    }
+  }
+
+  // 2순위: 해당 영상에 연결된 과제
+  if (links.length === 0) {
+    const { data: videoLinks } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("id, external_id, assignment_type")
+      .eq("class_id", video.class_id)
+      .eq("video_id", videoId)
+      .is("week_label", null)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    links = (videoLinks ?? []) as LinkRow[];
+  }
+
+  // 3순위: 수강반 단위 과제(구버전)
   if (links.length === 0) {
     const { data: classLinks } = await supabaseAdmin
       .from("external_assignment_links")
       .select("id, external_id, assignment_type")
       .eq("class_id", video.class_id)
       .is("video_id", null)
+      .is("week_label", null)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(1);
-    links = classLinks ?? [];
+    links = (classLinks ?? []) as LinkRow[];
   }
+
   if (links.length === 0) return;
 
   const occurredAt = new Date().toISOString();
@@ -78,7 +142,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
         student_id: student.external_id,
         assignment_type: link.assignment_type,
         status: COMPLETED_STATUS,
-        memo: `이러닝: "${video.title}" 시청 완료`,
+        memo,
         occurred_at: occurredAt,
       });
       await supabaseAdmin

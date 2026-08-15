@@ -15,7 +15,7 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
 
     let query = context.supabase
       .from("external_assignment_links")
-      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, class_id, video_id, created_at")
+      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, class_id, video_id, week_label, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -409,4 +409,169 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
       }
     }
     return { sent, total: (rows ?? []).length };
+  });
+
+/** 수강반 영상을 주차별로 묶어 반환 (연동 현황 포함) */
+export const listClassWeeksForAssignment = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { data: videos, error } = await context.supabase
+      .from("videos")
+      .select("id, title, week_label, sort_order, created_at")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const { data: links, error: linkErr } = await context.supabase
+      .from("external_assignment_links")
+      .select("id, week_label, assignment_type, period_start, period_end, last_error, last_synced_at")
+      .eq("class_id", data.classId)
+      .not("week_label", "is", null)
+      .is("deleted_at", null);
+    if (linkErr) throw new Error(linkErr.message);
+
+    const linkByWeek = new Map<string, any>();
+    for (const l of links ?? []) if (l.week_label) linkByWeek.set(l.week_label as string, l);
+
+    type WeekBucket = { week_label: string | null; videos: { id: string; title: string }[] };
+    const byWeek = new Map<string, WeekBucket>();
+    for (const v of (videos ?? []) as any[]) {
+      const key = (v.week_label as string | null) ?? "";
+      const bucket: WeekBucket =
+        byWeek.get(key) ?? { week_label: (v.week_label as string | null) ?? null, videos: [] };
+      bucket.videos.push({ id: v.id as string, title: v.title as string });
+      byWeek.set(key, bucket);
+    }
+
+    const weeks = Array.from(byWeek.values())
+      .map((w) => ({
+        ...w,
+        link: w.week_label ? (linkByWeek.get(w.week_label) ?? null) : null,
+      }))
+      .sort((a, b) => {
+        if (!a.week_label) return 1;
+        if (!b.week_label) return -1;
+        return b.week_label.localeCompare(a.week_label);
+      });
+
+    return weeks;
+  });
+
+/** 선택한 주차별로 외부 "과제 점검"에 과제를 1건씩 생성/갱신 */
+export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        weeks: z
+          .array(
+            z.object({
+              weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
+              assignmentType: z.string().trim().min(1).max(200),
+              periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+              periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+            }),
+          )
+          .min(1)
+          .max(20),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { data: klass, error: classErr } = await context.supabase
+      .from("classes")
+      .select("id, name")
+      .eq("id", data.classId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (classErr) throw new Error(classErr.message);
+    if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
+
+    const { data: enrolled, error: enrollErr } = await context.supabase
+      .from("class_students")
+      .select("user_id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    if (enrollErr) throw new Error(enrollErr.message);
+    const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
+    if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: students } = await supabaseAdmin
+      .from("external_students")
+      .select("external_id, auth_user_id")
+      .in("auth_user_id", userIds)
+      .eq("is_deleted", false);
+
+    const externalStudentIds = Array.from(
+      new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
+    );
+    if (externalStudentIds.length === 0) {
+      throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
+    }
+
+    const { pushAssignmentSync } = await import("./external-assignment.server");
+    const results: { weekLabel: string; ok: boolean; error?: string }[] = [];
+
+    for (const w of data.weeks) {
+      const externalId = `class-${data.classId}-week-${w.weekLabel}`;
+
+      let remoteAssignmentTypeId: string | null = null;
+      let lastError: string | null = null;
+      try {
+        const res = await pushAssignmentSync({
+          external_id: externalId,
+          assignment_type: w.assignmentType.slice(0, 200),
+          scope: "individual",
+          target: { class_name: klass.name, week: w.weekLabel },
+          period: { start: w.periodStart, end: w.periodEnd },
+          students: externalStudentIds,
+        });
+        remoteAssignmentTypeId = res.remoteAssignmentTypeId;
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : String(e);
+      }
+
+      const { error: upsertErr } = await supabaseAdmin
+        .from("external_assignment_links")
+        .upsert(
+          {
+            source: "elearning",
+            external_id: externalId,
+            class_id: data.classId,
+            video_id: null,
+            week_label: w.weekLabel,
+            assignment_type: w.assignmentType.slice(0, 200),
+            scope: "individual",
+            period_start: w.periodStart,
+            period_end: w.periodEnd,
+            remote_assignment_type_id: remoteAssignmentTypeId,
+            student_count: externalStudentIds.length,
+            last_synced_at: lastError ? null : new Date().toISOString(),
+            last_error: lastError,
+            created_by: context.userId,
+            deleted_at: null,
+            deleted_by: null,
+          },
+          { onConflict: "source,external_id" },
+        );
+      if (upsertErr) throw new Error(upsertErr.message);
+
+      results.push({ weekLabel: w.weekLabel, ok: !lastError, ...(lastError ? { error: lastError } : {}) });
+    }
+
+    return {
+      ok: results.every((r) => r.ok),
+      studentCount: externalStudentIds.length,
+      skipped: userIds.length - externalStudentIds.length,
+      results,
+    };
   });
