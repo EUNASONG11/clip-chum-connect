@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, RotateCcw, Subtitles } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -69,7 +69,7 @@ function formatDuration(sec: number | null) {
 function getVimeoEmbedUrl(video: Video) {
   if (!video.player_embed_url) return null;
   const separator = video.player_embed_url.includes("?") ? "&" : "?";
-  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0`;
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0&texttrack=false`;
 }
 
 async function requestElementFullscreen(element: Element | null) {
@@ -105,7 +105,20 @@ function VideoPage() {
   const durationRef = useRef<number | null>(null);
   const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
+  const rewindRef = useRef<(sec?: number) => void>(() => {});
+  const captionsRef = useRef<(on: boolean) => void>(() => {});
+  const captionsOnRef = useRef(false);
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const toggleCaptions = () => {
+    const next = !captionsOnRef.current;
+    captionsOnRef.current = next;
+    setCaptionsOn(next);
+    captionsRef.current?.(next);
+  };
+
   const playerRef = useRef<any>(null);
+
+
   const isPlayingRef = useRef(false);
   const [ratio, setRatio] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -348,7 +361,30 @@ function VideoPage() {
           }
           lastWallRef.current = Date.now();
         } catch {}
+        // 자막(자동 생성 포함)은 기본 OFF — 학생이 필요할 때만 켤 수 있게
+        try { await (player as any).disableTextTrack?.(); } catch {}
       });
+      // 자막 켜기/끄기
+      captionsRef.current = (on: boolean) => {
+        void (async () => {
+          try {
+            if (!on) {
+              await (player as any).disableTextTrack?.();
+              return;
+            }
+            const tracks = (await (player as any).getTextTracks?.()) ?? [];
+            const first = tracks[0];
+            if (first) await (player as any).enableTextTrack?.(first.language, first.kind);
+          } catch {}
+        })();
+      };
+      // 자막이 자동으로 다시 켜지는 경우 방지
+      player.on("texttrackchange", (d: any) => {
+        if (!captionsOnRef.current && d?.language) {
+          (player as any).disableTextTrack?.()?.catch?.(() => {});
+        }
+      });
+
       const allowSeek = effectiveAllowSeek;
       const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       const enforceRate = async () => {
@@ -422,6 +458,23 @@ function VideoPage() {
         player.setCurrentTime(target).catch(() => {});
         player.play().catch(() => {});
       };
+      // 되감기(이미 본 구간 다시 보기)는 항상 허용
+      rewindRef.current = (back = 10) => {
+        void (async () => {
+          try {
+            const t = await player.getCurrentTime();
+            const target = Math.max(0, t - back);
+            lastTimeRef.current = target;
+            currentTimeRef.current = target;
+            isSeekingRef.current = false;
+            lastWallRef.current = Date.now();
+            await player.setCurrentTime(target);
+            await player.play().catch(() => {});
+          } catch {}
+        })();
+      };
+
+
 
       fullscreenRef.current = () => {
         void (async () => {
@@ -452,7 +505,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&cc_load_policy=0&hl=ko&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
@@ -487,10 +540,16 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
+                // 자막은 기본 OFF
+                if (!captionsOnRef.current) {
+                  try { player.unloadModule?.("captions"); } catch {}
+                  try { player.unloadModule?.("cc"); } catch {}
+                }
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
             },
+
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               setIsPlaying(e.data === 1);
@@ -525,6 +584,32 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
+        // 되감기(이미 본 구간 다시 보기)는 항상 허용
+        rewindRef.current = (back = 10) => {
+          try {
+            const t = player.getCurrentTime?.() ?? 0;
+            const target = Math.max(0, t - back);
+            lastTimeRef.current = target;
+            currentTimeRef.current = target;
+            isSeekingRef.current = false;
+            player.seekTo?.(target, true);
+            player.playVideo?.();
+          } catch {}
+        };
+        // 자막 켜기/끄기
+        captionsRef.current = (on: boolean) => {
+          try {
+            if (on) {
+              player.loadModule?.("captions");
+              player.loadModule?.("cc");
+            } else {
+              player.unloadModule?.("captions");
+              player.unloadModule?.("cc");
+            }
+          } catch {}
+        };
+
+
 
         fullscreenRef.current = () => {
           void (async () => {
@@ -648,24 +733,54 @@ function VideoPage() {
                       hideFsControls();
                     }}
                   >
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          revealFsControls();
+                          toggleCaptions();
+                        }}
+                        className={cn(
+                          "inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95",
+                          captionsOn ? "bg-primary/90" : "bg-black/85"
+                        )}
+                        aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                      >
+                        <Subtitles className="h-5 w-5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsPlayerExpanded(false);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                        aria-label="전체화면 닫기"
+                      >
+                        <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
+                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
+                    )}
+                  >
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setIsPlayerExpanded(false);
+                        revealFsControls();
+                        rewindRef.current?.(10);
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                      aria-label="전체화면 닫기"
+                      className="pointer-events-auto rounded-full bg-black/70 p-4 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-5"
+                      aria-label="10초 뒤로"
                     >
-                      <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                      <RotateCcw className="h-7 w-7 sm:h-8 sm:w-8" />
                     </button>
-                  </div>
-                  <div
-                    className={cn(
-                      "absolute inset-0 z-[110] flex items-center justify-center transition-opacity duration-300 pointer-events-none",
-                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
-                    )}
-                  >
+
 
                     <button
                       type="button"
@@ -687,16 +802,38 @@ function VideoPage() {
                 </>
 
               ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsPlayerExpanded(true)}
-                  className="absolute top-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                  aria-label="전체화면"
-                >
-                  <Maximize2 className="h-3.5 w-3.5" /> 전체화면
-                </button>
+                <div className="absolute top-2 right-2 z-[110] flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleCaptions}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
+                      captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
+                    )}
+                    aria-label={captionsOn ? "자막 끄기" : "자막 켜기"}
+                  >
+                    <Subtitles className="h-3.5 w-3.5" /> 자막 {captionsOn ? "켜짐" : "꺼짐"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => rewindRef.current?.(10)}
+                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                    aria-label="10초 뒤로"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> 10초 뒤로
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPlayerExpanded(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                    aria-label="전체화면"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                  </button>
+                </div>
               )}
             </div>
+
 
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
