@@ -150,12 +150,21 @@ export function ExternalAssignmentPanel({
                 onChange={(e) => setPeriodEnd(e.target.value)}
               />
             </div>
-            <div className="flex min-w-0 items-end md:col-span-2 lg:col-span-1">
-              <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full">
+            <div className="flex min-w-0 items-end gap-2 md:col-span-2 lg:col-span-1">
+              <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
                 {submitting ? "전송 중..." : `선택 영상 내보내기 (${selected.length})`}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onResync}
+                disabled={resyncing || !configured}
+              >
+                {resyncing ? "재통보 중..." : "완료 재통보"}
               </Button>
             </div>
           </div>
+
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
