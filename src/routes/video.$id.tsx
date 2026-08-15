@@ -540,10 +540,16 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
+                // 자막은 기본 OFF
+                if (!captionsOnRef.current) {
+                  try { player.unloadModule?.("captions"); } catch {}
+                  try { player.unloadModule?.("cc"); } catch {}
+                }
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
             },
+
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               setIsPlaying(e.data === 1);
