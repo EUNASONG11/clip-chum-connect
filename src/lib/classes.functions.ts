@@ -736,6 +736,8 @@ export const updateVideo = createServerFn({ method: "POST" })
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().min(0.5).max(4).nullable().optional(),
         thumbnail_url: z.string().max(1000).nullable().optional(),
+        week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+
       })
       .parse(i),
   )
