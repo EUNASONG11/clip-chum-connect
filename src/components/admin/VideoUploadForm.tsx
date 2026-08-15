@@ -287,6 +287,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [progress, setProgress] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [playback, setPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
+  const [weekLabel, setWeekLabel] = useState<string | null>(weekLabelFromDate());
   const [thumbFile, setThumbFile] = useState<File | null>(null);
   const [ytThumbFile, setYtThumbFile] = useState<File | null>(null);
   const [resetKey, setResetKey] = useState(0);
