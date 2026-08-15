@@ -351,6 +351,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: classId === NO_CLASS || folderId === NO_FOLDER ? null : folderId,
           is_published: isPublished,
           sort_order: sortOrder,
+          week_label: weekLabel,
           ...playback,
         },
       });
@@ -371,6 +372,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setIsPublished(false);
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
+      setWeekLabel(weekLabelFromDate());
       setFile(null);
       setThumbFile(null);
       setResetKey((k) => k + 1);
@@ -399,6 +401,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           folder_id: ytClassId === NO_CLASS || ytFolderId === NO_FOLDER ? null : ytFolderId,
           is_published: ytPublished,
           sort_order: ytSort,
+          week_label: ytWeekLabel,
           ...ytPlayback,
         },
       });
@@ -418,6 +421,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
+      setYtWeekLabel(weekLabelFromDate());
       setYtThumbFile(null);
       setResetKey((k) => k + 1);
       onUploaded?.();
@@ -532,6 +536,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
             <Label htmlFor="pub">학생에게 공개</Label>
           </div>
+          <WeekPicker id="up-week" value={weekLabel} onChange={setWeekLabel} />
           <PlaybackSettings id="up" value={playback} onChange={setPlayback} />
           <ThumbnailPicker key={`up-${resetKey}`} id="up" file={thumbFile} onChange={setThumbFile} />
           <div>
@@ -643,6 +648,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
               <Label htmlFor="yt-pub">학생에게 공개</Label>
             </div>
+            <WeekPicker id="yt-week" value={ytWeekLabel} onChange={setYtWeekLabel} />
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
             <Button type="submit" disabled={ytSaving}>
