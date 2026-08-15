@@ -423,6 +423,7 @@ export type Database = {
           source: string
           student_count: number
           updated_at: string
+          video_id: string | null
         }
         Insert: {
           assignment_type: string
@@ -442,6 +443,7 @@ export type Database = {
           source?: string
           student_count?: number
           updated_at?: string
+          video_id?: string | null
         }
         Update: {
           assignment_type?: string
@@ -461,6 +463,7 @@ export type Database = {
           source?: string
           student_count?: number
           updated_at?: string
+          video_id?: string | null
         }
         Relationships: [
           {
@@ -468,6 +471,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_assignment_links_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
             referencedColumns: ["id"]
           },
         ]
