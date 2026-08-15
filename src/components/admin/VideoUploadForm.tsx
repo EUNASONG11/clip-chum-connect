@@ -11,6 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen, X } from "lucide-react";
+import { WeekPicker } from "@/components/admin/WeekPicker";
+import { weekLabelFromDate } from "@/lib/week";
 
 type FolderNode = { id: string; name: string; depth: number };
 
