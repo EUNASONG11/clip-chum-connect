@@ -496,7 +496,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&cc_load_policy=0&hl=ko&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&hl=ko&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
@@ -576,18 +576,10 @@ function VideoPage() {
                   player.seekTo(resumeAtRef.current, true);
                 }
                 enforceRate();
-                // 모듈을 한 번 로드해 실제 트랙 유무를 확인하되, 기본 상태는 OFF로 유지한다.
-                player.loadModule?.("captions");
-                selectYouTubeCaptionTrack(12, captionsOnRef.current);
                 const state = player.getPlayerState?.();
                 setIsPlaying(state === 1);
               } catch {}
             },
-            // captions 모듈 로드가 끝난 뒤 발생하는 공식 API 이벤트에서 트랙을 선택한다.
-            onApiChange: () => {
-              if (captionsOnRef.current) selectYouTubeCaptionTrack();
-            },
-
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               setIsPlaying(e.data === 1);
@@ -607,7 +599,6 @@ function VideoPage() {
               if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
               if (e.data === 1) {
                 isSeekingRef.current = false;
-                if (!captionsOnRef.current) captionsRef.current?.(false);
               }
               if (e.data === 0) send(t, d, true);
               else if (e.data === 2) send(t, d);
@@ -625,7 +616,8 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
-        captionsRef.current = applyYouTubeCaptions;
+        // YouTube 자막은 플레이어 하단의 기본 CC 버튼이 직접 제어한다.
+        captionsRef.current = () => {};
 
 
 
@@ -752,7 +744,7 @@ function VideoPage() {
                     }}
                   >
                     <div className="flex items-center gap-2">
-                      <button
+                      {video.source !== "youtube" && <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -767,7 +759,7 @@ function VideoPage() {
                          aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
                       >
                          <Subtitles className="h-5 w-5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
-                      </button>
+                      </button>}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -808,7 +800,7 @@ function VideoPage() {
 
               ) : (
                 <div className="absolute top-2 right-2 z-[110] flex items-center gap-1.5">
-                  <button
+                  {video.source !== "youtube" && <button
                     type="button"
                     onClick={toggleCaptions}
                      disabled={captionsAvailable !== true}
@@ -819,7 +811,7 @@ function VideoPage() {
                      aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
                   >
                      <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
-                  </button>
+                  </button>}
                   <button
                     type="button"
                     onClick={() => setIsPlayerExpanded(true)}
