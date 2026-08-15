@@ -353,7 +353,30 @@ function VideoPage() {
           }
           lastWallRef.current = Date.now();
         } catch {}
+        // 자막(자동 생성 포함)은 기본 OFF — 학생이 필요할 때만 켤 수 있게
+        try { await (player as any).disableTextTrack?.(); } catch {}
       });
+      // 자막 켜기/끄기
+      captionsRef.current = (on: boolean) => {
+        void (async () => {
+          try {
+            if (!on) {
+              await (player as any).disableTextTrack?.();
+              return;
+            }
+            const tracks = (await (player as any).getTextTracks?.()) ?? [];
+            const first = tracks[0];
+            if (first) await (player as any).enableTextTrack?.(first.language, first.kind);
+          } catch {}
+        })();
+      };
+      // 자막이 자동으로 다시 켜지는 경우 방지
+      player.on("texttrackchange", (d: any) => {
+        if (!captionsOnRef.current && d?.language) {
+          (player as any).disableTextTrack?.()?.catch?.(() => {});
+        }
+      });
+
       const allowSeek = effectiveAllowSeek;
       const maxRate = Math.max(0.5, Math.min(4, effectiveMaxRate));
       const enforceRate = async () => {
