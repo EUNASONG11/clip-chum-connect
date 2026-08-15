@@ -674,6 +674,8 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
         completion_ratio: z.number().min(0).max(1).optional(),
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().nullable().optional(),
+        week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+
 
       })
       .parse(input),
