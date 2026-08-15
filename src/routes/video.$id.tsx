@@ -513,34 +513,41 @@ function VideoPage() {
           } catch {}
         };
         let captionsRetryTimer: number | null = null;
-        const applyYouTubeCaptions = (on: boolean, retries = 6) => {
+        const selectYouTubeCaptionTrack = (retries = 12) => {
           try {
-            player.loadModule?.("captions");
-            if (!on) {
-              player.setOption?.("captions", "track", {});
-              return;
-            }
-
             const list = player.getOption?.("captions", "tracklist") ?? [];
             const preferred =
               list.find?.((track: any) => track.languageCode === "ko" || track.languageCode === "ko-KR") ??
               list[0];
             if (preferred) {
-              player.setOption?.("captions", "track", {
-                languageCode: preferred.languageCode,
-                ...(preferred.translationLanguage ? { translationLanguage: preferred.translationLanguage } : {}),
-              });
+              // YouTube가 반환한 트랙 객체를 그대로 다시 전달해야 자동 생성(ASR) 자막도 켜진다.
+              player.setOption?.("captions", "track", preferred);
               return;
             }
 
-            // YouTube는 자막 모듈 준비가 늦는 경우가 있어 트랙 목록이 생길 때까지 재시도한다.
             if (retries > 0) {
               if (captionsRetryTimer) window.clearTimeout(captionsRetryTimer);
               captionsRetryTimer = window.setTimeout(
-                () => applyYouTubeCaptions(on, retries - 1),
-                350,
+                () => selectYouTubeCaptionTrack(retries - 1),
+                500,
               );
             }
+          } catch {}
+        };
+        const applyYouTubeCaptions = (on: boolean) => {
+          if (captionsRetryTimer) {
+            window.clearTimeout(captionsRetryTimer);
+            captionsRetryTimer = null;
+          }
+          try {
+            if (!on) {
+              player.setOption?.("captions", "track", {});
+              player.unloadModule?.("captions");
+              return;
+            }
+            // 실제 YouTube IFrame Player의 captions 모듈을 로드한다.
+            player.loadModule?.("captions");
+            selectYouTubeCaptionTrack();
           } catch {}
         };
         const player = new YT.Player(iframeRef.current, {
@@ -561,7 +568,10 @@ function VideoPage() {
                 setIsPlaying(state === 1);
               } catch {}
             },
-            onApiChange: () => applyYouTubeCaptions(captionsOnRef.current),
+            // captions 모듈 로드가 끝난 뒤 발생하는 공식 API 이벤트에서 트랙을 선택한다.
+            onApiChange: () => {
+              if (captionsOnRef.current) selectYouTubeCaptionTrack();
+            },
 
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
@@ -600,7 +610,7 @@ function VideoPage() {
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
           try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
-        captionsRef.current = (on: boolean) => applyYouTubeCaptions(on);
+        captionsRef.current = applyYouTubeCaptions;
 
 
 
