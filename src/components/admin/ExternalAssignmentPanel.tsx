@@ -12,6 +12,8 @@ import {
   getExternalAssignmentStatus,
   listClassVideosForAssignment,
   pushVideoAssignmentsToExternal,
+  resyncCompletionsToExternal,
+
 } from "@/lib/external-assignment.functions";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -38,12 +40,28 @@ export function ExternalAssignmentPanel({
   const fetchStatus = useServerFn(getExternalAssignmentStatus);
   const fetchVideos = useServerFn(listClassVideosForAssignment);
   const pushVideos = useServerFn(pushVideoAssignmentsToExternal);
+  const resyncCompletions = useServerFn(resyncCompletionsToExternal);
 
   const [titlePrefix, setTitlePrefix] = useState(`${className} 영상 과제`);
   const [periodStart, setPeriodStart] = useState(today());
   const [periodEnd, setPeriodEnd] = useState(today(6));
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [resyncing, setResyncing] = useState(false);
+
+  const onResync = async () => {
+    setResyncing(true);
+    try {
+      const res = await resyncCompletions({ data: { classId } });
+      toast.success(`완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`);
+      statusQuery.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "재통보에 실패했습니다.");
+    } finally {
+      setResyncing(false);
+    }
+  };
+
 
   const statusQuery = useQuery({
     queryKey: ["external-assignment-status", classId],
@@ -150,12 +168,21 @@ export function ExternalAssignmentPanel({
                 onChange={(e) => setPeriodEnd(e.target.value)}
               />
             </div>
-            <div className="flex min-w-0 items-end md:col-span-2 lg:col-span-1">
-              <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full">
+            <div className="flex min-w-0 items-end gap-2 md:col-span-2 lg:col-span-1">
+              <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
                 {submitting ? "전송 중..." : `선택 영상 내보내기 (${selected.length})`}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onResync}
+                disabled={resyncing || !configured}
+              >
+                {resyncing ? "재통보 중..." : "완료 재통보"}
               </Button>
             </div>
           </div>
+
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">

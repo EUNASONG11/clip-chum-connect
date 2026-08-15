@@ -372,3 +372,41 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
       skipped: userIds.length - externalStudentIds.length,
     };
   });
+
+/** 이미 완료된 시청 기록을 외부 "과제 점검"에 재통보 (누락분 보정) */
+export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { notifyVideoCompletion } = await import("./external-assignment-notify.server");
+
+    const { data: videos, error: vidErr } = await supabaseAdmin
+      .from("videos")
+      .select("id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    if (vidErr) throw new Error(vidErr.message);
+    const videoIds = (videos ?? []).map((v) => v.id as string);
+    if (videoIds.length === 0) return { sent: 0, total: 0 };
+
+    const { data: rows, error: progErr } = await supabaseAdmin
+      .from("video_progress")
+      .select("user_id, video_id")
+      .in("video_id", videoIds)
+      .eq("is_completed", true);
+    if (progErr) throw new Error(progErr.message);
+
+    let sent = 0;
+    for (const r of rows ?? []) {
+      try {
+        await notifyVideoCompletion(r.user_id as string, r.video_id as string);
+        sent += 1;
+      } catch (e) {
+        console.error("[external-assignment] resync failed", e);
+      }
+    }
+    return { sent, total: (rows ?? []).length };
+  });
