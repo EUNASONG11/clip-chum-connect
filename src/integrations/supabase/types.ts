@@ -424,6 +424,7 @@ export type Database = {
           student_count: number
           updated_at: string
           video_id: string | null
+          week_label: string | null
         }
         Insert: {
           assignment_type: string
@@ -444,6 +445,7 @@ export type Database = {
           student_count?: number
           updated_at?: string
           video_id?: string | null
+          week_label?: string | null
         }
         Update: {
           assignment_type?: string
@@ -464,6 +466,7 @@ export type Database = {
           student_count?: number
           updated_at?: string
           video_id?: string | null
+          week_label?: string | null
         }
         Relationships: [
           {
@@ -940,6 +943,7 @@ export type Database = {
           updated_at: string
           vimeo_uri: string | null
           vimeo_video_id: string | null
+          week_label: string | null
         }
         Insert: {
           allow_seek?: boolean
@@ -968,6 +972,7 @@ export type Database = {
           updated_at?: string
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
+          week_label?: string | null
         }
         Update: {
           allow_seek?: boolean
@@ -996,6 +1001,7 @@ export type Database = {
           updated_at?: string
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
+          week_label?: string | null
         }
         Relationships: [
           {
