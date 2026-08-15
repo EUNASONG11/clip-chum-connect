@@ -75,17 +75,15 @@ export function ExternalAssignmentPanel({
     }
     setSubmitting(true);
     try {
-      const res = await pushVideoAssignmentsToExternal
-        ? await pushVideos({
-            data: {
-              classId,
-              videoIds: selected,
-              periodStart,
-              periodEnd,
-              titlePrefix: titlePrefix.trim() || className,
-            },
-          })
-        : null;
+      const res = await pushVideos({
+        data: {
+          classId,
+          videoIds: selected,
+          periodStart,
+          periodEnd,
+          titlePrefix: titlePrefix.trim() || className,
+        },
+      });
       const failed = (res?.results ?? []).filter((r: any) => !r.ok);
       if (failed.length > 0) {
         toast.error(`${failed.length}개 영상 전송 실패: ${failed[0]?.error ?? ""}`);
