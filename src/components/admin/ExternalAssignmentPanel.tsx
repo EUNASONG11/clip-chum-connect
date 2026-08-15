@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
@@ -8,12 +8,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { formatWeekLabel, weekRange } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
-  listClassVideosForAssignment,
-  pushVideoAssignmentsToExternal,
+  listClassWeeksForAssignment,
+  pushWeekAssignmentsToExternal,
   resyncCompletionsToExternal,
-
 } from "@/lib/external-assignment.functions";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -24,12 +24,6 @@ const STATUS_LABEL: Record<string, string> = {
   pending: "전송 대기",
 };
 
-function today(offsetDays = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
-}
-
 export function ExternalAssignmentPanel({
   classId,
   className,
@@ -38,16 +32,38 @@ export function ExternalAssignmentPanel({
   className: string;
 }) {
   const fetchStatus = useServerFn(getExternalAssignmentStatus);
-  const fetchVideos = useServerFn(listClassVideosForAssignment);
-  const pushVideos = useServerFn(pushVideoAssignmentsToExternal);
+  const fetchWeeks = useServerFn(listClassWeeksForAssignment);
+  const pushWeeks = useServerFn(pushWeekAssignmentsToExternal);
   const resyncCompletions = useServerFn(resyncCompletionsToExternal);
 
-  const [titlePrefix, setTitlePrefix] = useState(`${className} 영상 과제`);
-  const [periodStart, setPeriodStart] = useState(today());
-  const [periodEnd, setPeriodEnd] = useState(today(6));
+  const [titlePrefix, setTitlePrefix] = useState(className);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [resyncing, setResyncing] = useState(false);
+
+  const statusQuery = useQuery({
+    queryKey: ["external-assignment-status", classId],
+    queryFn: () => fetchStatus({ data: { classId } }),
+    staleTime: 30_000,
+  });
+
+  const weeksQuery = useQuery({
+    queryKey: ["external-assignment-weeks", classId],
+    queryFn: () => fetchWeeks({ data: { classId } }),
+    staleTime: 30_000,
+  });
+
+  const configured = statusQuery.data?.configured ?? false;
+  const links = statusQuery.data?.links ?? [];
+  const weeks = (weeksQuery.data ?? []) as any[];
+  const labeledWeeks = weeks.filter((w) => !!w.week_label);
+  const unlabeled = weeks.find((w) => !w.week_label);
+
+  const toggle = (label: string) =>
+    setSelected((prev) => (prev.includes(label) ? prev.filter((v) => v !== label) : [...prev, label]));
+
+  const assignmentName = (label: string) =>
+    `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
     setResyncing(true);
@@ -62,58 +78,39 @@ export function ExternalAssignmentPanel({
     }
   };
 
-
-  const statusQuery = useQuery({
-    queryKey: ["external-assignment-status", classId],
-    queryFn: () => fetchStatus({ data: { classId } }),
-    staleTime: 30_000,
-  });
-
-  const videosQuery = useQuery({
-    queryKey: ["external-assignment-videos", classId],
-    queryFn: () => fetchVideos({ data: { classId } }),
-    staleTime: 30_000,
-  });
-
-  const configured = statusQuery.data?.configured ?? false;
-  const links = statusQuery.data?.links ?? [];
-  const videos = videosQuery.data ?? [];
-
-  const toggle = (id: string) =>
-    setSelected((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
-
   const onSubmit = async () => {
     if (selected.length === 0) {
-      toast.error("내보낼 영상을 선택해 주세요.");
-      return;
-    }
-    if (periodEnd < periodStart) {
-      toast.error("종료일이 시작일보다 앞설 수 없습니다.");
+      toast.error("내보낼 주차를 선택해 주세요.");
       return;
     }
     setSubmitting(true);
     try {
-      const res = await pushVideos({
+      const res = await pushWeeks({
         data: {
           classId,
-          videoIds: selected,
-          periodStart,
-          periodEnd,
-          titlePrefix: titlePrefix.trim() || className,
+          weeks: selected.map((label) => {
+            const range = weekRange(label);
+            return {
+              weekLabel: label,
+              assignmentType: assignmentName(label),
+              periodStart: range.start,
+              periodEnd: range.end,
+            };
+          }),
         },
       });
       const failed = (res?.results ?? []).filter((r: any) => !r.ok);
       if (failed.length > 0) {
-        toast.error(`${failed.length}개 영상 전송 실패: ${failed[0]?.error ?? ""}`);
+        toast.error(`${failed.length}개 주차 전송 실패: ${failed[0]?.error ?? ""}`);
       } else {
         toast.success(
-          `영상 ${selected.length}개 과제를 내보냈습니다. 대상 학생 ${res?.studentCount ?? 0}명${
+          `주차 ${selected.length}건 과제를 내보냈습니다. 대상 학생 ${res?.studentCount ?? 0}명${
             (res?.skipped ?? 0) > 0 ? ` (식별 불가 ${res?.skipped}명 제외)` : ""
           }`,
         );
       }
       setSelected([]);
-      await statusQuery.refetch();
+      await Promise.all([statusQuery.refetch(), weeksQuery.refetch()]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "과제 내보내기에 실패했습니다.");
     } finally {
@@ -125,7 +122,7 @@ export function ExternalAssignmentPanel({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">외부 과제 점검으로 내보내기 (영상별)</CardTitle>
+          <CardTitle className="text-base">외부 과제 점검으로 내보내기 (주차별)</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {!configured && (
@@ -134,8 +131,8 @@ export function ExternalAssignmentPanel({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <div className="min-w-0 md:col-span-2 lg:col-span-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="min-w-0 md:col-span-2">
               <Label htmlFor="eap-prefix">과제명 앞머리</Label>
               <Input
                 id="eap-prefix"
@@ -145,55 +142,30 @@ export function ExternalAssignmentPanel({
                 placeholder="예: 19기"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                외부 과제명은 &quot;앞머리 - 영상 제목&quot; 형태로 영상별로 각각 생성됩니다.
+                외부 과제명은 &quot;앞머리 8월 1주차 영상 과제&quot; 형태로 주차별 1건씩 생성됩니다. 과제 기간은 해당
+                주차의 시작일~종료일로 자동 설정됩니다.
               </p>
             </div>
-            <div className="min-w-0">
-              <Label htmlFor="eap-start">시작일</Label>
-              <Input
-                id="eap-start"
-                type="date"
-                className="w-full min-w-0"
-                value={periodStart}
-                onChange={(e) => setPeriodStart(e.target.value)}
-              />
-            </div>
-            <div className="min-w-0">
-              <Label htmlFor="eap-end">종료일</Label>
-              <Input
-                id="eap-end"
-                type="date"
-                className="w-full min-w-0"
-                value={periodEnd}
-                onChange={(e) => setPeriodEnd(e.target.value)}
-              />
-            </div>
-            <div className="flex min-w-0 items-end gap-2 md:col-span-2 lg:col-span-1">
+            <div className="flex min-w-0 items-end gap-2">
               <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
-                {submitting ? "전송 중..." : `선택 영상 내보내기 (${selected.length})`}
+                {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onResync}
-                disabled={resyncing || !configured}
-              >
+              <Button type="button" variant="outline" onClick={onResync} disabled={resyncing || !configured}>
                 {resyncing ? "재통보 중..." : "완료 재통보"}
               </Button>
             </div>
           </div>
 
-
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>영상 선택</Label>
+              <Label>주차 선택</Label>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelected(videos.map((v: any) => v.id))}
-                  disabled={videos.length === 0}
+                  onClick={() => setSelected(labeledWeeks.map((w) => w.week_label as string))}
+                  disabled={labeledWeeks.length === 0}
                 >
                   전체 선택
                 </Button>
@@ -208,30 +180,54 @@ export function ExternalAssignmentPanel({
                 </Button>
               </div>
             </div>
-            {videosQuery.isLoading ? (
-              <p className="text-sm text-muted-foreground">영상 목록을 불러오는 중...</p>
-            ) : videos.length === 0 ? (
-              <p className="text-sm text-muted-foreground">이 수강반에 영상이 없습니다.</p>
+            {weeksQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">주차 목록을 불러오는 중...</p>
+            ) : labeledWeeks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                주차가 지정된 영상이 없습니다. 영상 설정에서 주차를 먼저 지정해 주세요.
+              </p>
             ) : (
-              <ul className="max-h-64 space-y-1 overflow-y-auto rounded-md border p-2">
-                {videos.map((v: any) => (
-                  <li key={v.id}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
-                      <Checkbox
-                        checked={selected.includes(v.id)}
-                        onCheckedChange={() => toggle(v.id)}
-                      />
-                      <span className="min-w-0 break-words">{v.title}</span>
-                    </label>
-                  </li>
-                ))}
+              <ul className="max-h-72 space-y-1 overflow-y-auto rounded-md border p-2">
+                {labeledWeeks.map((w) => {
+                  const label = w.week_label as string;
+                  const range = weekRange(label);
+                  return (
+                    <li key={label}>
+                      <label className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
+                        <Checkbox
+                          className="mt-0.5"
+                          checked={selected.includes(label)}
+                          onCheckedChange={() => toggle(label)}
+                        />
+                        <span className="min-w-0">
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{formatWeekLabel(label)}</span>
+                            <Badge variant="outline">영상 {w.videos.length}개</Badge>
+                            {w.link ? <Badge variant="secondary">내보냄</Badge> : null}
+                            <span className="text-xs text-muted-foreground">
+                              {range.start} ~ {range.end}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 block break-words text-xs text-muted-foreground">
+                            {w.videos.map((v: any) => v.title).join(", ")}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
               </ul>
+            )}
+            {unlabeled && (
+              <p className="text-xs text-muted-foreground">
+                주차 미지정 영상 {unlabeled.videos.length}개는 연동 대상에서 제외됩니다.
+              </p>
             )}
           </div>
 
           <p className="text-xs text-muted-foreground">
-            선택한 영상마다 외부 과제가 각각 생성되며, 이 수강반에 배정된 학생 전체가 대상이 됩니다. 학생이 해당 영상
-            시청을 완료하면 그 영상의 과제 항목만 자동으로 완료 처리됩니다.
+            주차별로 외부 과제 1건이 생성되며, 학생이 그 주차의 모든 영상 시청을 완료한 시점에 해당 과제가 자동으로
+            완료 처리됩니다.
           </p>
         </CardContent>
       </Card>
@@ -251,7 +247,9 @@ export function ExternalAssignmentPanel({
                 <li key={l.id} className="rounded-md border p-3 text-sm">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">{l.assignment_type}</span>
-                    {l.video_title ? (
+                    {l.week_label ? (
+                      <Badge variant="outline">주차: {formatWeekLabel(l.week_label)}</Badge>
+                    ) : l.video_title ? (
                       <Badge variant="outline">영상: {l.video_title}</Badge>
                     ) : (
                       <Badge variant="outline">수강반 단위</Badge>
