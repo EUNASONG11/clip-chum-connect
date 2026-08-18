@@ -520,16 +520,18 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     const { data: rows, error: progErr } = await progQuery;
     if (progErr) throw new Error(progErr.message);
 
-    let sent = 0;
-    for (const r of rows ?? []) {
-      try {
-        await notifyVideoCompletion(r.user_id as string, r.video_id as string);
-        sent += 1;
-      } catch (e) {
-        console.error("[external-assignment] resync failed", e);
+    const results = await Promise.allSettled(
+      (rows ?? []).map((r) =>
+        notifyVideoCompletion(r.user_id as string, r.video_id as string),
+      ),
+    );
+    const failed = results.filter((result) => result.status === "rejected");
+    for (const result of failed) {
+      if (result.status === "rejected") {
+        console.error("[external-assignment] resync failed", result.reason);
       }
     }
-    return { sent, total: (rows ?? []).length };
+    return { sent: results.length - failed.length, failed: failed.length, total: results.length };
   });
 
 
