@@ -46,11 +46,14 @@ export function ExternalAssignmentPanel({
   const fetchWeeks = useServerFn(listClassWeeksForAssignment);
   const pushWeeks = useServerFn(pushWeekAssignmentsToExternal);
   const resyncCompletions = useServerFn(resyncCompletionsToExternal);
+  const fetchTargets = useServerFn(listResyncTargets);
 
   const [titlePrefix, setTitlePrefix] = useState(className);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [resyncing, setResyncing] = useState(false);
+  const [resyncOpen, setResyncOpen] = useState(false);
+  const [resyncUsers, setResyncUsers] = useState<string[]>([]);
 
   const statusQuery = useQuery({
     queryKey: ["external-assignment-status", classId],
@@ -64,6 +67,15 @@ export function ExternalAssignmentPanel({
     staleTime: 30_000,
   });
 
+  const targetsQuery = useQuery({
+    queryKey: ["external-assignment-resync-targets", classId],
+    queryFn: () => fetchTargets({ data: { classId } }),
+    enabled: resyncOpen,
+    staleTime: 10_000,
+  });
+
+  const targets = (targetsQuery.data ?? []) as any[];
+
   const configured = statusQuery.data?.configured ?? false;
   const links = statusQuery.data?.links ?? [];
   const weeks = (weeksQuery.data ?? []) as any[];
@@ -73,14 +85,25 @@ export function ExternalAssignmentPanel({
   const toggle = (label: string) =>
     setSelected((prev) => (prev.includes(label) ? prev.filter((v) => v !== label) : [...prev, label]));
 
+  const toggleUser = (id: string) =>
+    setResyncUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+
   const assignmentName = (label: string) =>
     `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
+    if (resyncUsers.length === 0) {
+      toast.error("재통보할 학생을 선택해 주세요.");
+      return;
+    }
     setResyncing(true);
     try {
-      const res = await resyncCompletions({ data: { classId } });
-      toast.success(`완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`);
+      const res = await resyncCompletions({ data: { classId, userIds: resyncUsers } });
+      toast.success(
+        `학생 ${resyncUsers.length}명 · 완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`,
+      );
+      setResyncOpen(false);
+      setResyncUsers([]);
       statusQuery.refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "재통보에 실패했습니다.");
@@ -88,6 +111,7 @@ export function ExternalAssignmentPanel({
       setResyncing(false);
     }
   };
+
 
   const onSubmit = async () => {
     if (selected.length === 0) {
