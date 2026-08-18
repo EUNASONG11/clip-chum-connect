@@ -128,7 +128,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
   let occurredAt = (prog?.completed_at ?? prog?.updated_at ?? new Date().toISOString()) as string;
 
   // 주차 과제라면 해당 주차 기간(월~일) 안으로 보정
-  if (weekLabel) {
+  if (weekLabel && weekLinked) {
     const { start, end } = weekRange(weekLabel);
     const t = new Date(occurredAt).getTime();
     const s = new Date(`${start}T00:00:00Z`).getTime();
