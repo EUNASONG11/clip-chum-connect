@@ -7,11 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatWeekLabel, weekRange } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
   listClassWeeksForAssignment,
+  listResyncTargets,
   pushWeekAssignmentsToExternal,
   resyncCompletionsToExternal,
 } from "@/lib/external-assignment.functions";
@@ -22,7 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
   sent: "전송 완료",
   failed: "전송 실패",
   pending: "전송 대기",
+  not_sent: "미전송",
 };
+
 
 export function ExternalAssignmentPanel({
   classId,
