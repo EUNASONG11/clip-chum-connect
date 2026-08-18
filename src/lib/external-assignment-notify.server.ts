@@ -10,7 +10,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isExternalAssignmentConfigured, pushAssignmentComplete } from "./external-assignment.server";
-import { formatWeekLabel } from "./week";
+import { formatWeekLabel, weekRange } from "./week";
 
 const COMPLETED_STATUS = "review_completed";
 
@@ -62,6 +62,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
   let links: LinkRow[] = [];
   let memo = `이러닝: "${video.title}" 시청 완료`;
+  let weekLinked = false;
 
   // 1순위: 주차 과제
   const weekLabel = (video as any).week_label as string | null;
@@ -79,9 +80,11 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
       const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
       if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
       links = (weekLinks ?? []) as LinkRow[];
+      weekLinked = true;
       memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
     }
   }
+
 
   // 2순위: 해당 영상에 연결된 과제
   if (links.length === 0) {
@@ -113,7 +116,28 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
   if (links.length === 0) return;
 
-  const occurredAt = new Date().toISOString();
+  // 통보 시각은 "지금"이 아니라 실제 시청 완료 시각을 사용합니다.
+  // (외부 시스템이 occurred_at 으로 주차를 계산하기 때문에 지금 시각을 보내면 엉뚱한 주차로 반영됨)
+  const { data: prog } = await supabaseAdmin
+    .from("video_progress")
+    .select("completed_at, updated_at")
+    .eq("user_id", userId)
+    .eq("video_id", videoId)
+    .maybeSingle();
+
+  let occurredAt = (prog?.completed_at ?? prog?.updated_at ?? new Date().toISOString()) as string;
+
+  // 주차 과제라면 해당 주차 기간(월~일) 안으로 보정
+  if (weekLabel && weekLinked) {
+    const { start, end } = weekRange(weekLabel);
+    const t = new Date(occurredAt).getTime();
+    const s = new Date(`${start}T00:00:00Z`).getTime();
+    const e = new Date(`${end}T23:59:59Z`).getTime();
+    if (Number.isNaN(t) || t < s || t > e) {
+      occurredAt = new Date(`${end}T12:00:00Z`).toISOString();
+    }
+  }
+
 
   for (const link of links) {
     // 이미 전송된 건은 건너뜀 (link_id + user_id 유니크)
