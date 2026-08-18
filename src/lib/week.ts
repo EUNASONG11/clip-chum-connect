@@ -29,16 +29,6 @@ export function formatWeekLabel(label: string | null | undefined): string {
   return `${prefix}${p.month}월 ${p.week}주차`;
 }
 
-/** 날짜(YYYY-MM-DD 또는 Date) → 주차 라벨 */
-export function weekLabelFromDate(input: Date | string = new Date()): string {
-  const d = typeof input === "string" ? new Date(`${input}T00:00:00`) : new Date(input);
-  const year = d.getFullYear();
-  const month = d.getMonth() + 1;
-  const firstDow = (new Date(year, d.getMonth(), 1).getDay() + 6) % 7; // 0=월 … 6=일
-  const week = Math.min(5, Math.floor((d.getDate() + firstDow - 1) / 7) + 1);
-  return makeWeekLabel(year, month, week);
-}
-
 function toISODate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -46,57 +36,68 @@ function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** 주차의 시작(월)/종료(일) 날짜. 월 경계를 넘지 않도록 잘라냄 */
+function addDays(d: Date, n: number): Date {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+/** 그 날짜가 속한 주(월~일)의 월요일 */
+function mondayOf(d: Date): Date {
+  const offset = (d.getDay() + 6) % 7; // 0=월 … 6=일
+  return addDays(new Date(d.getFullYear(), d.getMonth(), d.getDate()), -offset);
+}
+
+/** 해당 월의 첫 번째 토요일이 속한 주의 월요일 = 1주차 월요일 */
+function firstWeekMonday(year: number, month: number): Date {
+  const first = new Date(year, month - 1, 1);
+  const delta = (6 - first.getDay() + 7) % 7; // 첫 토요일까지
+  const firstSaturday = addDays(first, delta);
+  return mondayOf(firstSaturday);
+}
+
+/**
+ * 날짜(YYYY-MM-DD 또는 Date) → 주차 라벨
+ * "토요일 기준 주차": 그 주의 토요일이 속한 월을 기준 월로 삼고,
+ * 그 월의 첫 토요일이 있는 주를 1주차로 센다.
+ */
+export function weekLabelFromDate(input: Date | string = new Date()): string {
+  const d = typeof input === "string" ? new Date(`${input}T00:00:00`) : new Date(input);
+  const monday = mondayOf(d);
+  const saturday = addDays(monday, 5);
+  const year = saturday.getFullYear();
+  const month = saturday.getMonth() + 1;
+  const base = firstWeekMonday(year, month);
+  const week = Math.round((monday.getTime() - base.getTime()) / 86400000 / 7) + 1;
+  return makeWeekLabel(year, month, Math.min(5, Math.max(1, week)));
+}
+
+/** 주차의 시작(월)/종료(일) 날짜 — 월 경계를 넘을 수 있음 */
 export function weekRange(label: string): { start: string; end: string } {
   const p = parseWeekLabel(label);
   if (!p) {
     const t = toISODate(new Date());
     return { start: t, end: t };
   }
-  const monthStart = new Date(p.year, p.month - 1, 1);
-  const monthEnd = new Date(p.year, p.month, 0);
-  const firstDow = (monthStart.getDay() + 6) % 7; // 0=월
-  let startDay = (p.week - 1) * 7 - firstDow + 1;
-  if (startDay < 1) startDay = 1;
-  const start = new Date(p.year, p.month - 1, startDay);
-  let endDay = p.week * 7 - firstDow;
-  if (endDay > monthEnd.getDate()) endDay = monthEnd.getDate();
-  const end = new Date(p.year, p.month - 1, Math.max(endDay, startDay));
-  return { start: toISODate(start), end: toISODate(end) };
+  const monday = addDays(firstWeekMonday(p.year, p.month), (p.week - 1) * 7);
+  return { start: toISODate(monday), end: toISODate(addDays(monday, 6)) };
 }
 
 /**
- * 외부 시스템 전송용 기간.
- * 외부 프로그램이 일요일 시작 주를 쓰면 우리 주차의 마지막 날(일)이 다음 주차로 밀려
- * 과제가 한 주 뒤 폴더에 들어간다. 이를 막기 위해 끝나는 일요일을 제외(토요일까지)한다.
+ * 외부 시스템 전송용 기간 (월~토).
+ * 주차 판정 기준일인 토요일까지만 보내 다음 주차로 밀리는 것을 방지한다.
  */
 export function weekRangeForExternal(label: string): { start: string; end: string } {
-  const { start, end } = weekRange(label);
-  const e = new Date(`${end}T00:00:00`);
-  if (e.getDay() === 0) {
-    const prev = new Date(e);
-    prev.setDate(prev.getDate() - 1);
-    const prevISO = toISODate(prev);
-    if (prevISO >= start) return { start, end: prevISO };
-  }
-  return { start, end };
+  const { start } = weekRange(label);
+  const s = new Date(`${start}T00:00:00`);
+  return { start, end: toISODate(addDays(s, 5)) };
 }
 
 /** 주차 안의 주말(토, 일) 날짜 — 외부 과제 기간 기본값 */
-
 export function weekendRange(label: string): { start: string; end: string } {
   const { start, end } = weekRange(label);
   const s = new Date(`${start}T00:00:00`);
-  const e = new Date(`${end}T00:00:00`);
-  const saturdays: Date[] = [];
-  for (const d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() === 6) saturdays.push(new Date(d));
-  }
-  const sat = saturdays[0];
-  if (!sat) return { start, end };
-  const sun = new Date(sat);
-  sun.setDate(sun.getDate() + 1);
-  return { start: toISODate(sat), end: toISODate(sun > e ? e : sun) };
+  return { start: toISODate(addDays(s, 5)), end };
 }
 
 /** 최근 라벨이 먼저 오도록 비교 */
