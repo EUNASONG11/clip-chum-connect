@@ -69,7 +69,11 @@ export function ExternalAssignmentPanel({
 
   const targetsQuery = useQuery({
     queryKey: ["external-assignment-resync-targets", classId, selected[0]],
-    queryFn: () => fetchTargets({ data: { classId, weekLabel: selected[0] } }),
+    queryFn: () => {
+      const weekLabel = selected[0];
+      if (!weekLabel) throw new Error("재통보할 주차를 선택해 주세요.");
+      return fetchTargets({ data: { classId, weekLabel } });
+    },
     enabled: resyncOpen && selected.length === 1,
     staleTime: 10_000,
   });
@@ -92,7 +96,8 @@ export function ExternalAssignmentPanel({
     `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
-    if (selected.length !== 1) {
+    const weekLabel = selected[0];
+    if (selected.length !== 1 || !weekLabel) {
       toast.error("재통보할 주차를 1개만 선택해 주세요.");
       return;
     }
@@ -103,7 +108,7 @@ export function ExternalAssignmentPanel({
     setResyncing(true);
     try {
       const res = await resyncCompletions({
-        data: { classId, weekLabel: selected[0], userIds: resyncUsers },
+        data: { classId, weekLabel, userIds: resyncUsers },
       });
       toast.success(
         `학생 ${resyncUsers.length}명 · 완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`,
