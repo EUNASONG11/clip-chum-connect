@@ -185,9 +185,15 @@ export function ExternalAssignmentPanel({
               <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
                 {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
-              <Button type="button" variant="outline" onClick={onResync} disabled={resyncing || !configured}>
-                {resyncing ? "재통보 중..." : "완료 재통보"}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setResyncOpen(true)}
+                disabled={!configured}
+              >
+                완료 재통보
               </Button>
+
             </div>
           </div>
 
