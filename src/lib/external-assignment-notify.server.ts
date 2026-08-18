@@ -62,6 +62,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
   let links: LinkRow[] = [];
   let memo = `이러닝: "${video.title}" 시청 완료`;
+  let weekLinked = false;
 
   // 1순위: 주차 과제
   const weekLabel = (video as any).week_label as string | null;
@@ -79,9 +80,11 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
       const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
       if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
       links = (weekLinks ?? []) as LinkRow[];
+      weekLinked = true;
       memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
     }
   }
+
 
   // 2순위: 해당 영상에 연결된 과제
   if (links.length === 0) {
