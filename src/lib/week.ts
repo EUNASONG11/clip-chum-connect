@@ -65,7 +65,25 @@ export function weekRange(label: string): { start: string; end: string } {
   return { start: toISODate(start), end: toISODate(end) };
 }
 
+/**
+ * 외부 시스템 전송용 기간.
+ * 외부 프로그램이 일요일 시작 주를 쓰면 우리 주차의 마지막 날(일)이 다음 주차로 밀려
+ * 과제가 한 주 뒤 폴더에 들어간다. 이를 막기 위해 끝나는 일요일을 제외(토요일까지)한다.
+ */
+export function weekRangeForExternal(label: string): { start: string; end: string } {
+  const { start, end } = weekRange(label);
+  const e = new Date(`${end}T00:00:00`);
+  if (e.getDay() === 0) {
+    const prev = new Date(e);
+    prev.setDate(prev.getDate() - 1);
+    const prevISO = toISODate(prev);
+    if (prevISO >= start) return { start, end: prevISO };
+  }
+  return { start, end };
+}
+
 /** 주차 안의 주말(토, 일) 날짜 — 외부 과제 기간 기본값 */
+
 export function weekendRange(label: string): { start: string; end: string } {
   const { start, end } = weekRange(label);
   const s = new Date(`${start}T00:00:00`);
