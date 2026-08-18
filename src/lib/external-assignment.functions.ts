@@ -376,7 +376,14 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
 /** 재통보 대상 학생 목록 (완료 영상 수 + 최근 전송 상태) */
 export const listResyncTargets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertExternalAssignmentStaff(context as any);
 
@@ -386,6 +393,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       .from("videos")
       .select("id")
       .eq("class_id", data.classId)
+      .eq("week_label", data.weekLabel)
       .is("deleted_at", null);
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
@@ -423,6 +431,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       .from("external_assignment_links")
       .select("id")
       .eq("class_id", data.classId)
+      .eq("week_label", data.weekLabel)
       .is("deleted_at", null);
     const linkIds = (links ?? []).map((l) => l.id as string);
     const statusByUser = new Map<string, { status: string; error: string | null }>();
@@ -466,6 +475,7 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     z
       .object({
         classId: z.string().uuid(),
+        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
         userIds: z.array(z.string().uuid()).optional(),
       })
       .parse(i),
@@ -476,10 +486,24 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { notifyVideoCompletion } = await import("./external-assignment-notify.server");
 
+    const { data: weekLink, error: linkErr } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("id")
+      .eq("class_id", data.classId)
+      .eq("week_label", data.weekLabel)
+      .is("deleted_at", null)
+      .limit(1)
+      .maybeSingle();
+    if (linkErr) throw new Error(linkErr.message);
+    if (!weekLink) {
+      throw new Error("선택한 주차 과제가 아직 없습니다. 먼저 '선택 주차 내보내기'를 실행해 주세요.");
+    }
+
     const { data: videos, error: vidErr } = await supabaseAdmin
       .from("videos")
       .select("id")
       .eq("class_id", data.classId)
+      .eq("week_label", data.weekLabel)
       .is("deleted_at", null);
     if (vidErr) throw new Error(vidErr.message);
     const videoIds = (videos ?? []).map((v) => v.id as string);

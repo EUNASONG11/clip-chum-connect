@@ -68,9 +68,9 @@ export function ExternalAssignmentPanel({
   });
 
   const targetsQuery = useQuery({
-    queryKey: ["external-assignment-resync-targets", classId],
-    queryFn: () => fetchTargets({ data: { classId } }),
-    enabled: resyncOpen,
+    queryKey: ["external-assignment-resync-targets", classId, selected[0]],
+    queryFn: () => fetchTargets({ data: { classId, weekLabel: selected[0] } }),
+    enabled: resyncOpen && selected.length === 1,
     staleTime: 10_000,
   });
 
@@ -92,13 +92,19 @@ export function ExternalAssignmentPanel({
     `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
+    if (selected.length !== 1) {
+      toast.error("재통보할 주차를 1개만 선택해 주세요.");
+      return;
+    }
     if (resyncUsers.length === 0) {
       toast.error("재통보할 학생을 선택해 주세요.");
       return;
     }
     setResyncing(true);
     try {
-      const res = await resyncCompletions({ data: { classId, userIds: resyncUsers } });
+      const res = await resyncCompletions({
+        data: { classId, weekLabel: selected[0], userIds: resyncUsers },
+      });
       toast.success(
         `학생 ${resyncUsers.length}명 · 완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`,
       );
@@ -188,8 +194,15 @@ export function ExternalAssignmentPanel({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setResyncOpen(true)}
-                disabled={!configured}
+                onClick={() => {
+                  if (selected.length !== 1) {
+                    toast.error("완료 재통보할 주차를 1개만 선택해 주세요.");
+                    return;
+                  }
+                  setResyncUsers([]);
+                  setResyncOpen(true);
+                }}
+                disabled={!configured || selected.length !== 1}
               >
                 완료 재통보
               </Button>
@@ -355,7 +368,7 @@ export function ExternalAssignmentPanel({
           <DialogHeader>
             <DialogTitle>완료 재통보 대상 선택</DialogTitle>
             <DialogDescription>
-              영상 시청을 완료한 학생 목록입니다. 재통보할 학생을 선택해 주세요.
+              {selected[0] ? `${formatWeekLabel(selected[0])} ` : ""}영상을 모두 완료한 학생 중 재통보할 대상을 선택해 주세요.
             </DialogDescription>
           </DialogHeader>
 
