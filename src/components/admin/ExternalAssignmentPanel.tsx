@@ -349,6 +349,109 @@ export function ExternalAssignmentPanel({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={resyncOpen} onOpenChange={setResyncOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>완료 재통보 대상 선택</DialogTitle>
+            <DialogDescription>
+              영상 시청을 완료한 학생 목록입니다. 재통보할 학생을 선택해 주세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{resyncUsers.length}명 선택</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setResyncUsers(targets.map((t) => t.user_id as string))}
+                disabled={targets.length === 0}
+              >
+                전체 선택
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setResyncUsers(
+                    targets
+                      .filter((t) => t.status === "failed" || t.status === "not_sent" || t.status === "pending")
+                      .map((t) => t.user_id as string),
+                  )
+                }
+                disabled={targets.length === 0}
+              >
+                실패·미전송만
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setResyncUsers([])}
+                disabled={resyncUsers.length === 0}
+              >
+                해제
+              </Button>
+            </div>
+          </div>
+
+          {targetsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">학생 목록을 불러오는 중...</p>
+          ) : targets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">완료 기록이 있는 학생이 없습니다.</p>
+          ) : (
+            <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-2">
+              {targets.map((t) => (
+                <li key={t.user_id}>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={resyncUsers.includes(t.user_id)}
+                      onCheckedChange={() => toggleUser(t.user_id)}
+                    />
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{t.name}</span>
+                        <Badge
+                          variant={
+                            t.status === "failed"
+                              ? "destructive"
+                              : t.status === "review_completed" || t.status === "sent"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {STATUS_LABEL[t.status] ?? t.status}
+                        </Badge>
+                        <Badge variant="outline">완료 영상 {t.completed_videos}개</Badge>
+                        {!t.identified && <Badge variant="destructive">식별 불가</Badge>}
+                      </span>
+                      {t.error_message && (
+                        <span className="mt-0.5 block break-all text-xs text-destructive">
+                          {String(t.error_message).slice(0, 160)}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setResyncOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={onResync} disabled={resyncing || resyncUsers.length === 0}>
+              {resyncing ? "재통보 중..." : `선택 학생 재통보 (${resyncUsers.length})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
