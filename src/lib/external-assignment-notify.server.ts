@@ -10,7 +10,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isExternalAssignmentConfigured, pushAssignmentComplete } from "./external-assignment.server";
-import { formatWeekLabel } from "./week";
+import { formatWeekLabel, weekRange } from "./week";
 
 const COMPLETED_STATUS = "review_completed";
 
