@@ -373,10 +373,103 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
     };
   });
 
-/** 이미 완료된 시청 기록을 외부 "과제 점검"에 재통보 (누락분 보정) */
-export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
+/** 재통보 대상 학생 목록 (완료 영상 수 + 최근 전송 상태) */
+export const listResyncTargets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: videos } = await supabaseAdmin
+      .from("videos")
+      .select("id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    const videoIds = (videos ?? []).map((v) => v.id as string);
+    if (videoIds.length === 0) return [] as any[];
+
+    const { data: rows } = await supabaseAdmin
+      .from("video_progress")
+      .select("user_id, video_id, completed_at, updated_at")
+      .in("video_id", videoIds)
+      .eq("is_completed", true);
+
+    const byUser = new Map<string, { completed: number; last: string | null }>();
+    for (const r of rows ?? []) {
+      const u = r.user_id as string;
+      const cur = byUser.get(u) ?? { completed: 0, last: null };
+      cur.completed += 1;
+      const at = (r.completed_at ?? r.updated_at) as string | null;
+      if (at && (!cur.last || at > cur.last)) cur.last = at;
+      byUser.set(u, cur);
+    }
+    const userIds = Array.from(byUser.keys());
+    if (userIds.length === 0) return [] as any[];
+
+    const { data: students } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, external_id")
+      .in("auth_user_id", userIds);
+    const nameById = new Map<string, { name: string; identified: boolean }>();
+    for (const s of students ?? []) {
+      if (s.auth_user_id)
+        nameById.set(s.auth_user_id, { name: s.name, identified: !!s.external_id });
+    }
+
+    // 최근 전송 상태 (해당 수강반 링크 기준)
+    const { data: links } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    const linkIds = (links ?? []).map((l) => l.id as string);
+    const statusByUser = new Map<string, { status: string; error: string | null }>();
+    if (linkIds.length > 0) {
+      const { data: comps } = await supabaseAdmin
+        .from("external_assignment_completions")
+        .select("user_id, status, remote_status, error_message, updated_at")
+        .in("link_id", linkIds)
+        .order("updated_at", { ascending: false });
+      for (const c of comps ?? []) {
+        const u = c.user_id as string;
+        if (statusByUser.has(u)) continue;
+        statusByUser.set(u, {
+          status: (c.remote_status || c.status || "unknown") as string,
+          error: (c.error_message as string | null) ?? null,
+        });
+      }
+    }
+
+    return userIds
+      .map((u) => {
+        const info = nameById.get(u);
+        const st = statusByUser.get(u);
+        return {
+          user_id: u,
+          name: info?.name ?? "이름 미확인",
+          identified: info?.identified ?? false,
+          completed_videos: byUser.get(u)?.completed ?? 0,
+          last_completed_at: byUser.get(u)?.last ?? null,
+          status: st?.status ?? "not_sent",
+          error_message: st?.error ?? null,
+        };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
+  });
+
+/** 이미 완료된 시청 기록을 외부 "과제 점검"에 재통보 (누락분 보정, 학생 선택 가능) */
+export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        userIds: z.array(z.string().uuid()).optional(),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertExternalAssignmentStaff(context as any);
 
@@ -392,11 +485,15 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return { sent: 0, total: 0 };
 
-    const { data: rows, error: progErr } = await supabaseAdmin
+    let progQuery = supabaseAdmin
       .from("video_progress")
       .select("user_id, video_id")
       .in("video_id", videoIds)
       .eq("is_completed", true);
+    if (data.userIds && data.userIds.length > 0) {
+      progQuery = progQuery.in("user_id", data.userIds);
+    }
+    const { data: rows, error: progErr } = await progQuery;
     if (progErr) throw new Error(progErr.message);
 
     let sent = 0;
@@ -410,6 +507,7 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     }
     return { sent, total: (rows ?? []).length };
   });
+
 
 /** 수강반 영상을 주차별로 묶어 반환 (연동 현황 포함) */
 export const listClassWeeksForAssignment = createServerFn({ method: "GET" })
