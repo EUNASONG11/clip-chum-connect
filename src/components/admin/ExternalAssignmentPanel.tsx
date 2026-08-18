@@ -16,7 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { formatWeekLabel, weekRange } from "@/lib/week";
+import { formatWeekLabel, weekRange, weekRangeForExternal } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
   listClassWeeksForAssignment,
@@ -135,7 +135,7 @@ export function ExternalAssignmentPanel({
         data: {
           classId,
           weeks: selected.map((label) => {
-            const range = weekRange(label);
+            const range = weekRangeForExternal(label);
             return {
               weekLabel: label,
               assignmentType: assignmentName(label),
