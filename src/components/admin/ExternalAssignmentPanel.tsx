@@ -7,11 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { formatWeekLabel, weekRange } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
   listClassWeeksForAssignment,
+  listResyncTargets,
   pushWeekAssignmentsToExternal,
   resyncCompletionsToExternal,
 } from "@/lib/external-assignment.functions";
@@ -22,7 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
   sent: "전송 완료",
   failed: "전송 실패",
   pending: "전송 대기",
+  not_sent: "미전송",
 };
+
 
 export function ExternalAssignmentPanel({
   classId,
@@ -35,11 +46,14 @@ export function ExternalAssignmentPanel({
   const fetchWeeks = useServerFn(listClassWeeksForAssignment);
   const pushWeeks = useServerFn(pushWeekAssignmentsToExternal);
   const resyncCompletions = useServerFn(resyncCompletionsToExternal);
+  const fetchTargets = useServerFn(listResyncTargets);
 
   const [titlePrefix, setTitlePrefix] = useState(className);
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [resyncing, setResyncing] = useState(false);
+  const [resyncOpen, setResyncOpen] = useState(false);
+  const [resyncUsers, setResyncUsers] = useState<string[]>([]);
 
   const statusQuery = useQuery({
     queryKey: ["external-assignment-status", classId],
@@ -53,6 +67,15 @@ export function ExternalAssignmentPanel({
     staleTime: 30_000,
   });
 
+  const targetsQuery = useQuery({
+    queryKey: ["external-assignment-resync-targets", classId],
+    queryFn: () => fetchTargets({ data: { classId } }),
+    enabled: resyncOpen,
+    staleTime: 10_000,
+  });
+
+  const targets = (targetsQuery.data ?? []) as any[];
+
   const configured = statusQuery.data?.configured ?? false;
   const links = statusQuery.data?.links ?? [];
   const weeks = (weeksQuery.data ?? []) as any[];
@@ -62,14 +85,25 @@ export function ExternalAssignmentPanel({
   const toggle = (label: string) =>
     setSelected((prev) => (prev.includes(label) ? prev.filter((v) => v !== label) : [...prev, label]));
 
+  const toggleUser = (id: string) =>
+    setResyncUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+
   const assignmentName = (label: string) =>
     `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
+    if (resyncUsers.length === 0) {
+      toast.error("재통보할 학생을 선택해 주세요.");
+      return;
+    }
     setResyncing(true);
     try {
-      const res = await resyncCompletions({ data: { classId } });
-      toast.success(`완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`);
+      const res = await resyncCompletions({ data: { classId, userIds: resyncUsers } });
+      toast.success(
+        `학생 ${resyncUsers.length}명 · 완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`,
+      );
+      setResyncOpen(false);
+      setResyncUsers([]);
       statusQuery.refetch();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "재통보에 실패했습니다.");
@@ -77,6 +111,7 @@ export function ExternalAssignmentPanel({
       setResyncing(false);
     }
   };
+
 
   const onSubmit = async () => {
     if (selected.length === 0) {
@@ -150,9 +185,15 @@ export function ExternalAssignmentPanel({
               <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
                 {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
-              <Button type="button" variant="outline" onClick={onResync} disabled={resyncing || !configured}>
-                {resyncing ? "재통보 중..." : "완료 재통보"}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setResyncOpen(true)}
+                disabled={!configured}
+              >
+                완료 재통보
               </Button>
+
             </div>
           </div>
 
@@ -308,6 +349,109 @@ export function ExternalAssignmentPanel({
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={resyncOpen} onOpenChange={setResyncOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>완료 재통보 대상 선택</DialogTitle>
+            <DialogDescription>
+              영상 시청을 완료한 학생 목록입니다. 재통보할 학생을 선택해 주세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{resyncUsers.length}명 선택</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setResyncUsers(targets.map((t) => t.user_id as string))}
+                disabled={targets.length === 0}
+              >
+                전체 선택
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setResyncUsers(
+                    targets
+                      .filter((t) => t.status === "failed" || t.status === "not_sent" || t.status === "pending")
+                      .map((t) => t.user_id as string),
+                  )
+                }
+                disabled={targets.length === 0}
+              >
+                실패·미전송만
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setResyncUsers([])}
+                disabled={resyncUsers.length === 0}
+              >
+                해제
+              </Button>
+            </div>
+          </div>
+
+          {targetsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">학생 목록을 불러오는 중...</p>
+          ) : targets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">완료 기록이 있는 학생이 없습니다.</p>
+          ) : (
+            <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-2">
+              {targets.map((t) => (
+                <li key={t.user_id}>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={resyncUsers.includes(t.user_id)}
+                      onCheckedChange={() => toggleUser(t.user_id)}
+                    />
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{t.name}</span>
+                        <Badge
+                          variant={
+                            t.status === "failed"
+                              ? "destructive"
+                              : t.status === "review_completed" || t.status === "sent"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {STATUS_LABEL[t.status] ?? t.status}
+                        </Badge>
+                        <Badge variant="outline">완료 영상 {t.completed_videos}개</Badge>
+                        {!t.identified && <Badge variant="destructive">식별 불가</Badge>}
+                      </span>
+                      {t.error_message && (
+                        <span className="mt-0.5 block break-all text-xs text-destructive">
+                          {String(t.error_message).slice(0, 160)}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setResyncOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={onResync} disabled={resyncing || resyncUsers.length === 0}>
+              {resyncing ? "재통보 중..." : `선택 학생 재통보 (${resyncUsers.length})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
