@@ -55,8 +55,10 @@ export function ExternalAssignmentPanel({
   const pushWeeks = useServerFn(pushWeekAssignmentsToExternal);
   const resyncCompletions = useServerFn(resyncCompletionsToExternal);
   const fetchTargets = useServerFn(listResyncTargets);
+  const fetchBranches = useServerFn(listClassStudentBranches);
 
   const [titlePrefix, setTitlePrefix] = useState(className);
+  const [branch, setBranch] = useState<string>("__all__");
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [resyncing, setResyncing] = useState(false);
@@ -68,6 +70,14 @@ export function ExternalAssignmentPanel({
     queryFn: () => fetchStatus({ data: { classId } }),
     staleTime: 30_000,
   });
+
+  const branchesQuery = useQuery({
+    queryKey: ["external-assignment-branches", classId],
+    queryFn: () => fetchBranches({ data: { classId } }),
+    staleTime: 60_000,
+  });
+
+  const branches = (branchesQuery.data ?? []) as { branch: string; count: number }[];
 
   const weeksQuery = useQuery({
     queryKey: ["external-assignment-weeks", classId],
