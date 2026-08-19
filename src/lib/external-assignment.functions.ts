@@ -666,7 +666,9 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     const results: { weekLabel: string; ok: boolean; error?: string }[] = [];
 
     for (const w of data.weeks) {
-      const externalId = `class-${data.classId}-week-${w.weekLabel}`;
+      const externalId = data.branch
+        ? `class-${data.classId}-week-${w.weekLabel}-${data.branch}`
+        : `class-${data.classId}-week-${w.weekLabel}`;
 
       let remoteAssignmentTypeId: string | null = null;
       let lastError: string | null = null;
@@ -678,12 +680,12 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
           target: {
             class_name: klass.name,
             week: w.weekLabel,
-            branch: (klass as any).branch ?? null,
+            branch: payloadBranch,
             student_branches: studentBranches,
           },
           period: { start: w.periodStart, end: w.periodEnd },
           students: externalStudentIds,
-          branch: (klass as any).branch ?? null,
+          branch: payloadBranch,
           student_branches: studentBranches,
         });
 
