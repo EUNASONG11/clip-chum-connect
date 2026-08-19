@@ -111,7 +111,7 @@ export function ExternalAssignmentPanel({
     setResyncUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
 
   const assignmentName = (label: string) =>
-    `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
+    `${titlePrefix.trim() || className}${branch !== "__all__" ? `(${branch})` : ""} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
     const weekLabel = selected[0];
