@@ -87,7 +87,10 @@ export type CompletePayload = {
   status: string;
   memo?: string;
   occurred_at: string;
+  /** 학생 교육원 (외부에서 담당 계정/필터 판정용) */
+  branch?: string | null;
 };
+
 
 /** 학생 1명의 과제 상태를 완료로 갱신 */
 export async function pushAssignmentComplete(payload: CompletePayload) {
