@@ -61,7 +61,12 @@ export type SyncPayload = {
   target: Record<string, unknown>;
   period: { start: string; end: string };
   students: string[];
+  /** 수강반 교육원 (없으면 모든 교육원 대상) */
+  branch?: string | null;
+  /** 학생별 교육원: { "마스터 students.id": "청라" } */
+  student_branches?: Record<string, string | null>;
 };
+
 
 /** 과제 정의 생성/갱신 (upsert) */
 export async function pushAssignmentSync(payload: SyncPayload) {
