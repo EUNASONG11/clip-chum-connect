@@ -632,17 +632,25 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
+    const { data: allStudents } = await supabaseAdmin
       .from("external_students")
       .select("external_id, auth_user_id, branch")
       .in("auth_user_id", userIds)
       .eq("is_deleted", false);
 
+    const students = data.branch
+      ? (allStudents ?? []).filter((s: any) => (s.branch ?? null) === data.branch)
+      : (allStudents ?? []);
+
     const externalStudentIds = Array.from(
       new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
     );
     if (externalStudentIds.length === 0) {
-      throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
+      throw new Error(
+        data.branch
+          ? `${data.branch} 교육원에 해당하는 학생이 없습니다.`
+          : "외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)",
+      );
     }
 
     // 학생별 교육원 (외부에서 담당 계정/필터 판정에 사용)
@@ -650,6 +658,9 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     for (const s of students ?? []) {
       if (s.external_id) studentBranches[s.external_id as string] = (s as any).branch ?? null;
     }
+
+    const payloadBranch = data.branch ?? (klass as any).branch ?? null;
+
 
     const { pushAssignmentSync } = await import("./external-assignment.server");
     const results: { weekLabel: string; ok: boolean; error?: string }[] = [];
