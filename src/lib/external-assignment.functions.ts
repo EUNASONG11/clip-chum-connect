@@ -729,3 +729,37 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
       results,
     };
   });
+
+/** 수강반 배정 학생들의 교육원 목록 (인원수 포함) */
+export const listClassStudentBranches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { data: enrolled, error } = await context.supabase
+      .from("class_students")
+      .select("user_id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
+    if (userIds.length === 0) return [] as { branch: string; count: number }[];
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: students } = await supabaseAdmin
+      .from("external_students")
+      .select("branch, external_id")
+      .in("auth_user_id", userIds)
+      .eq("is_deleted", false);
+
+    const counts = new Map<string, number>();
+    for (const s of students ?? []) {
+      if (!(s as any).external_id) continue;
+      const b = ((s as any).branch as string | null) ?? "미지정";
+      counts.set(b, (counts.get(b) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([branch, count]) => ({ branch, count }))
+      .sort((a, b) => a.branch.localeCompare(b.branch));
+  });
