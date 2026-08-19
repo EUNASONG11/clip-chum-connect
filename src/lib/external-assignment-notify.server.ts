@@ -93,9 +93,13 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
         links = [picked];
         weekLinked = true;
         memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
+      } else {
+        // 주차 과제는 있는데 이 학생 교육원용 과제가 없으면 구버전 과제로 잘못 보내지 않도록 중단
+        return;
       }
     }
   }
+
 
 
 
