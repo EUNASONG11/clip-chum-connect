@@ -74,17 +74,29 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
       .eq("class_id", video.class_id)
       .eq("week_label", weekLabel)
       .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
+      .order("created_at", { ascending: false });
 
-    if ((weekLinks ?? []).length > 0) {
-      const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
-      if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
-      links = (weekLinks ?? []) as LinkRow[];
-      weekLinked = true;
-      memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
+    const all = (weekLinks ?? []) as LinkRow[];
+    if (all.length > 0) {
+      // 교육원별로 분리 내보낸 과제가 있으면 학생 교육원에 맞는 링크를 선택
+      const studentBranch = ((student as any).branch ?? null) as string | null;
+      const base = `class-${video.class_id}-week-${weekLabel}`;
+      const branchLink = studentBranch
+        ? all.find((l) => l.external_id === `${base}-${studentBranch}`)
+        : undefined;
+      const generalLink = all.find((l) => l.external_id === base);
+      const picked = branchLink ?? generalLink ?? null;
+
+      if (picked) {
+        const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
+        if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
+        links = [picked];
+        weekLinked = true;
+        memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
+      }
     }
   }
+
 
 
   // 2순위: 해당 영상에 연결된 과제
