@@ -612,10 +612,11 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
 
     const { data: klass, error: classErr } = await context.supabase
       .from("classes")
-      .select("id, name")
+      .select("id, name, branch")
       .eq("id", data.classId)
       .is("deleted_at", null)
       .maybeSingle();
+
     if (classErr) throw new Error(classErr.message);
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
@@ -631,7 +632,7 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: students } = await supabaseAdmin
       .from("external_students")
-      .select("external_id, auth_user_id")
+      .select("external_id, auth_user_id, branch")
       .in("auth_user_id", userIds)
       .eq("is_deleted", false);
 
@@ -640,6 +641,12 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     );
     if (externalStudentIds.length === 0) {
       throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
+    }
+
+    // 학생별 교육원 (외부에서 담당 계정/필터 판정에 사용)
+    const studentBranches: Record<string, string | null> = {};
+    for (const s of students ?? []) {
+      if (s.external_id) studentBranches[s.external_id as string] = (s as any).branch ?? null;
     }
 
     const { pushAssignmentSync } = await import("./external-assignment.server");
@@ -655,10 +662,18 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
           external_id: externalId,
           assignment_type: w.assignmentType.slice(0, 200),
           scope: "individual",
-          target: { class_name: klass.name, week: w.weekLabel },
+          target: {
+            class_name: klass.name,
+            week: w.weekLabel,
+            branch: (klass as any).branch ?? null,
+            student_branches: studentBranches,
+          },
           period: { start: w.periodStart, end: w.periodEnd },
           students: externalStudentIds,
+          branch: (klass as any).branch ?? null,
+          student_branches: studentBranches,
         });
+
         remoteAssignmentTypeId = res.remoteAssignmentTypeId;
       } catch (e) {
         lastError = e instanceof Error ? e.message : String(e);
