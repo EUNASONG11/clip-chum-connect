@@ -152,6 +152,7 @@ export function ExternalAssignmentPanel({
       const res = await pushWeeks({
         data: {
           classId,
+          ...(branch !== "__all__" ? { branch } : {}),
           weeks: selected.map((label) => {
             const range = weekRangeForExternal(label);
             return {
