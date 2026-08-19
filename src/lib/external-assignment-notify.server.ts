@@ -169,7 +169,9 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
         status: COMPLETED_STATUS,
         memo,
         occurred_at: occurredAt,
+        branch: (student as any).branch ?? null,
       });
+
       await supabaseAdmin
         .from("external_assignment_completions")
         .update({
