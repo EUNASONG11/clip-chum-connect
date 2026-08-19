@@ -593,6 +593,8 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     z
       .object({
         classId: z.string().uuid(),
+        /** 특정 교육원 학생만 내보낼 때 사용 (없으면 전체) */
+        branch: z.string().trim().min(1).nullish(),
         weeks: z
           .array(
             z.object({
