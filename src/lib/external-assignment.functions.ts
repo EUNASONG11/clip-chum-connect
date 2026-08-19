@@ -612,10 +612,11 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
 
     const { data: klass, error: classErr } = await context.supabase
       .from("classes")
-      .select("id, name")
+      .select("id, name, branch")
       .eq("id", data.classId)
       .is("deleted_at", null)
       .maybeSingle();
+
     if (classErr) throw new Error(classErr.message);
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
