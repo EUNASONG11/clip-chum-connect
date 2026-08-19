@@ -55,10 +55,11 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
   // 외부 시스템이 아는 학생 식별자 (마스터 students.id)
   const { data: student } = await supabaseAdmin
     .from("external_students")
-    .select("external_id")
+    .select("external_id, branch")
     .eq("auth_user_id", userId)
     .maybeSingle();
   if (!student?.external_id) return;
+
 
   let links: LinkRow[] = [];
   let memo = `이러닝: "${video.title}" 시청 완료`;
