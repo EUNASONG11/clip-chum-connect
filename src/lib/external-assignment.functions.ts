@@ -639,7 +639,9 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
       .eq("is_deleted", false);
 
     const students = data.branch
-      ? (allStudents ?? []).filter((s: any) => (s.branch ?? null) === data.branch)
+      ? (allStudents ?? []).filter((s: any) =>
+          data.branch === "미지정" ? !s.branch : (s.branch ?? null) === data.branch,
+        )
       : (allStudents ?? []);
 
     const externalStudentIds = Array.from(
@@ -659,7 +661,8 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
       if (s.external_id) studentBranches[s.external_id as string] = (s as any).branch ?? null;
     }
 
-    const payloadBranch = data.branch ?? (klass as any).branch ?? null;
+    const payloadBranch =
+      data.branch && data.branch !== "미지정" ? data.branch : ((klass as any).branch ?? null);
 
 
     const { pushAssignmentSync } = await import("./external-assignment.server");
