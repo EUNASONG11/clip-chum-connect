@@ -19,11 +19,19 @@ import { toast } from "sonner";
 import { formatWeekLabel, weekRange, weekRangeForExternal } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
+  listClassStudentBranches,
   listClassWeeksForAssignment,
   listResyncTargets,
   pushWeekAssignmentsToExternal,
   resyncCompletionsToExternal,
 } from "@/lib/external-assignment.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_LABEL: Record<string, string> = {
   initial: "미완료",
