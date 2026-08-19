@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { Info, Send, RefreshCw } from "lucide-react";
 import { formatWeekLabel, weekRange, weekRangeForExternal } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
@@ -41,7 +44,6 @@ const STATUS_LABEL: Record<string, string> = {
   pending: "전송 대기",
   not_sent: "미전송",
 };
-
 
 export function ExternalAssignmentPanel({
   classId,
@@ -113,6 +115,8 @@ export function ExternalAssignmentPanel({
   const assignmentName = (label: string) =>
     `${titlePrefix.trim() || className}${branch !== "__all__" ? `(${branch})` : ""} ${formatWeekLabel(label)} 영상 과제`;
 
+  const selectedWeekDisplay = selected.length === 1 ? formatWeekLabel(selected[0]) : null;
+
   const onResync = async () => {
     const weekLabel = selected[0];
     if (selected.length !== 1 || !weekLabel) {
@@ -140,7 +144,6 @@ export function ExternalAssignmentPanel({
       setResyncing(false);
     }
   };
-
 
   const onSubmit = async () => {
     if (selected.length === 0) {
@@ -185,14 +188,38 @@ export function ExternalAssignmentPanel({
 
   return (
     <div className="space-y-4">
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertTitle>외부 과제 연동은 2단계로 동작합니다</AlertTitle>
+        <AlertDescription>
+          <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm">
+            <li>
+              <strong>과제 내보내기:</strong> 외부 시스템에 주차별 과제를 만들고, 대상 학생과 기간을 등록합니다.
+              과제가 이미 있으면 학생 목록·기간이 갱신(upsert)됩니다.
+            </li>
+            <li>
+              <strong>완료 재통보:</strong> 학생이 영상을 모두 본 뒤, 그 완료 상태를 외부에 알립니다. 보통은 시청
+              완료 시 자동 전송되지만, <em>내보내기 이전에 완료했거나</em> 전송이 실패한 경우에만 이 버튼을
+              사용합니다.
+            </li>
+          </ol>
+        </AlertDescription>
+      </Alert>
+
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">외부 과제 점검으로 내보내기 (주차별)</CardTitle>
+          <CardTitle className="text-base">
+            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+              1
+            </span>
+            과제 생성 / 갱신
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {!configured && (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              외부 연동 설정이 아직 없습니다. 외부 프로젝트에서 발급한 API 주소와 키를 등록하면 바로 사용할 수 있습니다.
+              외부 연동 설정이 아직 없습니다. 외부 프로젝트에서 발급한 API 주소와 키를 등록하면 바로 사용할 수
+              있습니다.
             </div>
           )}
 
@@ -229,27 +256,11 @@ export function ExternalAssignmentPanel({
                 특정 교육원을 고르면 그 교육원 학생만 담긴 과제가 별도로 생성됩니다. (과제명에 교육원 표기)
               </p>
             </div>
-            <div className="flex min-w-0 items-end gap-2">
-
-              <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
+            <div className="flex min-w-0 items-end">
+              <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full gap-2">
+                <Send className="h-4 w-4" />
                 {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  if (selected.length !== 1) {
-                    toast.error("완료 재통보할 주차를 1개만 선택해 주세요.");
-                    return;
-                  }
-                  setResyncUsers([]);
-                  setResyncOpen(true);
-                }}
-                disabled={!configured || selected.length !== 1}
-              >
-                완료 재통보
-              </Button>
-
             </div>
           </div>
 
@@ -326,6 +337,60 @@ export function ExternalAssignmentPanel({
             주차별로 외부 과제 1건이 생성되며, 학생이 그 주차의 모든 영상 시청을 완료한 시점에 해당 과제가 자동으로
             완료 처리됩니다.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+              2
+            </span>
+            완료 상태 재통보
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">이 버튼은 언제 누르나요?</p>
+            <ul className="mt-1 list-disc space-y-1 pl-4">
+              <li>1단계에서 과제를 내보낸 뒤, 이미 시청 완료된 학생의 완료 내역이 외부에 안 들어갔을 때</li>
+              <li>특정 학생의 완료 통보가 실패/누락되어 다시 알려야 할 때</li>
+              <li>주차 1개를 선택한 뒤, 재통보할 학생을 골라 실행합니다.</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <p className="text-sm">
+                {selected.length === 1 ? (
+                  <>
+                    선택된 주차: <strong>{selectedWeekDisplay}</strong>
+                  </>
+                ) : selected.length === 0 ? (
+                  <span className="text-muted-foreground">주차를 1개 선택하면 재통보할 수 있습니다.</span>
+                ) : (
+                  <span className="text-destructive">재통보는 주차를 1개만 선택해 주세요.</span>
+                )}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (selected.length !== 1) {
+                  toast.error("완료 재통보할 주차를 1개만 선택해 주세요.");
+                  return;
+                }
+                setResyncUsers([]);
+                setResyncOpen(true);
+              }}
+              disabled={!configured || selected.length !== 1}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              완료 재통보
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -411,7 +476,8 @@ export function ExternalAssignmentPanel({
           <DialogHeader>
             <DialogTitle>완료 재통보 대상 선택</DialogTitle>
             <DialogDescription>
-              {selected[0] ? `${formatWeekLabel(selected[0])} ` : ""}영상을 모두 완료한 학생 중 재통보할 대상을 선택해 주세요.
+              {selected[0] ? `${formatWeekLabel(selected[0])} ` : ""}영상을 모두 완료한 학생 중 재통보할 대상을
+              선택해 주세요.
             </DialogDescription>
           </DialogHeader>
 
@@ -508,6 +574,5 @@ export function ExternalAssignmentPanel({
         </DialogContent>
       </Dialog>
     </div>
-
   );
 }
