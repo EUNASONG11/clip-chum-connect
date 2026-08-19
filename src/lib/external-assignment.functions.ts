@@ -593,6 +593,8 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     z
       .object({
         classId: z.string().uuid(),
+        /** 특정 교육원 학생만 내보낼 때 사용 (없으면 전체) */
+        branch: z.string().trim().min(1).nullish(),
         weeks: z
           .array(
             z.object({
@@ -630,17 +632,27 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
+    const { data: allStudents } = await supabaseAdmin
       .from("external_students")
       .select("external_id, auth_user_id, branch")
       .in("auth_user_id", userIds)
       .eq("is_deleted", false);
 
+    const students = data.branch
+      ? (allStudents ?? []).filter((s: any) =>
+          data.branch === "미지정" ? !s.branch : (s.branch ?? null) === data.branch,
+        )
+      : (allStudents ?? []);
+
     const externalStudentIds = Array.from(
       new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
     );
     if (externalStudentIds.length === 0) {
-      throw new Error("외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)");
+      throw new Error(
+        data.branch
+          ? `${data.branch} 교육원에 해당하는 학생이 없습니다.`
+          : "외부 시스템에서 식별 가능한 학생이 없습니다. (학생 명부 동기화 필요)",
+      );
     }
 
     // 학생별 교육원 (외부에서 담당 계정/필터 판정에 사용)
@@ -649,11 +661,17 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
       if (s.external_id) studentBranches[s.external_id as string] = (s as any).branch ?? null;
     }
 
+    const payloadBranch =
+      data.branch && data.branch !== "미지정" ? data.branch : ((klass as any).branch ?? null);
+
+
     const { pushAssignmentSync } = await import("./external-assignment.server");
     const results: { weekLabel: string; ok: boolean; error?: string }[] = [];
 
     for (const w of data.weeks) {
-      const externalId = `class-${data.classId}-week-${w.weekLabel}`;
+      const externalId = data.branch
+        ? `class-${data.classId}-week-${w.weekLabel}-${data.branch}`
+        : `class-${data.classId}-week-${w.weekLabel}`;
 
       let remoteAssignmentTypeId: string | null = null;
       let lastError: string | null = null;
@@ -665,12 +683,12 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
           target: {
             class_name: klass.name,
             week: w.weekLabel,
-            branch: (klass as any).branch ?? null,
+            branch: payloadBranch,
             student_branches: studentBranches,
           },
           period: { start: w.periodStart, end: w.periodEnd },
           students: externalStudentIds,
-          branch: (klass as any).branch ?? null,
+          branch: payloadBranch,
           student_branches: studentBranches,
         });
 
@@ -713,4 +731,38 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
       skipped: userIds.length - externalStudentIds.length,
       results,
     };
+  });
+
+/** 수강반 배정 학생들의 교육원 목록 (인원수 포함) */
+export const listClassStudentBranches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await assertExternalAssignmentStaff(context as any);
+
+    const { data: enrolled, error } = await context.supabase
+      .from("class_students")
+      .select("user_id")
+      .eq("class_id", data.classId)
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
+    if (userIds.length === 0) return [] as { branch: string; count: number }[];
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: students } = await supabaseAdmin
+      .from("external_students")
+      .select("branch, external_id")
+      .in("auth_user_id", userIds)
+      .eq("is_deleted", false);
+
+    const counts = new Map<string, number>();
+    for (const s of students ?? []) {
+      if (!(s as any).external_id) continue;
+      const b = ((s as any).branch as string | null) ?? "미지정";
+      counts.set(b, (counts.get(b) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([branch, count]) => ({ branch, count }))
+      .sort((a, b) => a.branch.localeCompare(b.branch));
   });

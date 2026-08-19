@@ -19,11 +19,19 @@ import { toast } from "sonner";
 import { formatWeekLabel, weekRange, weekRangeForExternal } from "@/lib/week";
 import {
   getExternalAssignmentStatus,
+  listClassStudentBranches,
   listClassWeeksForAssignment,
   listResyncTargets,
   pushWeekAssignmentsToExternal,
   resyncCompletionsToExternal,
 } from "@/lib/external-assignment.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STATUS_LABEL: Record<string, string> = {
   initial: "미완료",
@@ -47,8 +55,10 @@ export function ExternalAssignmentPanel({
   const pushWeeks = useServerFn(pushWeekAssignmentsToExternal);
   const resyncCompletions = useServerFn(resyncCompletionsToExternal);
   const fetchTargets = useServerFn(listResyncTargets);
+  const fetchBranches = useServerFn(listClassStudentBranches);
 
   const [titlePrefix, setTitlePrefix] = useState(className);
+  const [branch, setBranch] = useState<string>("__all__");
   const [selected, setSelected] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [resyncing, setResyncing] = useState(false);
@@ -60,6 +70,14 @@ export function ExternalAssignmentPanel({
     queryFn: () => fetchStatus({ data: { classId } }),
     staleTime: 30_000,
   });
+
+  const branchesQuery = useQuery({
+    queryKey: ["external-assignment-branches", classId],
+    queryFn: () => fetchBranches({ data: { classId } }),
+    staleTime: 60_000,
+  });
+
+  const branches = (branchesQuery.data ?? []) as { branch: string; count: number }[];
 
   const weeksQuery = useQuery({
     queryKey: ["external-assignment-weeks", classId],
@@ -93,7 +111,7 @@ export function ExternalAssignmentPanel({
     setResyncUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
 
   const assignmentName = (label: string) =>
-    `${titlePrefix.trim() || className} ${formatWeekLabel(label)} 영상 과제`;
+    `${titlePrefix.trim() || className}${branch !== "__all__" ? `(${branch})` : ""} ${formatWeekLabel(label)} 영상 과제`;
 
   const onResync = async () => {
     const weekLabel = selected[0];
@@ -134,6 +152,7 @@ export function ExternalAssignmentPanel({
       const res = await pushWeeks({
         data: {
           classId,
+          ...(branch !== "__all__" ? { branch } : {}),
           weeks: selected.map((label) => {
             const range = weekRangeForExternal(label);
             return {
@@ -178,7 +197,7 @@ export function ExternalAssignmentPanel({
           )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="min-w-0 md:col-span-2">
+            <div className="min-w-0">
               <Label htmlFor="eap-prefix">과제명 앞머리</Label>
               <Input
                 id="eap-prefix"
@@ -188,11 +207,30 @@ export function ExternalAssignmentPanel({
                 placeholder="예: 19기"
               />
               <p className="mt-1 text-xs text-muted-foreground">
-                외부 과제명은 &quot;앞머리 8월 1주차 영상 과제&quot; 형태로 주차별 1건씩 생성됩니다. 과제 기간은 해당
-                주차의 시작일~종료일로 자동 설정됩니다.
+                외부 과제명은 &quot;앞머리 8월 1주차 영상 과제&quot; 형태로 주차별 1건씩 생성됩니다.
+              </p>
+            </div>
+            <div className="min-w-0">
+              <Label>교육원</Label>
+              <Select value={branch} onValueChange={setBranch}>
+                <SelectTrigger className="w-full min-w-0">
+                  <SelectValue placeholder="전체 교육원" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">전체 교육원 (배정 학생 전원)</SelectItem>
+                  {branches.map((b) => (
+                    <SelectItem key={b.branch} value={b.branch}>
+                      {b.branch} ({b.count}명)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1 text-xs text-muted-foreground">
+                특정 교육원을 고르면 그 교육원 학생만 담긴 과제가 별도로 생성됩니다. (과제명에 교육원 표기)
               </p>
             </div>
             <div className="flex min-w-0 items-end gap-2">
+
               <Button onClick={onSubmit} disabled={submitting || !configured} className="flex-1">
                 {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
