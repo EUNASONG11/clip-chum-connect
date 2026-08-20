@@ -6,17 +6,62 @@ export function isIOSDevice() {
   return iOSLike || iPadOS;
 }
 
-export type InAppBrowser = "kakao" | "line" | "naver" | "facebook" | "instagram" | "other" | null;
+export type InAppBrowser =
+  | "kakao"
+  | "line"
+  | "naver"
+  | "whale"
+  | "facebook"
+  | "instagram"
+  | "threads"
+  | "band"
+  | "daum"
+  | "everytime"
+  | "tiktok"
+  | "snapchat"
+  | "twitter"
+  | "linkedin"
+  | "pinterest"
+  | "wechat"
+  | "telegram"
+  | "slack"
+  | "discord"
+  | "electron"
+  | "other"
+  | null;
 
 export function detectInAppBrowser(): InAppBrowser {
   if (typeof navigator === "undefined") return null;
   const ua = (navigator.userAgent || "").toLowerCase();
+
   if (ua.includes("kakaotalk")) return "kakao";
-  if (ua.includes("line/")) return "line";
-  if (ua.includes("naver") || ua.includes("whale")) return "naver";
-  if (ua.includes("fbav") || ua.includes("fban")) return "facebook";
+  if (/\bline\//.test(ua) || ua.includes("line/")) return "line";
+  if (ua.includes("naver(inapp") || ua.includes("naverapp") || ua.includes("naver ")) return "naver";
+  if (ua.includes("whale")) return "whale";
+  if (ua.includes("bandapp") || ua.includes("naverband")) return "band";
+  if (ua.includes("barcelona")) return "threads";
   if (ua.includes("instagram")) return "instagram";
-  if (ua.includes("everytimeapp") || ua.includes("daumapps")) return "other";
+  if (ua.includes("fbav") || ua.includes("fban") || ua.includes("fb_iab") || ua.includes("fbios"))
+    return "facebook";
+  if (ua.includes("daumapps") || ua.includes("daum/")) return "daum";
+  if (ua.includes("everytimeapp")) return "everytime";
+  if (ua.includes("bytedancewebview") || ua.includes("musical_ly") || ua.includes("tiktok"))
+    return "tiktok";
+  if (ua.includes("snapchat")) return "snapchat";
+  if (ua.includes("twitter")) return "twitter";
+  if (ua.includes("linkedinapp")) return "linkedin";
+  if (ua.includes("pinterest")) return "pinterest";
+  if (ua.includes("micromessenger")) return "wechat";
+  if (ua.includes("telegram")) return "telegram";
+  if (ua.includes("slack_ssb")) return "slack";
+  if (ua.includes("discord")) return "discord";
+  if (ua.includes("electron")) return "electron";
+
+  // 일반 WebView 감지 (안드로이드 wv, iOS: Safari 토큰 없는 모바일 WebView)
+  if (/; wv\)/.test(ua)) return "other";
+  const isIOSUa = /iphone|ipod|ipad/.test(ua);
+  if (isIOSUa && ua.includes("applewebkit") && !ua.includes("safari") && !ua.includes("crios"))
+    return "other";
   return null;
 }
 
