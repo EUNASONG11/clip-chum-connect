@@ -803,7 +803,7 @@ function ClassDetailPage() {
 
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">전체</SelectItem>
+                  <SelectItem value="__all__">전체 교육원에서 검색</SelectItem>
                   {branchList.map((b) => (
                     <SelectItem key={b} value={b}>{b}</SelectItem>
                   ))}
