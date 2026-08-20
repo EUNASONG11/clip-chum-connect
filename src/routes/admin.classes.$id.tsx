@@ -860,6 +860,8 @@ function ClassDetailPage() {
               </ul>
             </div>
           )}
+          </>
+          )}
 
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
