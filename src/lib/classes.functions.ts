@@ -41,7 +41,9 @@ function isClassActive(active_from: string | null, active_to: string | null) {
 async function assertOwnClassOrAdmin(
   context: { supabase: any; userId: string },
   classId: string,
+  mode: "read" | "write" = "write",
 ) {
+
   const admin = await isAdmin(context);
   if (admin) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
