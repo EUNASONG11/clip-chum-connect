@@ -959,6 +959,36 @@ export const clearMyMustChangePassword = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const resetInstructorPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ instructorId: z.string().uuid() }).parse(i))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inst, error } = await supabaseAdmin
+      .from("instructors")
+      .select("id, name, auth_user_id")
+      .eq("id", data.instructorId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!inst?.auth_user_id) throw new Error("계정이 없는 강사입니다.");
+
+    const { error: uErr } = await supabaseAdmin.auth.admin.updateUserById(inst.auth_user_id, {
+      password: "12345678",
+    });
+    if (uErr) throw new Error(uErr.message);
+
+    const { error: iErr } = await supabaseAdmin
+      .from("instructors")
+      .update({ must_change_password: true })
+      .eq("id", inst.id);
+    if (iErr) throw new Error(iErr.message);
+
+    return { ok: true, tempPassword: "12345678" };
+  });
+
+
+
 // ============= 강사 명부(로스터) 관리 =============
 
 export const listInstructorRoster = createServerFn({ method: "GET" })
