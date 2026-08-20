@@ -506,8 +506,9 @@ function UsersPage() {
                 {tab === "instructor" && (
                   <th className="min-w-[110px] whitespace-nowrap px-4 py-3">기수</th>
                 )}
-
-                <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                {tab !== "instructor" && (
+                  <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                )}
                 <th className="min-w-[100px] whitespace-nowrap px-4 py-3">가입일</th>
                 <th className="min-w-[220px] whitespace-nowrap px-4 py-3 text-right">작업</th>
               </tr>
@@ -515,7 +516,7 @@ function UsersPage() {
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={(tab === "pending" ? 7 : 6) + (tab === "instructor" ? 1 : 0)} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
@@ -577,7 +578,9 @@ function UsersPage() {
                           />
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
+                      {tab !== "instructor" && (
+                        <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
+                      )}
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
                       </td>
