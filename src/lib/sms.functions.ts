@@ -570,7 +570,7 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
         const path = `/brandmessage/v2/services/${creds.btServiceId}/messages`;
         const headers = await sensHeaders("POST", path, creds.accessKey, creds.secretKey);
         const failoverSms = data.fallbackToSms && creds.smsFrom
-          ? { type: byteLen(data.message) > 80 ? ("LMS" as const) : ("SMS" as const), from: creds.smsFrom, content: data.message }
+          ? { type: byteLen(resolvedMessage) > 80 ? ("LMS" as const) : ("SMS" as const), from: creds.smsFrom, content: resolvedMessage }
           : null;
         const body: any = {
           plusFriendId: creds.btChannelId,
@@ -580,7 +580,7 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
           messages: list.map((r) => ({
             countryCode: "82",
             to: r.phone,
-            content: data.message,
+            content: resolvedMessage,
             ...(failoverSms ? { failoverConfig: failoverSms } : {}),
           })),
         };
@@ -604,7 +604,7 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
           batch_id: batchId,
           class_id: data.classId,
           channel: "brandtalk",
-          message: data.message,
+          message: resolvedMessage,
           user_id: r.user_id,
           recipient_name: r.name ?? "",
           phone: r.phone,
