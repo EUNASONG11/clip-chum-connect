@@ -11,6 +11,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
 import { cn } from "@/lib/utils";
+import { useRotatedFullscreen } from "@/hooks/use-rotated-fullscreen";
 
 type Video = {
   id: string;
@@ -131,6 +132,8 @@ function VideoPage() {
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const fsFallbackRef = useRef(false);
+  const [fsFallback, setFsFallback] = useState(false);
+  const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
 
   const revealFsControls = () => {
     setShowFsControls(true);
@@ -161,8 +164,10 @@ function VideoPage() {
       (await requestElementFullscreen(iframeRef.current));
     if (opened) {
       fsFallbackRef.current = false;
+      setFsFallback(false);
     } else {
       fsFallbackRef.current = true;
+      setFsFallback(true);
       setIsPlayerExpanded(true);
     }
   };
@@ -796,16 +801,9 @@ function VideoPage() {
             >
               <div
                 ref={containerRef}
-                className={isPlayerExpanded ? "relative aspect-video" : "relative aspect-video"}
-                style={
-                  isPlayerExpanded
-                    ? {
-                        width: "min(100vw, calc(100dvh * 16 / 9))",
-                        maxWidth: "100vw",
-                        maxHeight: "100dvh",
-                      }
-                    : undefined
-                }
+                className="relative aspect-video"
+                style={isPlayerExpanded ? fsStyle : undefined}
+
                 onClick={() => {
                   if (isPlayerExpanded) revealFsControls();
                 }}
