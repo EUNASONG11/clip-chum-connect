@@ -434,17 +434,41 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="msg" className="text-sm">
-              메시지 ({message.length}자)
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="msg" className="text-sm">
+                메시지 ({message.length}자)
+              </Label>
+              <span className="text-xs text-muted-foreground">사용 가능한 변수</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => insertVariable("{수강반명}")}
+              >
+                {"{수강반명}"}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => insertVariable("{영상명}")}
+                disabled={mode !== "video" || !videoId}
+              >
+                {"{영상명}"}
+              </Button>
+            </div>
             <Textarea
+              ref={textareaRef}
               id="msg"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              placeholder="예) [OO학원] 이번 주 수업 영상이 아직 시청되지 않았어요. 오늘 안에 시청 부탁드립니다."
+              placeholder="예) [{수강반명}] {영상명} 영상이 아직 시청되지 않았어요. 오늘 안에 시청 부탁드립니다."
             />
           </div>
+
         </div>
 
         <DialogFooter>
