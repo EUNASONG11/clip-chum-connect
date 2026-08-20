@@ -732,13 +732,22 @@ function VideoPage() {
             <div
               className={
                 isPlayerExpanded
-                  ? "fixed inset-0 z-[100] flex items-center justify-center bg-black"
+                  ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black"
                   : "relative overflow-hidden rounded-xl border bg-black"
               }
             >
               <div
                 ref={containerRef}
-                className={isPlayerExpanded ? "relative w-full aspect-video" : "relative aspect-video"}
+                className={isPlayerExpanded ? "relative aspect-video" : "relative aspect-video"}
+                style={
+                  isPlayerExpanded
+                    ? {
+                        width: "min(100vw, calc(100dvh * 16 / 9))",
+                        maxWidth: "100vw",
+                        maxHeight: "100dvh",
+                      }
+                    : undefined
+                }
                 onClick={() => {
                   if (isPlayerExpanded) revealFsControls();
                 }}
