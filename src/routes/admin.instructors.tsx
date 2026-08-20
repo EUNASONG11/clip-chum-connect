@@ -166,7 +166,6 @@ function InstructorsPage() {
                       <th className="py-2 pr-2">기수</th>
                       <th className="py-2 pr-2">이메일 (로그인 ID)</th>
                       <th className="py-2 pr-2">계정 상태</th>
-                      <th className="py-2 pr-2 text-right">작업</th>
                     </tr>
                   </thead>
                   <tbody>
