@@ -1,17 +1,27 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, X, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { detectInAppBrowser, isAndroidDevice, isIOSDevice, openInExternalBrowser } from "@/lib/device";
+import {
+  detectInAppBrowser,
+  inAppBrowserLabel,
+  isAndroidDevice,
+  isIOSDevice,
+  openInExternalBrowser,
+  type InAppBrowser,
+} from "@/lib/device";
 
 const DISMISS_KEY = "inapp-notice-dismissed";
 
 export function InAppBrowserNotice() {
   const [show, setShow] = useState(false);
   const [android, setAndroid] = useState(false);
+  const [browser, setBrowser] = useState<InAppBrowser>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem(DISMISS_KEY) === "1") return;
-    if (!detectInAppBrowser()) return;
+    const detected = detectInAppBrowser();
+    if (!detected) return;
+    setBrowser(detected);
     setAndroid(isAndroidDevice());
     setShow(true);
   }, []);
@@ -37,8 +47,8 @@ export function InAppBrowserNotice() {
       <div className="mx-auto flex max-w-6xl items-center gap-2">
         <p className="flex-1 leading-relaxed text-foreground">
           {android
-            ? "카카오톡 브라우저에서는 전체화면이 제한될 수 있어요. 크롬으로 열면 더 편하게 볼 수 있어요."
-            : "카카오톡 브라우저에서는 전체화면이 제한돼요. Safari에서 열면 더 편하게 볼 수 있어요."}
+            ? `${inAppBrowserLabel(browser)} 인앱 브라우저에서는 전체화면이 제한될 수 있어요. 크롬으로 열면 더 편하게 볼 수 있어요.`
+            : `${inAppBrowserLabel(browser)} 인앱 브라우저에서는 전체화면이 제한돼요. Safari에서 열면 더 편하게 볼 수 있어요.`}
         </p>
         {android || isIOSDevice() ? (
           <button
