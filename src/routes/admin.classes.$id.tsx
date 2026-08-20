@@ -1622,9 +1622,12 @@ function ClassDetailPage() {
         </TabsContent>
 
 
-        <TabsContent value="sms">
-          <SmsLogPanel classId={id} />
-        </TabsContent>
+        {canWrite && (
+          <TabsContent value="sms">
+            <SmsLogPanel classId={id} />
+          </TabsContent>
+        )}
+
 
         <TabsContent value="settings">
           <div className="space-y-4">
