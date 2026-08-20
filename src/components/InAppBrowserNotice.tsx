@@ -1,17 +1,27 @@
 import { useEffect, useState } from "react";
 import { ExternalLink, X, Copy } from "lucide-react";
 import { toast } from "sonner";
-import { detectInAppBrowser, isAndroidDevice, isIOSDevice, openInExternalBrowser } from "@/lib/device";
+import {
+  detectInAppBrowser,
+  inAppBrowserLabel,
+  isAndroidDevice,
+  isIOSDevice,
+  openInExternalBrowser,
+  type InAppBrowser,
+} from "@/lib/device";
 
 const DISMISS_KEY = "inapp-notice-dismissed";
 
 export function InAppBrowserNotice() {
   const [show, setShow] = useState(false);
   const [android, setAndroid] = useState(false);
+  const [browser, setBrowser] = useState<InAppBrowser>(null);
 
   useEffect(() => {
     if (sessionStorage.getItem(DISMISS_KEY) === "1") return;
-    if (!detectInAppBrowser()) return;
+    const detected = detectInAppBrowser();
+    if (!detected) return;
+    setBrowser(detected);
     setAndroid(isAndroidDevice());
     setShow(true);
   }, []);
