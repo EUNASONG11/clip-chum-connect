@@ -686,18 +686,25 @@ function ClassDetailPage() {
         <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-baseline gap-2">
             <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
+            {!canWrite && (
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                조회 전용
+              </span>
+            )}
             {cls?.description && (
               <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMessageDialogOpen(true)}
-            className="shrink-0"
-          >
-            <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
-          </Button>
+          {canWrite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMessageDialogOpen(true)}
+              className="shrink-0"
+            >
+              <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
+            </Button>
+          )}
         </div>
       </div>
 
