@@ -1148,6 +1148,7 @@ function ClassDetailPage() {
                           {v.is_published ? "공개" : "비공개"} · {v.status}
                         </p>
                       </div>
+                      {canWrite && (
                       <div className="flex shrink-0 items-center gap-1">
                         <Select
                           value={v.folder_id ?? "__none__"}
