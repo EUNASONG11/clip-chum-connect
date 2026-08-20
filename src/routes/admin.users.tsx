@@ -516,7 +516,7 @@ function UsersPage() {
             <tbody>
               {paged.length === 0 ? (
                 <tr>
-                  <td colSpan={(tab === "pending" ? 7 : 6) + (tab === "instructor" ? 1 : 0)} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={tab === "pending" ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground">
                     표시할 사용자가 없습니다.
                   </td>
                 </tr>
