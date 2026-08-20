@@ -1423,6 +1423,30 @@ function ClassDetailPage() {
               >
                 <RefreshCw className={`h-4 w-4 ${statsFetching ? "animate-spin" : ""}`} />
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                title="전체 펼치기"
+                onClick={() => {
+                  setOpenStudentIds(pagedStudentStats.map((s: any) => s.user_id));
+                  toast.success("모든 학생의 상세를 펼쳤습니다.");
+                }}
+              >
+                <ChevronDown className="h-4 w-4" /> 전체 펼치기
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                title="전체 접기"
+                onClick={() => {
+                  setOpenStudentIds([]);
+                  toast.success("모든 학생의 상세를 접었습니다.");
+                }}
+              >
+                <ChevronUp className="h-4 w-4" /> 전체 접기
+              </Button>
             </CardTitle>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
