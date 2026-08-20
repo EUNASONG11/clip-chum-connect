@@ -178,16 +178,20 @@ function VideoPage() {
     if (opened) {
       fsFallbackRef.current = false;
       setFsFallback(false);
+      setIsPlayerExpanded(true);
+      revealFsHint();
     } else {
       fsFallbackRef.current = true;
       setFsFallback(true);
       setIsPlayerExpanded(true);
+      revealFsHint();
     }
   };
 
   const exitFullscreen = async () => {
     await exitNativeFullscreen();
     setIsPlayerExpanded(false);
+    hideFsHint();
   };
 
 
