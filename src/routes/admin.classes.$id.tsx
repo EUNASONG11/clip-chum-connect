@@ -972,14 +972,16 @@ function ClassDetailPage() {
                       <p className="truncate text-sm font-medium">{s.name || "-"}</p>
                       <p className="truncate text-xs text-muted-foreground">{s.email}</p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => removeI(s.user_id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {canWrite && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => removeI(s.user_id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
