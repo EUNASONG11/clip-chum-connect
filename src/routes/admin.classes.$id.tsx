@@ -221,10 +221,11 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
-  const { data: studentStats = [] } = useQuery({
+  const { data: studentStats = [], isFetching: statsFetching, refetch: refetchStats } = useQuery({
     queryKey: ["admin", "class", id, "student-stats"],
     queryFn: () => getClassStudentStats({ data: { classId: id } }),
   });
+
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
