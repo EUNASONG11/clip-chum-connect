@@ -999,7 +999,7 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 폴더 관리 */}
-          {creatingUnder === undefined ? (
+          {!canWrite ? null : creatingUnder === undefined ? (
             <Button size="sm" variant="outline" onClick={() => setCreatingUnder(null)} className="whitespace-nowrap">
               <FolderPlus className="mr-1 h-4 w-4 shrink-0" /> 폴더 추가
             </Button>
