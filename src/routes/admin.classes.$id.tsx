@@ -742,7 +742,9 @@ function ClassDetailPage() {
         open={messageDialogOpen}
         onOpenChange={setMessageDialogOpen}
         classId={id}
+        className={cls?.name}
       />
+
 
       {!canWrite && (
         <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
