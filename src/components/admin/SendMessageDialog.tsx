@@ -504,8 +504,14 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
         <div className="space-y-3">
           <div className="rounded-md border bg-muted/40 p-3 text-sm">
             <p className="mb-1 font-medium text-foreground">메시지 내용</p>
-            <p className="whitespace-pre-wrap text-muted-foreground">{message.trim()}</p>
+            <p className="whitespace-pre-wrap text-muted-foreground">{previewMessage.trim()}</p>
+            {(message.includes("{수강반명}") || message.includes("{영상명}")) && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                {"{수강반명}"}과 {"{영상명}"} 변수는 실제 발송 시 자동으로 치환됩니다.
+              </p>
+            )}
           </div>
+
 
           <div className="space-y-2">
             <Label className="text-sm">수신자 목록 ({selectedList.length}명)</Label>
