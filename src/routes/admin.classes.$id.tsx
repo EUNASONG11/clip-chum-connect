@@ -211,6 +211,8 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
   });
+  // 쓰기 권한: 관리자 / 생성자 / 이 수강반에 배정된 강사만 true
+  const canWrite = !cls || (cls as any).can_write !== false;
   const { data: students = [] } = useQuery({
     queryKey: ["admin", "class", id, "students"],
     queryFn: () => listClassStudents({ data: { classId: id } }),
