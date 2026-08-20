@@ -455,6 +455,8 @@ function ClassDetailPage() {
 
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
+  const [listBranch, setListBranch] = useState<string>("__all__");
+
   const [results, setResults] = useState<
     { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string }[]
   >([]);
@@ -772,8 +774,10 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {canWrite && (
-          <>
+          <div className="rounded-md border bg-muted/20 p-3">
+            <p className="mb-2 text-xs font-semibold">학생 검색 · 배정</p>
           <form onSubmit={search} className="space-y-2">
+
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
                 <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
@@ -792,13 +796,14 @@ function ClassDetailPage() {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground shrink-0">교육원</Label>
+              <Label className="shrink-0 text-xs text-muted-foreground">검색 대상 교육원</Label>
               <Select value={searchBranch} onValueChange={setSearchBranch}>
                 <SelectTrigger className="h-9 w-full sm:w-56">
-                  <SelectValue placeholder="전체" />
+                  <SelectValue placeholder="전체 교육원에서 검색" />
+
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">전체</SelectItem>
+                  <SelectItem value="__all__">전체 교육원에서 검색</SelectItem>
                   {branchList.map((b) => (
                     <SelectItem key={b} value={b}>{b}</SelectItem>
                   ))}
@@ -859,14 +864,37 @@ function ClassDetailPage() {
               </ul>
             </div>
           )}
-          </>
+          </div>
           )}
 
+          {(() => {
+            const listed = (students as any[]).filter(
+              (s) => listBranch === "__all__" || (s.branch ?? "") === listBranch,
+            );
+            return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold">배정된 학생 목록 ({listed.length}/{students.length})</p>
+              <Select value={listBranch} onValueChange={setListBranch}>
+                <SelectTrigger className="h-8 w-full sm:w-48">
+                  <SelectValue placeholder="교육원 전체 보기" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">교육원 전체 보기</SelectItem>
+                  {branchList.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
+          ) : listed.length === 0 ? (
+            <p className="text-sm text-muted-foreground">선택한 교육원에 배정된 학생이 없습니다.</p>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {students.map((s: any) => (
+              {listed.map((s: any) => (
+
                 <div
                   key={s.user_id}
                   className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3 py-2"
@@ -897,6 +925,11 @@ function ClassDetailPage() {
               ))}
             </div>
           )}
+          </div>
+            );
+          })()}
+
+
 
         </CardContent>
       </Card>
