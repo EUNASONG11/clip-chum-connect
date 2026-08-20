@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { InAppBrowserNotice } from "@/components/InAppBrowserNotice";
 import { MobileTabBar } from "@/components/MobileTabBar";
 
 function NotFoundComponent() {
@@ -123,10 +124,12 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <InAppBrowserNotice />
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <div className="pb-16 md:pb-0">
         <Outlet />
       </div>
+
       <MobileTabBar />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
