@@ -851,68 +851,68 @@ function VideoPage() {
                       >
                          <Subtitles className="h-5 w-5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
                       </button>}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsPlayerExpanded(false);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                        aria-label="전체화면 닫기"
-                      >
-                        <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    className={cn(
-                      "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
-                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        revealFsControls();
-                        togglePlayPause();
-                      }}
-                      className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
-                      aria-label={isPlaying ? "일시정지" : "재생"}
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
-                      ) : (
-                        <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
-                      )}
-                    </button>
-                  </div>
-                </>
-
-              ) : (
-                <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
-                  {video.source !== "youtube" && <button
-                    type="button"
-                    onClick={toggleCaptions}
-                     disabled={captionsAvailable !== true}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
-                      captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
-                    )}
-                     aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
-                  >
-                     <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
-                  </button>}
                   <button
                     type="button"
-                    onClick={() => setIsPlayerExpanded(true)}
-                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                    aria-label="전체화면"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exitFullscreen();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                    aria-label="전체화면 닫기"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
                   </button>
                 </div>
-              )}
+              </div>
+              <div
+                className={cn(
+                  "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
+                  showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
+                    togglePlayPause();
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
+                  aria-label={isPlaying ? "일시정지" : "재생"}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
+                  ) : (
+                    <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
+                  )}
+                </button>
+              </div>
+            </>
+
+          ) : (
+            <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
+              {video.source !== "youtube" && <button
+                type="button"
+                onClick={toggleCaptions}
+                 disabled={captionsAvailable !== true}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
+                  captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
+                )}
+                 aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
+              >
+                 <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
+              </button>}
+              <button
+                type="button"
+                onClick={() => enterFullscreen()}
+                className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                aria-label="전체화면"
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+              </button>
+            </div>
+          )}
             </div>
 
 
