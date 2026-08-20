@@ -85,11 +85,21 @@ function InstructorsPage() {
         delete n[row.id];
         return n;
       });
+      setEditingId(null);
     } catch (e: any) {
       toast.error(e.message ?? "저장 실패");
     } finally {
       setSavingId(null);
     }
+  };
+
+  const cancelEdit = (rowId: string) => {
+    setEditingId((id) => (id === rowId ? null : id));
+    setDrafts((d) => {
+      const n = { ...d };
+      delete n[rowId];
+      return n;
+    });
   };
 
   const bulkCreate = async () => {
