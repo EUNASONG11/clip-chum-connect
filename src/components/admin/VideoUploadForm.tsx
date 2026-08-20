@@ -33,12 +33,31 @@ function buildFolderTree(list: any[]): FolderNode[] {
   }
   return out;
 }
-import { createVimeoUpload, finalizeVideo, addYoutubeVideo } from "@/lib/vimeo.functions";
+import { createVimeoUpload, finalizeVideo, addYoutubeVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, listClassFolders, updateVideo } from "@/lib/classes.functions";
 import { useAdminRole } from "@/components/AdminRole";
 import { supabase } from "@/integrations/supabase/client";
 
 const THUMB_BUCKET = "video-thumbnails";
+
+/** Vimeo 트랜스코딩이 끝날 때까지 백그라운드에서 상태를 갱신 (최대 10분) */
+async function pollUntilReady(videoId: string, onReady?: () => void) {
+  for (let i = 0; i < 60; i++) {
+    await new Promise((r) => setTimeout(r, i < 6 ? 5000 : 10000));
+    try {
+      const r = await refreshVideoStatus({ data: { id: videoId } });
+      if (r.status === "ready") {
+        toast.success("Vimeo 처리 완료! 이제 시청할 수 있습니다.");
+        onReady?.();
+        return;
+      }
+      if (r.status === "error") return;
+    } catch {
+      return;
+    }
+  }
+}
+
 
 async function uploadThumbnail(videoId: string, file: File) {
   const ext = file.name.split(".").pop() || "jpg";
@@ -379,6 +398,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
       onUploaded?.();
+      if (row?.id) void pollUntilReady(row.id, () => onUploaded?.());
+
     } catch (err: any) {
       toast.error(err.message ?? "업로드 실패");
     } finally {
