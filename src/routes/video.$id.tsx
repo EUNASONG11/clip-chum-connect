@@ -639,6 +639,20 @@ function VideoPage() {
           })();
         };
         let lastWall = Date.now();
+        // 건너뛰기 감시 전용 고속 루프 (0.25초) — 3초 주기 진도 저장과 분리해 즉시 되돌린다
+        const guardIv = setInterval(() => {
+          if (allowSeek) return;
+          try {
+            const t = player.getCurrentTime?.() ?? 0;
+            if (t > maxAllowedRef.current + 2) {
+              logSeek(lastTimeRef.current, t, true);
+              player.seekTo?.(maxAllowedRef.current, true);
+              lastTimeRef.current = maxAllowedRef.current;
+              currentTimeRef.current = maxAllowedRef.current;
+              lastWall = Date.now();
+            }
+          } catch {}
+        }, 250);
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
