@@ -418,6 +418,7 @@ export const sendClassSms = createServerFn({ method: "POST" })
     z
       .object({
         classId: z.string().uuid(),
+        videoId: z.string().uuid().optional(),
         recipients: z.array(RecipientSchema).min(1).max(1000),
         message: z.string().min(1).max(2000),
       })
@@ -425,8 +426,16 @@ export const sendClassSms = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructorOnClass(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const resolvedMessage = await resolveMessageTemplate(
+      supabaseAdmin,
+      data.classId,
+      data.videoId,
+      data.message,
+    );
 
     // 교육원별로 그룹화
+
     const groups = new Map<string, typeof data.recipients>();
     for (const r of data.recipients) {
       const b = normalizeBranch(r.branch);
