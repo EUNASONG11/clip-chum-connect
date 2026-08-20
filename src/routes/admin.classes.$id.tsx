@@ -925,6 +925,11 @@ function ClassDetailPage() {
               ))}
             </div>
           )}
+          </div>
+            );
+          })()}
+
+
 
         </CardContent>
       </Card>
