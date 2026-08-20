@@ -578,7 +578,9 @@ function UsersPage() {
                           />
                         </td>
                       )}
-                      <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
+                      {tab !== "instructor" && (
+                        <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
+                      )}
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
                       </td>
