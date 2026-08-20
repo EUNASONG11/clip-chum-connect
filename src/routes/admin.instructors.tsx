@@ -166,7 +166,6 @@ function InstructorsPage() {
                       <th className="py-2 pr-2">기수</th>
                       <th className="py-2 pr-2">이메일 (로그인 ID)</th>
                       <th className="py-2 pr-2">계정 상태</th>
-                      <th className="py-2 pr-2 text-right">작업</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -203,22 +202,57 @@ function InstructorsPage() {
                             />
                           </td>
                           <td className="py-2 pr-2">
-                            {editingId === r.id ? (
-                              <Input
-                                type="email"
-                                value={value}
-                                onChange={(e) =>
-                                  setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
-                                }
-                                placeholder="teacher@example.com"
-                                className="h-8"
-                                autoFocus
-                              />
-                            ) : (
-                              <span className="text-sm text-foreground">
-                                {r.email || "-"}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {editingId === r.id ? (
+                                <>
+                                  <Input
+                                    type="email"
+                                    value={value}
+                                    onChange={(e) =>
+                                      setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                                    }
+                                    placeholder="teacher@example.com"
+                                    className="h-8 flex-1"
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={!dirty || savingId === r.id}
+                                    onClick={() => save(r)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Save className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    disabled={savingId === r.id}
+                                    onClick={() => cancelEdit(r.id)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-sm text-foreground">
+                                    {r.email || "-"}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setEditingId(r.id);
+                                      setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </td>
                           <td className="py-2 pr-2 text-xs">
                             {r.auth_user_id ? (
@@ -229,51 +263,12 @@ function InstructorsPage() {
                               <span className="text-muted-foreground">미생성</span>
                             )}
                           </td>
-                          <td className="py-2 pr-2 text-right">
-                            {editingId === r.id ? (
-                              <div className="flex justify-end gap-1.5">
-                                <Button
-                                  size="sm"
-                                  variant={dirty ? "default" : "outline"}
-                                  disabled={!dirty || savingId === r.id}
-                                  onClick={() => save(r)}
-                                  className="h-8 gap-1 px-2"
-                                >
-                                  <Save className="h-3.5 w-3.5" />
-                                  {savingId === r.id ? "저장 중..." : "저장"}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  disabled={savingId === r.id}
-                                  onClick={() => cancelEdit(r.id)}
-                                  className="h-8 gap-1 px-2"
-                                >
-                                  <X className="h-3.5 w-3.5" />
-                                  취소
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  setEditingId(r.id);
-                                  setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
-                                }}
-                                className="h-8 gap-1 px-2"
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                                수정
-                              </Button>
-                            )}
-                          </td>
                         </tr>
                       );
                     })}
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
                           표시할 강사가 없습니다.
                         </td>
                       </tr>
