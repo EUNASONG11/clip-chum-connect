@@ -435,7 +435,16 @@ function VideoPage() {
         send(t, durationCached);
         lastTimeRef.current = t;
       });
-      player.on("seeking", () => { isSeekingRef.current = true; });
+      player.on("seeking", (d: any) => {
+        isSeekingRef.current = true;
+        // 버퍼링 이후가 아니라 seek 시작 즉시 되돌려서 체감 지연을 없앤다
+        const t = typeof d?.seconds === "number" ? d.seconds : null;
+        if (!allowSeek && t !== null && t > maxAllowedRef.current + 2) {
+          logSeek(lastTimeRef.current, t, true);
+          player.setCurrentTime(maxAllowedRef.current).catch(() => {});
+          lastTimeRef.current = maxAllowedRef.current;
+        }
+      });
       player.on("seeked", (d: any) => {
         if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
           logSeek(lastTimeRef.current, d.seconds, true);
