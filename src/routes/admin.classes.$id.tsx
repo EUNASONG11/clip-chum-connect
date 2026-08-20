@@ -749,11 +749,9 @@ function ClassDetailPage() {
       )}
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-5"}`}>
+        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-6"}`}>
           <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "학생 배정" : "학생"}</TabsTrigger>
-          {canWrite && (
-            <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
-          )}
+          <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "강사 배정" : "강사"}</TabsTrigger>
           <TabsTrigger value="videos" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">배정 이력</TabsTrigger>
