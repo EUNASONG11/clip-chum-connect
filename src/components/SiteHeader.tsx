@@ -2,9 +2,17 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyRole, getMyDisplayName } from "@/lib/vimeo.functions";
+import { getMyRole, getMyDisplayName, getMyStatus, getMyInstructorProfile } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
-import { Video, LogOut } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Video, LogOut, UserRound } from "lucide-react";
 
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
@@ -30,14 +38,23 @@ export function SiteHeader() {
   const { data: me } = useQuery({
     queryKey: ["me", userId],
     queryFn: async () => {
-      const [r, n] = await Promise.all([getMyRole(), getMyDisplayName()]);
-      return { isAdmin: r.isAdmin, name: n.name };
+      const [r, n, s] = await Promise.all([getMyRole(), getMyDisplayName(), getMyStatus()]);
+      return { isAdmin: r.isAdmin, name: n.name, isInstructor: s.isInstructor };
     },
     enabled: !!userId,
     staleTime: 10 * 60 * 1000,
   });
 
   const displayName = me?.name ?? null;
+  const isInstructor = Boolean(me?.isInstructor);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["my-instructor-profile", userId],
+    queryFn: () => getMyInstructorProfile(),
+    enabled: !!userId && isInstructor && profileOpen,
+    staleTime: 5 * 60 * 1000,
+  });
 
   return (
     <header className="border-b border-border/60 bg-card">
@@ -56,6 +73,88 @@ export function SiteHeader() {
                   {displayName}
                 </span>
               )}
+
+              {isInstructor && (
+                <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="rounded-full">
+                      <UserRound className="mr-1 h-4 w-4" /> 마이페이지
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>내 정보</DialogTitle>
+                    </DialogHeader>
+                    {profileLoading ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">불러오는 중…</p>
+                    ) : !profile?.instructor ? (
+                      <p className="py-6 text-center text-sm text-muted-foreground">
+                        강사 정보를 찾을 수 없습니다.
+                      </p>
+                    ) : (
+                      <div className="space-y-4 text-sm">
+                        <div className="grid grid-cols-[80px_1fr] gap-y-2">
+                          <span className="text-muted-foreground">이름</span>
+                          <span className="font-medium">{profile.instructor.name ?? "-"}</span>
+                          <span className="text-muted-foreground">이메일</span>
+                          <span className="font-medium break-all">
+                            {profile.instructor.email ?? email ?? "-"}
+                          </span>
+                          <span className="text-muted-foreground">교육원</span>
+                          <span className="font-medium">
+                            {profile.instructor.all_branches
+                              ? "전체 교육원"
+                              : profile.instructor.branch ?? "-"}
+                          </span>
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-muted-foreground">허용된 기수</p>
+                          {profile.instructor.cohorts.length ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {profile.instructor.cohorts.map((c) => (
+                                <Badge key={c} variant="secondary">
+                                  {c}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-muted-foreground">없음</p>
+                          )}
+                        </div>
+
+                        <div>
+                          <p className="mb-2 text-muted-foreground">
+                            배정된 수강반 ({profile.classes.length})
+                          </p>
+                          {profile.classes.length ? (
+                            <ul className="max-h-56 space-y-1 overflow-y-auto rounded-md border border-border/60 p-2">
+                              {profile.classes.map((c) => (
+                                <li key={c.id} className="flex items-center justify-between gap-2 rounded px-2 py-1 hover:bg-muted/60">
+                                  <Link
+                                    to="/admin/classes/$id"
+                                    params={{ id: c.id }}
+                                    onClick={() => setProfileOpen(false)}
+                                    className="truncate font-medium hover:underline"
+                                  >
+                                    {c.name}
+                                  </Link>
+                                  {c.branch && (
+                                    <span className="shrink-0 text-xs text-muted-foreground">{c.branch}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-muted-foreground">배정된 수강반이 없습니다.</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+              )}
+
 
               <Button
                 size="sm"
