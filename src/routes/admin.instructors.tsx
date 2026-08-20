@@ -57,10 +57,13 @@ function InstructorsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<Row | null>(null);
 
-  async function resetPw(r: Row) {
-    if (!confirm(`${r.name} 강사의 비밀번호를 임시 비밀번호(12345678)로 초기화할까요?\n초기화 후 강사는 최초 로그인 시 새 비밀번호를 설정하게 됩니다.`)) return;
+  async function confirmReset() {
+    if (!resetTarget) return;
+    const r = resetTarget;
     setResettingId(r.id);
+    setResetTarget(null);
     try {
       await resetInstructorPassword({ data: { instructorId: r.id } });
       toast.success(`${r.name} 강사의 비밀번호를 12345678로 초기화했습니다.`);
