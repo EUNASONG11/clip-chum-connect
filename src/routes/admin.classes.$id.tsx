@@ -769,7 +769,7 @@ function ClassDetailPage() {
       <Card>
         <CardHeader>
             <CardTitle className="flex min-w-0 items-center gap-2">
-              <UserPlus className="h-5 w-5 shrink-0" /> <span className="truncate">학생 배정 ({students.length})</span>
+              <UserPlus className="h-5 w-5 shrink-0" /> <span className="truncate">{canWrite ? "학생 배정" : "배정된 학생"} ({students.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
