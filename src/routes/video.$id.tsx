@@ -401,6 +401,12 @@ function VideoPage() {
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
       playerRef.current = player;
+      fullscreenRef.current = () => {
+        void (async () => {
+          const opened = await requestElementFullscreen(containerRef.current);
+          if (!opened) setIsPlayerExpanded(true);
+        })();
+      };
       player.on("play", () => setIsPlaying(true));
       player.on("pause", () => setIsPlaying(false));
       player.on("ended", () => setIsPlaying(false));
