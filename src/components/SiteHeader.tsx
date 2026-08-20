@@ -2,9 +2,17 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getMyRole, getMyDisplayName } from "@/lib/vimeo.functions";
+import { getMyRole, getMyDisplayName, getMyStatus, getMyInstructorProfile } from "@/lib/vimeo.functions";
 import { Button } from "@/components/ui/button";
-import { Video, LogOut } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Video, LogOut, UserRound } from "lucide-react";
 
 export function SiteHeader() {
   const [email, setEmail] = useState<string | null>(null);
