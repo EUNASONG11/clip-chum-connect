@@ -52,7 +52,9 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const queryClient = useQueryClient();
+
 
   const { data: videos = [] } = useQuery({
     queryKey: ["admin", "class", classId, "videos-lite"],
@@ -61,6 +63,17 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   });
 
   const effectiveVideoId = mode === "video" ? videoId : undefined;
+
+  const { data: classData } = useQuery({
+    queryKey: ["admin", "class", classId, "name"],
+    queryFn: () => getClass({ data: { id: classId } }),
+    enabled: open && !className,
+  });
+  const resolvedClassName = className ?? (classData as any)?.name ?? "";
+
+  const selectedVideo = useMemo(() => (videos as any[]).find((v) => v.id === videoId), [videos, videoId]);
+  const videoTitle = selectedVideo?.title ?? "";
+
 
   const {
     data: studentsData,
@@ -121,7 +134,31 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
 
   const clearAll = () => setSelected({});
 
+  const insertVariable = (variable: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setMessage((prev) => prev + variable);
+      return;
+    }
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const next = message.slice(0, start) + variable + message.slice(end);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + variable.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  const previewMessage = useMemo(() => {
+    return message
+      .replace(/\{수강반명\}/g, resolvedClassName)
+      .replace(/\{영상명\}/g, videoTitle);
+  }, [message, resolvedClassName, videoTitle]);
+
   const selfAvailable = filteredStudents.filter((n: any) => n.student_phone).length;
+
   const parentAvailable = filteredStudents.filter((n: any) => n.parent_phone).length;
   const noPhoneCount = filteredStudents.filter((n: any) => !n.student_phone && !n.parent_phone).length;
 
