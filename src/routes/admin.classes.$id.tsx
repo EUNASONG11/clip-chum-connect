@@ -499,6 +499,29 @@ function ClassDetailPage() {
     }
   };
 
+  const [bulkAssigning, setBulkAssigning] = useState(false);
+  const assignAll = async (targets: { user_id: string; name: string }[]) => {
+    if (targets.length === 0) return;
+    setBulkAssigning(true);
+    let ok = 0;
+    const failed: string[] = [];
+    for (const t of targets) {
+      try {
+        await assignStudent({ data: { classId: id, userId: t.user_id } });
+        ok += 1;
+      } catch {
+        failed.push(t.name);
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
+    qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
+    const assignedIds = new Set(targets.map((t) => t.user_id));
+    setResults((r) => r.filter((s) => !assignedIds.has(s.user_id) || failed.length > 0));
+    setBulkAssigning(false);
+    if (ok > 0) toast.success(`${ok}명을 배정했습니다.`);
+    if (failed.length > 0) toast.error(`배정 실패: ${failed.join(", ")}`);
+  };
+
   const remove = async (userId: string) => {
     try {
       await unassignStudent({ data: { classId: id, userId } });
