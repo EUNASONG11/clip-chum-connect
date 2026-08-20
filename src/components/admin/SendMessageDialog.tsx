@@ -176,15 +176,17 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     try {
       const res =
         channel === "sms"
-          ? await sendClassSms({ data: { classId, recipients: selectedList, message: message.trim() } })
+          ? await sendClassSms({ data: { classId, videoId: effectiveVideoId, recipients: selectedList, message: message.trim() } })
           : await sendClassBrandTalk({
               data: {
                 classId,
+                videoId: effectiveVideoId,
                 recipients: selectedList,
                 message: message.trim(),
                 fallbackToSms: true,
               },
             });
+
       queryClient.invalidateQueries({ queryKey: ["class-sms-logs", classId] });
       const okBranches = res.groups.filter((g: any) => g.ok);
       const failBranches = res.groups.filter((g: any) => !g.ok);
