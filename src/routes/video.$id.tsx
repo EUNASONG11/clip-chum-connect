@@ -840,9 +840,21 @@ function VideoPage() {
                     )}
                   >
                     <div className="rounded-full bg-black/80 px-4 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/20 backdrop-blur">
-                      전체화면 나가기: 화면을 터치하면 닫기 버튼이 나타나요
+                      전체화면을 끝내려면 오른쪽 위 &lsquo;전체화면 나가기&rsquo; 버튼을 누르세요
                     </div>
                   </div>
+                  {/* 전체화면 나가기 버튼: 항상 표시 */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exitFullscreen();
+                    }}
+                    className="absolute right-3 top-3 z-[120] inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                    aria-label="전체화면 나가기"
+                  >
+                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 전체화면 나가기
+                  </button>
                   {!showFsControls && (
                     <div
                       className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
@@ -854,15 +866,10 @@ function VideoPage() {
                   )}
                   <div
                     className={cn(
-                      "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
+                      "absolute inset-x-0 bottom-4 z-[110] flex items-center justify-center gap-2 transition-opacity duration-300",
                       showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
                     )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      hideFsControls();
-                    }}
                   >
-                    <div className="flex items-center gap-2">
                       {video.source !== "youtube" && <button
                         type="button"
                         onClick={(e) => {
@@ -879,18 +886,6 @@ function VideoPage() {
                       >
                          <Subtitles className="h-5 w-5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
                       </button>}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      exitFullscreen();
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                    aria-label="전체화면 나가기"
-                  >
-                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 전체화면 나가기
-                  </button>
-                </div>
               </div>
               <div
                 className={cn(
