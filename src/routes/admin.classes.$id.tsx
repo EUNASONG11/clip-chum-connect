@@ -1254,6 +1254,7 @@ function ClassDetailPage() {
                               (폴더 {childFolders.length} · 영상 {items.length})
                             </span>
                           </div>
+                          {canWrite && (
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -1280,6 +1281,7 @@ function ClassDetailPage() {
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </div>
+                          )}
                         </>
                       )}
                     </div>
