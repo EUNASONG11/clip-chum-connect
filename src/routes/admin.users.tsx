@@ -506,8 +506,9 @@ function UsersPage() {
                 {tab === "instructor" && (
                   <th className="min-w-[110px] whitespace-nowrap px-4 py-3">기수</th>
                 )}
-
-                <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                {tab !== "instructor" && (
+                  <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                )}
                 <th className="min-w-[100px] whitespace-nowrap px-4 py-3">가입일</th>
                 <th className="min-w-[220px] whitespace-nowrap px-4 py-3 text-right">작업</th>
               </tr>
