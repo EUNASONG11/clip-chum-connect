@@ -43,6 +43,7 @@ function InstructorsPage() {
     staleTime: 30_000,
   });
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
