@@ -448,7 +448,7 @@ export const sendClassSms = createServerFn({ method: "POST" })
     }
     if (groups.size === 0) throw new Error("발송 가능한 수신자가 없습니다. (교육원 또는 전화번호 확인)");
 
-    const isLms = byteLen(data.message) > 80;
+    const isLms = byteLen(resolvedMessage) > 80;
     const results: Array<{ branch: string; count: number; ok: boolean; error?: string }> = [];
     const unknownBranches: string[] = [];
     const batchId = crypto.randomUUID();
@@ -473,7 +473,7 @@ export const sendClassSms = createServerFn({ method: "POST" })
             contentType: "COMM",
             countryCode: "82",
             from: creds.smsFrom,
-            content: data.message,
+            content: resolvedMessage,
             messages: chunk.map((r) => ({ to: r.phone })),
           };
           const res = await fetch(`https://sens.apigw.ntruss.com${path}`, {
@@ -498,7 +498,7 @@ export const sendClassSms = createServerFn({ method: "POST" })
           batch_id: batchId,
           class_id: data.classId,
           channel: "sms",
-          message: data.message,
+          message: resolvedMessage,
           user_id: r.user_id,
           recipient_name: r.name ?? "",
           phone: r.phone,
@@ -526,6 +526,7 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
     z
       .object({
         classId: z.string().uuid(),
+        videoId: z.string().uuid().optional(),
         recipients: z.array(RecipientSchema).min(1).max(1000),
         message: z.string().min(1).max(2000),
         fallbackToSms: z.boolean().default(true),
@@ -534,7 +535,15 @@ export const sendClassBrandTalk = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructorOnClass(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const resolvedMessage = await resolveMessageTemplate(
+      supabaseAdmin,
+      data.classId,
+      data.videoId,
+      data.message,
+    );
     const groups = new Map<string, typeof data.recipients>();
+
     for (const r of data.recipients) {
       const b = normalizeBranch(r.branch);
       if (!b) continue;
