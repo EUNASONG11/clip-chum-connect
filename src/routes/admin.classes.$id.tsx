@@ -749,11 +749,9 @@ function ClassDetailPage() {
       )}
 
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-5"}`}>
+        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-6"}`}>
           <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "학생 배정" : "학생"}</TabsTrigger>
-          {canWrite && (
-            <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
-          )}
+          <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "강사 배정" : "강사"}</TabsTrigger>
           <TabsTrigger value="videos" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">배정 이력</TabsTrigger>
@@ -909,13 +907,14 @@ function ClassDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 shrink-0" /> <span className="truncate">강사 배정 ({assignedInstructors.length})</span>
+              <GraduationCap className="h-5 w-5 shrink-0" /> <span className="truncate">{canWrite ? "강사 배정" : "배정된 강사"} ({assignedInstructors.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
               배정된 강사는 이 수강반의 학생/영상/진도를 조회하고 관리할 수 있습니다.
             </p>
+            {canWrite && (
             <form onSubmit={searchI} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
                 <Label htmlFor="iquery" className="sr-only">이름 또는 이메일</Label>
@@ -933,8 +932,9 @@ function ClassDetailPage() {
                 {iSearching ? "검색 중..." : "검색"}
               </Button>
             </form>
+            )}
 
-            {iResults.length > 0 && (
+            {canWrite && iResults.length > 0 && (
               <div className="rounded-md border">
                 <ul className="divide-y">
                   {iResults.map((r) => {
@@ -972,14 +972,16 @@ function ClassDetailPage() {
                       <p className="truncate text-sm font-medium">{s.name || "-"}</p>
                       <p className="truncate text-xs text-muted-foreground">{s.email}</p>
                     </div>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0"
-                      onClick={() => removeI(s.user_id)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    {canWrite && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 shrink-0"
+                        onClick={() => removeI(s.user_id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
