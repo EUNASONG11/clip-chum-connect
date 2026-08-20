@@ -742,15 +742,25 @@ function ClassDetailPage() {
         classId={id}
       />
 
+      {!canWrite && (
+        <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          이 수강반에 배정된 강사가 아니므로 <span className="font-semibold">조회만</span> 가능합니다. 배정·설정 변경이 필요하면 관리자에게 요청하세요.
+        </p>
+      )}
+
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학생 배정</TabsTrigger>
-          <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
+        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-5"}`}>
+          <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "학생 배정" : "학생"}</TabsTrigger>
+          {canWrite && (
+            <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
+          )}
           <TabsTrigger value="videos" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">배정 이력</TabsTrigger>
           <TabsTrigger value="sms" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">문자 이력</TabsTrigger>
-          <TabsTrigger value="settings" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">설정</TabsTrigger>
+          {canWrite && (
+            <TabsTrigger value="settings" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">설정</TabsTrigger>
+          )}
         </TabsList>
 
 
