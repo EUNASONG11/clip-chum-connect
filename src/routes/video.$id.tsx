@@ -435,7 +435,16 @@ function VideoPage() {
         send(t, durationCached);
         lastTimeRef.current = t;
       });
-      player.on("seeking", () => { isSeekingRef.current = true; });
+      player.on("seeking", (d: any) => {
+        isSeekingRef.current = true;
+        // 버퍼링 이후가 아니라 seek 시작 즉시 되돌려서 체감 지연을 없앤다
+        const t = typeof d?.seconds === "number" ? d.seconds : null;
+        if (!allowSeek && t !== null && t > maxAllowedRef.current + 2) {
+          logSeek(lastTimeRef.current, t, true);
+          player.setCurrentTime(maxAllowedRef.current).catch(() => {});
+          lastTimeRef.current = maxAllowedRef.current;
+        }
+      });
       player.on("seeked", (d: any) => {
         if (!allowSeek && d.seconds > maxAllowedRef.current + 2) {
           logSeek(lastTimeRef.current, d.seconds, true);
@@ -630,6 +639,20 @@ function VideoPage() {
           })();
         };
         let lastWall = Date.now();
+        // 건너뛰기 감시 전용 고속 루프 (0.25초) — 3초 주기 진도 저장과 분리해 즉시 되돌린다
+        const guardIv = setInterval(() => {
+          if (allowSeek) return;
+          try {
+            const t = player.getCurrentTime?.() ?? 0;
+            if (t > maxAllowedRef.current + 2) {
+              logSeek(lastTimeRef.current, t, true);
+              player.seekTo?.(maxAllowedRef.current, true);
+              lastTimeRef.current = maxAllowedRef.current;
+              currentTimeRef.current = maxAllowedRef.current;
+              lastWall = Date.now();
+            }
+          } catch {}
+        }, 250);
         const iv = setInterval(() => {
           try {
             const state = player.getPlayerState?.();
@@ -671,6 +694,7 @@ function VideoPage() {
           window.removeEventListener("pagehide", saveOnLeave);
           window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
+          clearInterval(guardIv);
           try { player.destroy?.(); } catch {}
           try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
         };
