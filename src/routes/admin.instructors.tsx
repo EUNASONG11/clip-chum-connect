@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { GraduationCap, Save, KeyRound } from "lucide-react";
+import { GraduationCap, Save, KeyRound, Pencil, X } from "lucide-react";
 import {
   listInstructorRoster,
   updateInstructorEmail,
@@ -43,6 +43,7 @@ function InstructorsPage() {
     staleTime: 30_000,
   });
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
@@ -84,11 +85,21 @@ function InstructorsPage() {
         delete n[row.id];
         return n;
       });
+      setEditingId(null);
     } catch (e: any) {
       toast.error(e.message ?? "저장 실패");
     } finally {
       setSavingId(null);
     }
+  };
+
+  const cancelEdit = (rowId: string) => {
+    setEditingId((id) => (id === rowId ? null : id));
+    setDrafts((d) => {
+      const n = { ...d };
+      delete n[rowId];
+      return n;
+    });
   };
 
   const bulkCreate = async () => {
@@ -192,15 +203,22 @@ function InstructorsPage() {
                             />
                           </td>
                           <td className="py-2 pr-2">
-                            <Input
-                              type="email"
-                              value={value}
-                              onChange={(e) =>
-                                setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
-                              }
-                              placeholder="teacher@example.com"
-                              className="h-8"
-                            />
+                            {editingId === r.id ? (
+                              <Input
+                                type="email"
+                                value={value}
+                                onChange={(e) =>
+                                  setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                                }
+                                placeholder="teacher@example.com"
+                                className="h-8"
+                                autoFocus
+                              />
+                            ) : (
+                              <span className="text-sm text-foreground">
+                                {r.email || "-"}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2 pr-2 text-xs">
                             {r.auth_user_id ? (
@@ -212,16 +230,43 @@ function InstructorsPage() {
                             )}
                           </td>
                           <td className="py-2 pr-2 text-right">
-                            <Button
-                              size="sm"
-                              variant={dirty ? "default" : "outline"}
-                              disabled={!dirty || savingId === r.id}
-                              onClick={() => save(r)}
-                              className="gap-1"
-                            >
-                              <Save className="h-3.5 w-3.5" />
-                              {savingId === r.id ? "저장 중..." : "저장"}
-                            </Button>
+                            {editingId === r.id ? (
+                              <div className="flex justify-end gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant={dirty ? "default" : "outline"}
+                                  disabled={!dirty || savingId === r.id}
+                                  onClick={() => save(r)}
+                                  className="h-8 gap-1 px-2"
+                                >
+                                  <Save className="h-3.5 w-3.5" />
+                                  {savingId === r.id ? "저장 중..." : "저장"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  disabled={savingId === r.id}
+                                  onClick={() => cancelEdit(r.id)}
+                                  className="h-8 gap-1 px-2"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  취소
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingId(r.id);
+                                  setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                }}
+                                className="h-8 gap-1 px-2"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                수정
+                              </Button>
+                            )}
                           </td>
                         </tr>
                       );
