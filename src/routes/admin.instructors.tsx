@@ -280,7 +280,7 @@ function InstructorsPage() {
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    className="h-7 px-2 text-xs"
+                                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
                                     disabled={resettingId === r.id}
                                     onClick={() => resetPw(r)}
                                     title="임시 비밀번호(12345678)로 초기화"
