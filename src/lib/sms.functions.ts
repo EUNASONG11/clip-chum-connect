@@ -289,7 +289,7 @@ export const listClassSmsLogs = createServerFn({ method: "POST" })
     z.object({ classId: z.string().uuid(), limit: z.number().int().min(1).max(200).optional() }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertAdminOrInstructorOnClass(context, data.classId);
+    await assertAdminOrInstructorOnClass(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // 최근 발송 묶음(batch) 목록만 먼저 확보 → 해당 묶음의 수신자만 조회
