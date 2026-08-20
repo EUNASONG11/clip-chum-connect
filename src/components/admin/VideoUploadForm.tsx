@@ -398,6 +398,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       if (fileRef.current) fileRef.current.value = "";
       setProgress(null);
       onUploaded?.();
+      if (row?.id) void pollUntilReady(row.id, () => onUploaded?.());
+
     } catch (err: any) {
       toast.error(err.message ?? "업로드 실패");
     } finally {
