@@ -25,6 +25,7 @@ function normalizePhone(v: string | null | undefined): string | null {
 async function assertAdminOrInstructorOnClass(
   context: { supabase: any; userId: string },
   classId: string,
+  mode: "read" | "write" = "write",
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: adminData } = await context.supabase.rpc("has_role", {
@@ -34,7 +35,7 @@ async function assertAdminOrInstructorOnClass(
   if (adminData) return;
   const { data: cls } = await supabaseAdmin
     .from("classes")
-    .select("created_by")
+    .select("created_by, category_id")
     .eq("id", classId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -47,7 +48,30 @@ async function assertAdminOrInstructorOnClass(
     .eq("instructor_user_id", context.userId)
     .is("deleted_at", null)
     .maybeSingle();
-  if (!assigned) throw new Error("이 수강반에 문자 전송 권한이 없습니다.");
+  if (assigned) return;
+  // 조회 모드: 카테고리에 지정된 기수 권한이 있으면 읽기 허용
+  if (mode === "read" && cls.category_id) {
+    const [{ data: cat }, { data: me }] = await Promise.all([
+      supabaseAdmin
+        .from("class_categories")
+        .select("cohort")
+        .eq("id", cls.category_id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort, cohorts")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
+    ]);
+    const catCohort = (cat as any)?.cohort as string | null | undefined;
+    const myCohorts: string[] = [
+      ...(((me as any)?.cohorts ?? []) as string[]),
+      ...((me as any)?.cohort ? [(me as any).cohort as string] : []),
+    ];
+    if (catCohort && myCohorts.includes(catCohort)) return;
+  }
+  throw new Error("이 수강반에 문자 전송 권한이 없습니다.");
 }
 
 // ---------- 수강반 학생 조회 (문자 전송용) ----------
