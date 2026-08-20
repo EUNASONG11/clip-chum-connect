@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
-  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare,
+  GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare, RefreshCw,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
@@ -221,10 +221,11 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
-  const { data: studentStats = [] } = useQuery({
+  const { data: studentStats = [], isFetching: statsFetching, refetch: refetchStats } = useQuery({
     queryKey: ["admin", "class", id, "student-stats"],
     queryFn: () => getClassStudentStats({ data: { classId: id } }),
   });
+
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
@@ -1407,7 +1408,21 @@ function ClassDetailPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 shrink-0" /> <span className="truncate">학생별 학습 현황</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                title="새로고침"
+                disabled={statsFetching}
+                onClick={async () => {
+                  await refetchStats();
+                  toast.success("학습 현황을 새로고침했습니다.");
+                }}
+              >
+                <RefreshCw className={`h-4 w-4 ${statsFetching ? "animate-spin" : ""}`} />
+              </Button>
             </CardTitle>
+
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
                 <SelectTrigger className="h-8 w-full sm:w-40">
