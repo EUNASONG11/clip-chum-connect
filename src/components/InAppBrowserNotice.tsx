@@ -47,8 +47,8 @@ export function InAppBrowserNotice() {
       <div className="mx-auto flex max-w-6xl items-center gap-2">
         <p className="flex-1 leading-relaxed text-foreground">
           {android
-            ? "카카오톡 브라우저에서는 전체화면이 제한될 수 있어요. 크롬으로 열면 더 편하게 볼 수 있어요."
-            : "카카오톡 브라우저에서는 전체화면이 제한돼요. Safari에서 열면 더 편하게 볼 수 있어요."}
+            ? `${inAppBrowserLabel(browser)} 인앱 브라우저에서는 전체화면이 제한될 수 있어요. 크롬으로 열면 더 편하게 볼 수 있어요.`
+            : `${inAppBrowserLabel(browser)} 인앱 브라우저에서는 전체화면이 제한돼요. Safari에서 열면 더 편하게 볼 수 있어요.`}
         </p>
         {android || isIOSDevice() ? (
           <button
