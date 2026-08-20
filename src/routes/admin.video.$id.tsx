@@ -102,7 +102,20 @@ function AdminVideoPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
+  const [showFsHint, setShowFsHint] = useState(false);
+  const fsHintTimerRef = useRef<number | null>(null);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
+
+  const revealFsHint = () => {
+    setShowFsHint(true);
+    if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+    fsHintTimerRef.current = window.setTimeout(() => setShowFsHint(false), 4000);
+  };
+
+  const hideFsHint = () => {
+    if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+    setShowFsHint(false);
+  };
 
   const revealFsControls = () => {
     setShowFsControls(true);
