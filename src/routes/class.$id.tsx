@@ -1,4 +1,5 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useSession } from "@/hooks/use-session";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -34,20 +35,45 @@ function formatDuration(sec: number | null) {
 
 function ClassPage() {
   const { id } = Route.useParams();
-  const { data: cls, isLoading: loadingCls } = useQuery({
+  const navigate = useNavigate();
+  const sessionStatus = useSession();
+  const authed = sessionStatus === "signedIn";
+
+  React.useEffect(() => {
+    if (sessionStatus === "signedOut") {
+      navigate({ to: "/login", replace: true });
+    }
+  }, [sessionStatus, navigate]);
+
+  const { data: cls, isLoading: loadingCls, isError: clsError } = useQuery({
     queryKey: ["class", id],
     queryFn: () => getClass({ data: { id } }),
+    enabled: authed,
+    retry: false,
   });
   const { data: videos = [], isLoading } = useQuery({
     queryKey: ["class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
+    enabled: authed,
+    retry: false,
   });
   const { data: folders = [] } = useQuery({
     queryKey: ["class", id, "folders"],
     queryFn: () => listClassFolders({ data: { classId: id } }),
+    enabled: authed,
+    retry: false,
   });
 
-  if (!loadingCls && !cls) throw notFound();
+  if (!authed) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <div className="p-10 text-center text-muted-foreground">불러오는 중…</div>
+      </div>
+    );
+  }
+
+  if (!loadingCls && !clsError && !cls) throw notFound();
 
   return (
     <div className="min-h-screen bg-background">
