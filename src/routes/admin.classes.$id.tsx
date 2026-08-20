@@ -796,10 +796,11 @@ function ClassDetailPage() {
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground shrink-0">교육원</Label>
+              <Label className="shrink-0 text-xs text-muted-foreground">검색 대상 교육원</Label>
               <Select value={searchBranch} onValueChange={setSearchBranch}>
                 <SelectTrigger className="h-9 w-full sm:w-56">
-                  <SelectValue placeholder="전체" />
+                  <SelectValue placeholder="전체 교육원에서 검색" />
+
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">전체</SelectItem>
