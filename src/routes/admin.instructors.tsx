@@ -325,6 +325,25 @@ function InstructorsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>비밀번호 초기화</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resetTarget?.name} 강사의 비밀번호를 임시 비밀번호(12345678)로 초기화할까요?
+              <br />
+              초기화 후 강사는 최초 로그인 시 새 비밀번호를 설정하게 됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setResetTarget(null)}>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReset} disabled={resettingId === resetTarget?.id}>
+              초기화
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminOnly>
   );
 }
