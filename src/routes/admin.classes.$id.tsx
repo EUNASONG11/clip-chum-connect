@@ -864,14 +864,37 @@ function ClassDetailPage() {
               </ul>
             </div>
           )}
-          </>
+          </div>
           )}
 
+          {(() => {
+            const listed = (students as any[]).filter(
+              (s) => listBranch === "__all__" || (s.branch ?? "") === listBranch,
+            );
+            return (
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-xs font-semibold">배정된 학생 목록 ({listed.length}/{students.length})</p>
+              <Select value={listBranch} onValueChange={setListBranch}>
+                <SelectTrigger className="h-8 w-full sm:w-48">
+                  <SelectValue placeholder="교육원 전체 보기" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">교육원 전체 보기</SelectItem>
+                  {branchList.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
+          ) : listed.length === 0 ? (
+            <p className="text-sm text-muted-foreground">선택한 교육원에 배정된 학생이 없습니다.</p>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {students.map((s: any) => (
+              {listed.map((s: any) => (
+
                 <div
                   key={s.user_id}
                   className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3 py-2"
