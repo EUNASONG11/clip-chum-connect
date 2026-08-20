@@ -31,20 +31,47 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
-    .select("created_by")
+    .select("created_by, category_id")
     .eq("id", classId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (data && data.created_by === context.userId) return;
+  if (!data) throw new Error("수강반을 찾을 수 없습니다.");
+  if (data.created_by === context.userId) return;
   const { data: assigned, error: aErr } = await supabaseAdmin
     .from("class_instructors")
     .select("class_id")
     .eq("class_id", classId)
     .eq("instructor_user_id", context.userId)
+    .is("deleted_at", null)
     .maybeSingle();
   if (aErr) throw new Error(aErr.message);
-  if (!assigned) throw new Error("해당 수강반에 대한 권한이 없습니다.");
+  if (assigned) return;
+  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사도 접근 허용
+  if ((data as any).category_id) {
+    const [{ data: cat }, { data: me }] = await Promise.all([
+      supabaseAdmin
+        .from("class_categories")
+        .select("cohort")
+        .eq("id", (data as any).category_id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+      supabaseAdmin
+        .from("instructors")
+        .select("cohort, cohorts")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle(),
+    ]);
+    const catCohort = (cat as any)?.cohort as string | null | undefined;
+    const myCohorts: string[] = [
+      ...(((me as any)?.cohorts ?? []) as string[]),
+      ...((me as any)?.cohort ? [(me as any).cohort as string] : []),
+    ];
+    if (catCohort && myCohorts.includes(catCohort)) return;
+  }
+  throw new Error("해당 수강반에 대한 권한이 없습니다.");
 }
+
 
 // 전체 요약 통계 (관리자: 전체, 강사: 본인 수강반 기준)
 export const getOverviewStats = createServerFn({ method: "GET" })
