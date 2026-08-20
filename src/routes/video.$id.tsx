@@ -11,6 +11,7 @@ import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
 import { cn } from "@/lib/utils";
+import { useRotatedFullscreen } from "@/hooks/use-rotated-fullscreen";
 
 type Video = {
   id: string;
@@ -163,8 +164,10 @@ function VideoPage() {
       (await requestElementFullscreen(iframeRef.current));
     if (opened) {
       fsFallbackRef.current = false;
+      setFsFallback(false);
     } else {
       fsFallbackRef.current = true;
+      setFsFallback(true);
       setIsPlayerExpanded(true);
     }
   };
