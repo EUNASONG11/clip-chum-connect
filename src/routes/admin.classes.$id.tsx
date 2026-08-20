@@ -1077,8 +1077,9 @@ function ClassDetailPage() {
                   {items.map((v: any, i: number) => (
                     <li
                       key={v.id}
-                      draggable
+                      draggable={canWrite}
                       onDragStart={(e) => {
+                        if (!canWrite) return;
                         setDraggingVideoId(v.id);
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData("text/plain", v.id);
