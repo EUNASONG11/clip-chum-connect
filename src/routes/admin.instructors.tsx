@@ -295,7 +295,7 @@ function InstructorsPage() {
                                     variant="ghost"
                                     className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
                                     disabled={resettingId === r.id}
-                                    onClick={() => resetPw(r)}
+                                    onClick={() => setResetTarget(r)}
                                     title="임시 비밀번호(12345678)로 초기화"
                                   >
                                     <RotateCcw className="mr-1 h-3.5 w-3.5" />
