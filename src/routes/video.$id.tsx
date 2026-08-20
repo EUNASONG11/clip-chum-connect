@@ -833,6 +833,16 @@ function VideoPage() {
 
               {isPlayerExpanded ? (
                 <>
+                  <div
+                    className={cn(
+                      "absolute inset-x-0 top-0 z-[115] flex justify-center p-4 transition-opacity duration-500",
+                      showFsHint ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <div className="rounded-full bg-black/80 px-4 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/20 backdrop-blur">
+                      전체화면 나가기: 화면을 터치하면 닫기 버튼이 나타나요
+                    </div>
+                  </div>
                   {!showFsControls && (
                     <div
                       className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
