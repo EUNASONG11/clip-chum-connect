@@ -268,7 +268,7 @@ function InstructorsPage() {
                     })}
                     {filtered.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
                           표시할 강사가 없습니다.
                         </td>
                       </tr>
