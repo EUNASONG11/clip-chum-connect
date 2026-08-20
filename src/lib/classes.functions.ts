@@ -41,7 +41,9 @@ function isClassActive(active_from: string | null, active_to: string | null) {
 async function assertOwnClassOrAdmin(
   context: { supabase: any; userId: string },
   classId: string,
+  mode: "read" | "write" = "write",
 ) {
+
   const admin = await isAdmin(context);
   if (admin) return;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -63,8 +65,9 @@ async function assertOwnClassOrAdmin(
     .is("deleted_at", null)
     .maybeSingle();
   if (assigned) return;
-  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사도 접근 허용
-  if ((data as any).category_id) {
+  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사는 "조회만" 허용
+  if (mode === "read" && (data as any).category_id) {
+
     const [{ data: cat }, { data: me }] = await Promise.all([
       supabaseAdmin
         .from("class_categories")
@@ -251,7 +254,7 @@ export const getClass = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.id);
+    await assertOwnClassOrAdmin(context, data.id, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
@@ -356,7 +359,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.classId);
+    await assertOwnClassOrAdmin(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_students")
@@ -569,7 +572,7 @@ export const listClassEnrollmentHistory = createServerFn({ method: "GET" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.classId);
+    await assertOwnClassOrAdmin(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const q = (data.search ?? "").trim();
@@ -686,7 +689,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.classId);
+    await assertOwnClassOrAdmin(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("videos")
@@ -847,7 +850,7 @@ export const listClassInstructors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.classId);
+    await assertOwnClassOrAdmin(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_instructors")
@@ -944,7 +947,7 @@ export const listClassFolders = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await assertOwnClassOrAdmin(context, data.classId);
+    await assertOwnClassOrAdmin(context, data.classId, "read");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_folders")
