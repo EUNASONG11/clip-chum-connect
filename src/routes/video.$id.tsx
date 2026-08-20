@@ -130,6 +130,7 @@ function VideoPage() {
   const [showFsControls, setShowFsControls] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const fsFallbackRef = useRef(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
@@ -140,6 +141,35 @@ function VideoPage() {
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     setShowFsControls(false);
+  };
+
+  const exitNativeFullscreen = async () => {
+    const d = document as any;
+    try {
+      if (document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (d.webkitExitFullscreen) await d.webkitExitFullscreen();
+        else if (d.mozCancelFullScreen) await d.mozCancelFullScreen();
+        else if (d.msExitFullscreen) await d.msExitFullscreen();
+      }
+    } catch {}
+  };
+
+  const enterFullscreen = async () => {
+    const opened =
+      (await requestElementFullscreen(containerRef.current)) ||
+      (await requestElementFullscreen(iframeRef.current));
+    if (opened) {
+      fsFallbackRef.current = false;
+    } else {
+      fsFallbackRef.current = true;
+      setIsPlayerExpanded(true);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    await exitNativeFullscreen();
+    setIsPlayerExpanded(false);
   };
 
 
@@ -160,6 +190,28 @@ function VideoPage() {
   };
 
   useEffect(() => {
+    const onFsChange = () => {
+      const d = document as any;
+      const active = !!(document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement);
+      if (!active && !fsFallbackRef.current) {
+        setIsPlayerExpanded(false);
+        if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+        setShowFsControls(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("mozfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("mozfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
       setShowFsControls(false);
@@ -177,7 +229,7 @@ function VideoPage() {
       orientation.lock("landscape").catch(() => {});
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsPlayerExpanded(false);
+      if (event.key === "Escape") exitFullscreen();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
@@ -349,6 +401,12 @@ function VideoPage() {
       const lastTimeRef = { current: 0 };
       const lastWallRef = { current: Date.now() };
       playerRef.current = player;
+      fullscreenRef.current = () => {
+        void (async () => {
+          const opened = await requestElementFullscreen(containerRef.current);
+          if (!opened) setIsPlayerExpanded(true);
+        })();
+      };
       player.on("play", () => setIsPlaying(true));
       player.on("pause", () => setIsPlaying(false));
       player.on("ended", () => setIsPlaying(false));
@@ -793,68 +851,68 @@ function VideoPage() {
                       >
                          <Subtitles className="h-5 w-5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
                       </button>}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsPlayerExpanded(false);
-                        }}
-                        className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                        aria-label="전체화면 닫기"
-                      >
-                        <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    className={cn(
-                      "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
-                      showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        revealFsControls();
-                        togglePlayPause();
-                      }}
-                      className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
-                      aria-label={isPlaying ? "일시정지" : "재생"}
-                    >
-                      {isPlaying ? (
-                        <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
-                      ) : (
-                        <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
-                      )}
-                    </button>
-                  </div>
-                </>
-
-              ) : (
-                <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
-                  {video.source !== "youtube" && <button
-                    type="button"
-                    onClick={toggleCaptions}
-                     disabled={captionsAvailable !== true}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
-                      captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
-                    )}
-                     aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
-                  >
-                     <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
-                  </button>}
                   <button
                     type="button"
-                    onClick={() => setIsPlayerExpanded(true)}
-                    className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
-                    aria-label="전체화면"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exitFullscreen();
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
+                    aria-label="전체화면 닫기"
                   >
-                    <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
                   </button>
                 </div>
-              )}
+              </div>
+              <div
+                className={cn(
+                  "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
+                  showFsControls ? "opacity-100" : "opacity-0 [&>*]:pointer-events-none"
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
+                    togglePlayPause();
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
+                  aria-label={isPlaying ? "일시정지" : "재생"}
+                >
+                  {isPlaying ? (
+                    <Pause className="h-8 w-8 sm:h-10 sm:w-10" />
+                  ) : (
+                    <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
+                  )}
+                </button>
+              </div>
+            </>
+
+          ) : (
+            <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
+              {video.source !== "youtube" && <button
+                type="button"
+                onClick={toggleCaptions}
+                 disabled={captionsAvailable !== true}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur",
+                  captionsOn ? "bg-primary/90 hover:bg-primary" : "bg-black/70 hover:bg-black/80"
+                )}
+                 aria-label={captionsAvailable === false ? "자막 없음" : captionsOn ? "자막 끄기" : "자막 켜기"}
+              >
+                 <Subtitles className="h-3.5 w-3.5" /> {captionsAvailable === false ? "자막 없음" : `자막 ${captionsOn ? "켜짐" : "꺼짐"}`}
+              </button>}
+              <button
+                type="button"
+                onClick={() => enterFullscreen()}
+                className="inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80"
+                aria-label="전체화면"
+              >
+                <Maximize2 className="h-3.5 w-3.5" /> 전체화면
+              </button>
+            </div>
+          )}
             </div>
 
 

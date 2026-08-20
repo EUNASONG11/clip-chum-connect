@@ -99,6 +99,7 @@ function AdminVideoPage() {
   const [showFsControls, setShowFsControls] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const fsFallbackRef = useRef(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
@@ -109,6 +110,35 @@ function AdminVideoPage() {
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     setShowFsControls(false);
+  };
+
+  const exitNativeFullscreen = async () => {
+    const d = document as any;
+    try {
+      if (document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (d.webkitExitFullscreen) await d.webkitExitFullscreen();
+        else if (d.mozCancelFullScreen) await d.mozCancelFullScreen();
+        else if (d.msExitFullscreen) await d.msExitFullscreen();
+      }
+    } catch {}
+  };
+
+  const enterFullscreen = async () => {
+    const opened =
+      (await requestElementFullscreen(containerRef.current)) ||
+      (await requestElementFullscreen(iframeRef.current));
+    if (opened) {
+      fsFallbackRef.current = false;
+    } else {
+      fsFallbackRef.current = true;
+      setIsPlayerExpanded(true);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    await exitNativeFullscreen();
+    setIsPlayerExpanded(false);
   };
 
 
@@ -150,6 +180,28 @@ function AdminVideoPage() {
   });
 
   useEffect(() => {
+    const onFsChange = () => {
+      const d = document as any;
+      const active = !!(document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement);
+      if (!active && !fsFallbackRef.current) {
+        setIsPlayerExpanded(false);
+        if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+        setShowFsControls(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("mozfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("mozfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
       setShowFsControls(false);
@@ -165,7 +217,7 @@ function AdminVideoPage() {
     const orientation = (screen as any).orientation;
     if (orientation?.lock) orientation.lock("landscape").catch(() => {});
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsPlayerExpanded(false);
+      if (event.key === "Escape") exitFullscreen();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
@@ -326,7 +378,7 @@ function AdminVideoPage() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsPlayerExpanded(false);
+                      exitFullscreen();
                     }}
                     className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
                     aria-label="전체화면 닫기"
@@ -363,7 +415,7 @@ function AdminVideoPage() {
             ) : (
               <button
                 type="button"
-                onClick={() => setIsPlayerExpanded(true)}
+                onClick={() => enterFullscreen()}
                 className="absolute bottom-2 right-2 z-[110] inline-flex items-center gap-1 rounded-md bg-black/70 px-3 py-1.5 text-xs text-white shadow-lg backdrop-blur hover:bg-black/80 md:hidden"
                 aria-label="전체화면"
               >
