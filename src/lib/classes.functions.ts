@@ -65,8 +65,9 @@ async function assertOwnClassOrAdmin(
     .is("deleted_at", null)
     .maybeSingle();
   if (assigned) return;
-  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사도 접근 허용
-  if ((data as any).category_id) {
+  // 카테고리에 기수가 지정된 경우, 같은 기수의 강사는 "조회만" 허용
+  if (mode === "read" && (data as any).category_id) {
+
     const [{ data: cat }, { data: me }] = await Promise.all([
       supabaseAdmin
         .from("class_categories")
