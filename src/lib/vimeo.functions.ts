@@ -260,6 +260,54 @@ export const getMyDisplayName = createServerFn({ method: "GET" })
     return { name: (data as any)?.name ?? null };
   });
 
+// 5-2) 내 강사 프로필 (마이페이지)
+export const getMyInstructorProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inst } = await supabaseAdmin
+      .from("instructors")
+      .select("name, email, phone, branch, cohort, cohorts, all_branches")
+      .eq("auth_user_id", context.userId)
+      .maybeSingle();
+    if (!inst) return { instructor: null, classes: [] as { id: string; name: string }[] };
+
+    const { data: links } = await supabaseAdmin
+      .from("class_instructors")
+      .select("class_id")
+      .eq("instructor_user_id", context.userId)
+      .is("deleted_at", null);
+    const ids = Array.from(new Set((links ?? []).map((l: any) => l.class_id))).filter(Boolean);
+    let classes: { id: string; name: string; branch: string | null }[] = [];
+    if (ids.length) {
+      const { data: cls } = await supabaseAdmin
+        .from("classes")
+        .select("id, name, branch")
+        .in("id", ids)
+        .is("deleted_at", null)
+        .order("name");
+      classes = (cls ?? []) as any;
+    }
+    const i = inst as any;
+    const cohorts: string[] = Array.isArray(i.cohorts)
+      ? i.cohorts.filter(Boolean)
+      : i.cohort
+      ? [String(i.cohort)]
+      : [];
+    return {
+      instructor: {
+        name: i.name ?? null,
+        email: i.email ?? null,
+        phone: i.phone ?? null,
+        branch: i.branch ?? null,
+        all_branches: Boolean(i.all_branches),
+        cohorts,
+      },
+      classes,
+    };
+  });
+
+
 // 6) 관리자 승격 (부트스트랩): 관리자 아무도 없으면 자기 자신을 admin 으로
 export const claimAdminIfNone = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
