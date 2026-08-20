@@ -211,6 +211,8 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
   });
+  // 쓰기 권한: 관리자 / 생성자 / 이 수강반에 배정된 강사만 true
+  const canWrite = !cls || (cls as any).can_write !== false;
   const { data: students = [] } = useQuery({
     queryKey: ["admin", "class", id, "students"],
     queryFn: () => listClassStudents({ data: { classId: id } }),
@@ -684,18 +686,25 @@ function ClassDetailPage() {
         <div className="mt-2 flex min-w-0 flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-baseline gap-2">
             <h1 className="truncate text-2xl font-bold">{cls?.name ?? "..."}</h1>
+            {!canWrite && (
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                조회 전용
+              </span>
+            )}
             {cls?.description && (
               <p className="min-w-0 truncate text-sm text-muted-foreground">{cls.description}</p>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMessageDialogOpen(true)}
-            className="shrink-0"
-          >
-            <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
-          </Button>
+          {canWrite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMessageDialogOpen(true)}
+              className="shrink-0"
+            >
+              <MessageSquare className="mr-1 h-4 w-4" /> 문자 전송
+            </Button>
+          )}
         </div>
       </div>
 
@@ -733,15 +742,25 @@ function ClassDetailPage() {
         classId={id}
       />
 
+      {!canWrite && (
+        <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          이 수강반에 배정된 강사가 아니므로 <span className="font-semibold">조회만</span> 가능합니다. 배정·설정 변경이 필요하면 관리자에게 요청하세요.
+        </p>
+      )}
+
       <Tabs defaultValue="students" className="w-full min-w-0">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학생 배정</TabsTrigger>
-          <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
+        <TabsList className={`grid w-full ${canWrite ? "grid-cols-7" : "grid-cols-5"}`}>
+          <TabsTrigger value="students" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">{canWrite ? "학생 배정" : "학생"}</TabsTrigger>
+          {canWrite && (
+            <TabsTrigger value="instructors" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">강사 배정</TabsTrigger>
+          )}
           <TabsTrigger value="videos" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">영상</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">학습 현황</TabsTrigger>
           <TabsTrigger value="history" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">배정 이력</TabsTrigger>
           <TabsTrigger value="sms" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">문자 이력</TabsTrigger>
-          <TabsTrigger value="settings" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">설정</TabsTrigger>
+          {canWrite && (
+            <TabsTrigger value="settings" className="whitespace-nowrap px-0.5 text-[10px] sm:px-1 sm:text-xs">설정</TabsTrigger>
+          )}
         </TabsList>
 
 
@@ -750,10 +769,12 @@ function ClassDetailPage() {
       <Card>
         <CardHeader>
             <CardTitle className="flex min-w-0 items-center gap-2">
-              <UserPlus className="h-5 w-5 shrink-0" /> <span className="truncate">학생 배정 ({students.length})</span>
+              <UserPlus className="h-5 w-5 shrink-0" /> <span className="truncate">{canWrite ? "학생 배정" : "배정된 학생"} ({students.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {canWrite && (
+          <>
           <form onSubmit={search} className="space-y-2">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
@@ -840,6 +861,8 @@ function ClassDetailPage() {
               </ul>
             </div>
           )}
+          </>
+          )}
 
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
@@ -862,14 +885,16 @@ function ClassDetailPage() {
                       <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 shrink-0"
-                    onClick={() => remove(s.user_id)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  {canWrite && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 shrink-0"
+                      onClick={() => remove(s.user_id)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -974,7 +999,7 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* 폴더 관리 */}
-          {creatingUnder === undefined ? (
+          {!canWrite ? null : creatingUnder === undefined ? (
             <Button size="sm" variant="outline" onClick={() => setCreatingUnder(null)} className="whitespace-nowrap">
               <FolderPlus className="mr-1 h-4 w-4 shrink-0" /> 폴더 추가
             </Button>
@@ -1052,14 +1077,16 @@ function ClassDetailPage() {
                   {items.map((v: any, i: number) => (
                     <li
                       key={v.id}
-                      draggable
+                      draggable={canWrite}
                       onDragStart={(e) => {
+                        if (!canWrite) return;
                         setDraggingVideoId(v.id);
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData("text/plain", v.id);
                       }}
                       onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
                       onTouchStart={(e) => {
+                        if (!canWrite) return;
                         if (longPressTimer.current) clearTimeout(longPressTimer.current);
                         longPressTimer.current = setTimeout(() => {
                           setDraggingVideoId(v.id);
@@ -1123,6 +1150,7 @@ function ClassDetailPage() {
                           {v.is_published ? "공개" : "비공개"} · {v.status}
                         </p>
                       </div>
+                      {canWrite && (
                       <div className="flex shrink-0 items-center gap-1">
                         <Select
                           value={v.folder_id ?? "__none__"}
@@ -1169,6 +1197,7 @@ function ClassDetailPage() {
                           <ArrowDown className="h-4 w-4" />
                         </Button>
                       </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -1225,6 +1254,7 @@ function ClassDetailPage() {
                               (폴더 {childFolders.length} · 영상 {items.length})
                             </span>
                           </div>
+                          {canWrite && (
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -1251,6 +1281,7 @@ function ClassDetailPage() {
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </div>
+                          )}
                         </>
                       )}
                     </div>

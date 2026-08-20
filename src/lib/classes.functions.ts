@@ -105,6 +105,20 @@ async function assertOwnClassOrAdmin(
   }
 }
 
+// 쓰기 권한 여부(관리자 / 생성자 / 배정된 강사)
+async function canWriteClass(
+  context: { supabase: any; userId: string },
+  classId: string,
+): Promise<boolean> {
+  try {
+    await assertOwnClassOrAdmin(context, classId, "write");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 
 async function assertAdminOnly(context: { supabase: any; userId: string }) {
   const admin = await isAdmin(context);
@@ -263,7 +277,9 @@ export const getClass = createServerFn({ method: "GET" })
       .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return row;
+    if (!row) return row;
+    const can_write = await canWriteClass(context, data.id);
+    return { ...(row as any), can_write } as any;
 
   });
 
