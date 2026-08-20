@@ -778,7 +778,21 @@ function ClassDetailPage() {
             <p className="mb-2 text-xs font-semibold">학생 검색 · 배정</p>
           <form onSubmit={search} className="space-y-2">
 
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2">
+              <div className="flex items-center gap-2">
+                <Label className="shrink-0 text-xs text-muted-foreground">교육원</Label>
+                <Select value={searchBranch} onValueChange={setSearchBranch}>
+                  <SelectTrigger className="h-9 w-32 sm:w-40">
+                    <SelectValue placeholder="전체" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체</SelectItem>
+                    {branchList.map((b) => (
+                      <SelectItem key={b} value={b}>{b}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="min-w-0">
                 <Label htmlFor="query" className="sr-only">이름 또는 전화번호</Label>
                 <ClearableSearchInput
@@ -794,21 +808,6 @@ function ClassDetailPage() {
                 <Search className="mr-1 h-4 w-4 shrink-0" />
                 {searching ? "검색 중..." : "검색"}
               </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label className="shrink-0 text-xs text-muted-foreground">검색 대상 교육원</Label>
-              <Select value={searchBranch} onValueChange={setSearchBranch}>
-                <SelectTrigger className="h-9 w-full sm:w-56">
-                  <SelectValue placeholder="전체 교육원에서 검색" />
-
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">전체 교육원에서 검색</SelectItem>
-                  {branchList.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </form>
 
