@@ -281,6 +281,36 @@ async function writeSmsLogs(rows: LogRow[]) {
   if (error) console.error("sms_logs insert failed:", error.message);
 }
 
+async function resolveMessageTemplate(
+  supabaseAdmin: any,
+  classId: string,
+  videoId: string | undefined,
+  message: string,
+) {
+  const [{ data: cls }, { data: vid }] = await Promise.all([
+    supabaseAdmin
+      .from("classes")
+      .select("name")
+      .eq("id", classId)
+      .is("deleted_at", null)
+      .maybeSingle(),
+    videoId
+      ? supabaseAdmin
+          .from("videos")
+          .select("title")
+          .eq("id", videoId)
+          .is("deleted_at", null)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const className = (cls as any)?.name ?? "";
+  const videoTitle = (vid as any)?.title ?? "";
+  return message
+    .replace(/\{수강반명\}/g, className)
+    .replace(/\{영상명\}/g, videoTitle);
+}
+
+
 // ---------- 문자 전송 이력 조회 ----------
 
 export const listClassSmsLogs = createServerFn({ method: "POST" })
