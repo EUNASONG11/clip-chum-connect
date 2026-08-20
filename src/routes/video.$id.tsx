@@ -732,7 +732,7 @@ function VideoPage() {
             <div
               className={
                 isPlayerExpanded
-                  ? "fixed inset-0 z-[100] flex items-center justify-center bg-black"
+                  ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black"
                   : "relative overflow-hidden rounded-xl border bg-black"
               }
             >
