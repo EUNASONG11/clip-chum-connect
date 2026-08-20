@@ -227,12 +227,14 @@ function AdminVideoPage() {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
       setShowFsControls(false);
+      if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+      setShowFsHint(false);
       return;
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
-
+    revealFsHint();
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -247,6 +249,7 @@ function AdminVideoPage() {
       document.removeEventListener("keydown", onKeyDown);
       if (orientation?.unlock) { try { orientation.unlock(); } catch {} }
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+      if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
     };
   }, [isPlayerExpanded]);
 
