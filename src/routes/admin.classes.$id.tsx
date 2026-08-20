@@ -1514,7 +1514,7 @@ function ClassDetailPage() {
                 <span>평균 시청률</span>
                 <span>최근 학습</span>
               </div>
-              <Accordion type="multiple" className="w-full">
+              <Accordion type="multiple" value={openStudentIds} onValueChange={setOpenStudentIds} className="w-full">
                 {pagedStudentStats.map((s: any) => (
                   <AccordionItem key={s.user_id} value={s.user_id}>
                     <AccordionTrigger className="px-3 hover:no-underline">
