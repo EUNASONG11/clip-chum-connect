@@ -907,13 +907,14 @@ function ClassDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 shrink-0" /> <span className="truncate">강사 배정 ({assignedInstructors.length})</span>
+              <GraduationCap className="h-5 w-5 shrink-0" /> <span className="truncate">{canWrite ? "강사 배정" : "배정된 강사"} ({assignedInstructors.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-xs text-muted-foreground">
               배정된 강사는 이 수강반의 학생/영상/진도를 조회하고 관리할 수 있습니다.
             </p>
+            {canWrite && (
             <form onSubmit={searchI} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
                 <Label htmlFor="iquery" className="sr-only">이름 또는 이메일</Label>
@@ -931,8 +932,9 @@ function ClassDetailPage() {
                 {iSearching ? "검색 중..." : "검색"}
               </Button>
             </form>
+            )}
 
-            {iResults.length > 0 && (
+            {canWrite && iResults.length > 0 && (
               <div className="rounded-md border">
                 <ul className="divide-y">
                   {iResults.map((r) => {
