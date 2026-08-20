@@ -133,7 +133,20 @@ function VideoPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
+  const [showFsHint, setShowFsHint] = useState(false);
+  const fsHintTimerRef = useRef<number | null>(null);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
+
+  const revealFsHint = () => {
+    setShowFsHint(true);
+    if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+    fsHintTimerRef.current = window.setTimeout(() => setShowFsHint(false), 4000);
+  };
+
+  const hideFsHint = () => {
+    if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+    setShowFsHint(false);
+  };
 
   const revealFsControls = () => {
     setShowFsControls(true);
@@ -165,16 +178,20 @@ function VideoPage() {
     if (opened) {
       fsFallbackRef.current = false;
       setFsFallback(false);
+      setIsPlayerExpanded(true);
+      revealFsHint();
     } else {
       fsFallbackRef.current = true;
       setFsFallback(true);
       setIsPlayerExpanded(true);
+      revealFsHint();
     }
   };
 
   const exitFullscreen = async () => {
     await exitNativeFullscreen();
     setIsPlayerExpanded(false);
+    hideFsHint();
   };
 
 
@@ -220,12 +237,14 @@ function VideoPage() {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
       setShowFsControls(false);
+      if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
+      setShowFsHint(false);
       return;
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
-
+    revealFsHint();
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -244,6 +263,7 @@ function VideoPage() {
         try { orientation.unlock(); } catch {}
       }
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+      if (fsHintTimerRef.current) window.clearTimeout(fsHintTimerRef.current);
     };
   }, [isPlayerExpanded]);
 
@@ -813,6 +833,16 @@ function VideoPage() {
 
               {isPlayerExpanded ? (
                 <>
+                  <div
+                    className={cn(
+                      "absolute inset-x-0 top-0 z-[115] flex justify-center p-4 transition-opacity duration-500",
+                      showFsHint ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <div className="rounded-full bg-black/80 px-4 py-2 text-xs font-medium text-white shadow-lg ring-1 ring-white/20 backdrop-blur">
+                      전체화면 나가기: 화면을 터치하면 닫기 버튼이 나타나요
+                    </div>
+                  </div>
                   {!showFsControls && (
                     <div
                       className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
@@ -856,9 +886,9 @@ function VideoPage() {
                       exitFullscreen();
                     }}
                     className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
-                    aria-label="전체화면 닫기"
+                    aria-label="전체화면 나가기"
                   >
-                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
+                    <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 전체화면 나가기
                   </button>
                 </div>
               </div>
