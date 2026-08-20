@@ -378,7 +378,7 @@ function AdminVideoPage() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsPlayerExpanded(false);
+                      exitFullscreen();
                     }}
                     className="inline-flex items-center gap-2 rounded-xl bg-black/85 px-4 py-3 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:px-5 sm:py-3.5"
                     aria-label="전체화면 닫기"
