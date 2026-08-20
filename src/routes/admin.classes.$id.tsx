@@ -1086,6 +1086,7 @@ function ClassDetailPage() {
                       }}
                       onDragEnd={() => { setDraggingVideoId(null); setDragOverFolder(undefined); }}
                       onTouchStart={(e) => {
+                        if (!canWrite) return;
                         if (longPressTimer.current) clearTimeout(longPressTimer.current);
                         longPressTimer.current = setTimeout(() => {
                           setDraggingVideoId(v.id);
