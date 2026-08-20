@@ -493,6 +493,7 @@ function ClassDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
       setResults((r) => r.filter((s) => s.user_id !== userId));
+      setQuery("");
       toast.success("배정되었습니다.");
     } catch (err: any) {
       toast.error(err.message);
@@ -518,7 +519,10 @@ function ClassDetailPage() {
     const assignedIds = new Set(targets.map((t) => t.user_id));
     setResults((r) => r.filter((s) => !assignedIds.has(s.user_id) || failed.length > 0));
     setBulkAssigning(false);
-    if (ok > 0) toast.success(`${ok}명을 배정했습니다.`);
+    if (ok > 0) {
+      setQuery("");
+      toast.success(`${ok}명을 배정했습니다.`);
+    }
     if (failed.length > 0) toast.error(`배정 실패: ${failed.join(", ")}`);
   };
 
