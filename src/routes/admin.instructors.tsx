@@ -4,6 +4,16 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { GraduationCap, Save, KeyRound, Pencil, X, RotateCcw } from "lucide-react";
 import {
@@ -47,10 +57,13 @@ function InstructorsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<Row | null>(null);
 
-  async function resetPw(r: Row) {
-    if (!confirm(`${r.name} 강사의 비밀번호를 임시 비밀번호(12345678)로 초기화할까요?\n초기화 후 강사는 최초 로그인 시 새 비밀번호를 설정하게 됩니다.`)) return;
+  async function confirmReset() {
+    if (!resetTarget) return;
+    const r = resetTarget;
     setResettingId(r.id);
+    setResetTarget(null);
     try {
       await resetInstructorPassword({ data: { instructorId: r.id } });
       toast.success(`${r.name} 강사의 비밀번호를 12345678로 초기화했습니다.`);
@@ -282,7 +295,7 @@ function InstructorsPage() {
                                     variant="ghost"
                                     className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
                                     disabled={resettingId === r.id}
-                                    onClick={() => resetPw(r)}
+                                    onClick={() => setResetTarget(r)}
                                     title="임시 비밀번호(12345678)로 초기화"
                                   >
                                     <RotateCcw className="mr-1 h-3.5 w-3.5" />
@@ -312,6 +325,25 @@ function InstructorsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>비밀번호 초기화</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resetTarget?.name} 강사의 비밀번호를 임시 비밀번호(12345678)로 초기화할까요?
+              <br />
+              초기화 후 강사는 최초 로그인 시 새 비밀번호를 설정하게 됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setResetTarget(null)}>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReset} disabled={resettingId === resetTarget?.id}>
+              초기화
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminOnly>
   );
 }
