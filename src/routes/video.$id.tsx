@@ -799,7 +799,7 @@ function VideoPage() {
                 </>
 
               ) : (
-                <div className="absolute bottom-3 right-3 z-[110] flex items-center gap-1.5">
+                <div className="absolute top-3 right-3 z-[110] flex items-center gap-1.5">
                   {video.source !== "youtube" && <button
                     type="button"
                     onClick={toggleCaptions}
