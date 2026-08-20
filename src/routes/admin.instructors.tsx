@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { GraduationCap, Save, KeyRound, Pencil, X } from "lucide-react";
+import { GraduationCap, Save, KeyRound, Pencil, X, RotateCcw } from "lucide-react";
 import {
   listInstructorRoster,
   updateInstructorEmail,
   updateInstructorCohort,
   bulkCreateInstructorAccounts,
+  resetInstructorPassword,
 } from "@/lib/vimeo.functions";
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { AdminOnly } from "@/components/AdminRole";
@@ -45,6 +46,21 @@ function InstructorsPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+
+  async function resetPw(r: Row) {
+    if (!confirm(`${r.name} 강사의 비밀번호를 임시 비밀번호(12345678)로 초기화할까요?\n초기화 후 강사는 최초 로그인 시 새 비밀번호를 설정하게 됩니다.`)) return;
+    setResettingId(r.id);
+    try {
+      await resetInstructorPassword({ data: { instructorId: r.id } });
+      toast.success(`${r.name} 강사의 비밀번호를 12345678로 초기화했습니다.`);
+      await qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "초기화에 실패했습니다.");
+    } finally {
+      setResettingId(null);
+    }
+  }
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
