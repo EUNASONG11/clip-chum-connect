@@ -256,13 +256,29 @@ function InstructorsPage() {
                           </td>
                           <td className="py-2 pr-2 text-xs">
                             {r.auth_user_id ? (
-                              <span className="text-green-600">
-                                계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
-                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-600">
+                                  계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
+                                </span>
+                                {!r.must_change_password && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs"
+                                    disabled={resettingId === r.id}
+                                    onClick={() => resetPw(r)}
+                                    title="임시 비밀번호(12345678)로 초기화"
+                                  >
+                                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                    비번 리셋
+                                  </Button>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">미생성</span>
                             )}
                           </td>
+
                         </tr>
                       );
                     })}
