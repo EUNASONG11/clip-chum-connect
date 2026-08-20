@@ -105,6 +105,20 @@ async function assertOwnClassOrAdmin(
   }
 }
 
+// 쓰기 권한 여부(관리자 / 생성자 / 배정된 강사)
+async function canWriteClass(
+  context: { supabase: any; userId: string },
+  classId: string,
+): Promise<boolean> {
+  try {
+    await assertOwnClassOrAdmin(context, classId, "write");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+
 
 async function assertAdminOnly(context: { supabase: any; userId: string }) {
   const admin = await isAdmin(context);
