@@ -277,7 +277,9 @@ export const getClass = createServerFn({ method: "GET" })
       .is("deleted_at", null)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return row;
+    if (!row) return row;
+    const can_write = await canWriteClass(context, data.id);
+    return { ...(row as any), can_write } as any;
 
   });
 
