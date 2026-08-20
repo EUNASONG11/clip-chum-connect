@@ -455,6 +455,8 @@ function ClassDetailPage() {
 
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
+  const [listBranch, setListBranch] = useState<string>("__all__");
+
   const [results, setResults] = useState<
     { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string }[]
   >([]);
