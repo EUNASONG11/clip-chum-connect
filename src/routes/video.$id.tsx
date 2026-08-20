@@ -694,6 +694,7 @@ function VideoPage() {
           window.removeEventListener("pagehide", saveOnLeave);
           window.removeEventListener("beforeunload", onBeforeUnload);
           clearInterval(iv);
+          clearInterval(guardIv);
           try { player.destroy?.(); } catch {}
           try { if (container.contains(iframe)) container.removeChild(iframe); } catch {}
         };
