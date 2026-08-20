@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare, RefreshCw,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
@@ -638,6 +639,7 @@ function ClassDetailPage() {
 
   const [statsPageSize, setStatsPageSize] = useState(20);
   const [statsPage, setStatsPage] = useState(1);
+  const [openStudentIds, setOpenStudentIds] = useState<string[]>([]);
   const statsTotalPages = Math.max(1, Math.ceil(filteredStudentStats.length / statsPageSize));
   useEffect(() => {
     setStatsPage(1);
@@ -1421,6 +1423,30 @@ function ClassDetailPage() {
               >
                 <RefreshCw className={`h-4 w-4 ${statsFetching ? "animate-spin" : ""}`} />
               </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                title="전체 펼치기"
+                onClick={() => {
+                  setOpenStudentIds(pagedStudentStats.map((s: any) => s.user_id));
+                  toast.success("모든 학생의 상세를 펼쳤습니다.");
+                }}
+              >
+                <ChevronDown className="h-4 w-4" /> 전체 펼치기
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 px-2 text-xs"
+                title="전체 접기"
+                onClick={() => {
+                  setOpenStudentIds([]);
+                  toast.success("모든 학생의 상세를 접었습니다.");
+                }}
+              >
+                <ChevronUp className="h-4 w-4" /> 전체 접기
+              </Button>
             </CardTitle>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -1488,7 +1514,7 @@ function ClassDetailPage() {
                 <span>평균 시청률</span>
                 <span>최근 학습</span>
               </div>
-              <Accordion type="multiple" className="w-full">
+              <Accordion type="multiple" value={openStudentIds} onValueChange={setOpenStudentIds} className="w-full">
                 {pagedStudentStats.map((s: any) => (
                   <AccordionItem key={s.user_id} value={s.user_id}>
                     <AccordionTrigger className="px-3 hover:no-underline">
