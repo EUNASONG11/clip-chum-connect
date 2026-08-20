@@ -786,6 +786,26 @@ function ClassDetailPage() {
 
           {results.length > 0 && (
             <div className="rounded-md border">
+              {(() => {
+                const pending = results.filter(
+                  (r) => !students.some((s: any) => s.user_id === r.user_id),
+                );
+                return (
+                  <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
+                    <span className="text-xs text-muted-foreground">
+                      검색 결과 {results.length}명 · 미배정 {pending.length}명
+                    </span>
+                    <Button
+                      size="sm"
+                      onClick={() => assignAll(pending)}
+                      disabled={bulkAssigning || pending.length === 0}
+                      className="shrink-0 whitespace-nowrap"
+                    >
+                      {bulkAssigning ? "배정 중..." : `전체 배정 (${pending.length})`}
+                    </Button>
+                  </div>
+                );
+              })()}
               <ul className="divide-y">
                 {results.map((r) => {
                   const already = students.some((s: any) => s.user_id === r.user_id);
