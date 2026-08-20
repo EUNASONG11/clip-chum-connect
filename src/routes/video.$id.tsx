@@ -130,6 +130,7 @@ function VideoPage() {
   const [showFsControls, setShowFsControls] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const fsFallbackRef = useRef(false);
 
   const revealFsControls = () => {
     setShowFsControls(true);
@@ -140,6 +141,35 @@ function VideoPage() {
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     setShowFsControls(false);
+  };
+
+  const exitNativeFullscreen = async () => {
+    const d = document as any;
+    try {
+      if (document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (d.webkitExitFullscreen) await d.webkitExitFullscreen();
+        else if (d.mozCancelFullScreen) await d.mozCancelFullScreen();
+        else if (d.msExitFullscreen) await d.msExitFullscreen();
+      }
+    } catch {}
+  };
+
+  const enterFullscreen = async () => {
+    const opened =
+      (await requestElementFullscreen(containerRef.current)) ||
+      (await requestElementFullscreen(iframeRef.current));
+    if (opened) {
+      fsFallbackRef.current = false;
+    } else {
+      fsFallbackRef.current = true;
+      setIsPlayerExpanded(true);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    await exitNativeFullscreen();
+    setIsPlayerExpanded(false);
   };
 
 
@@ -160,6 +190,28 @@ function VideoPage() {
   };
 
   useEffect(() => {
+    const onFsChange = () => {
+      const d = document as any;
+      const active = !!(document.fullscreenElement || d.webkitFullscreenElement || d.mozFullScreenElement || d.msFullscreenElement);
+      if (!active && !fsFallbackRef.current) {
+        setIsPlayerExpanded(false);
+        if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
+        setShowFsControls(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    document.addEventListener("webkitfullscreenchange", onFsChange);
+    document.addEventListener("mozfullscreenchange", onFsChange);
+    document.addEventListener("MSFullscreenChange", onFsChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFsChange);
+      document.removeEventListener("webkitfullscreenchange", onFsChange);
+      document.removeEventListener("mozfullscreenchange", onFsChange);
+      document.removeEventListener("MSFullscreenChange", onFsChange);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
       setShowFsControls(false);
@@ -177,7 +229,7 @@ function VideoPage() {
       orientation.lock("landscape").catch(() => {});
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsPlayerExpanded(false);
+      if (event.key === "Escape") exitFullscreen();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
