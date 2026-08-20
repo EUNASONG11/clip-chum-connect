@@ -774,6 +774,7 @@ function ClassDetailPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {canWrite && (
+          <>
           <form onSubmit={search} className="space-y-2">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
               <div className="min-w-0">
