@@ -25,7 +25,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
-import { listClassVideos } from "@/lib/classes.functions";
+import { listClassVideos, getClass } from "@/lib/classes.functions";
+
 import { BranchBadge } from "@/components/BranchBadge";
 import { cn } from "@/lib/utils";
 
@@ -33,13 +34,15 @@ type Props = {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   classId: string;
+  className?: string;
 };
+
 
 type SelectionKey = string; // `${user_id}:self` | `${user_id}:parent`
 
 type StudentStatus = "all" | "completed" | "incomplete";
 
-export function SendMessageDialog({ open, onOpenChange, classId }: Props) {
+export function SendMessageDialog({ open, onOpenChange, classId, className }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
   const [videoId, setVideoId] = useState<string>("");
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
