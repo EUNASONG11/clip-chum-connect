@@ -502,6 +502,7 @@ function VideoPage() {
         try {
           durationCached = await player.getDuration();
           durationRef.current = durationCached;
+          if (typeof durationCached === "number" && durationCached > 0) setFsDuration(durationCached);
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
@@ -569,6 +570,7 @@ function VideoPage() {
           }
         }
         currentTimeRef.current = t;
+        if (!scrubbingRef.current) setFsTime(t);
         // 실제 재생분만 누적 (정상 진행 구간)
         if (jump > 0 && jump <= 2) watchedAccRef.current += jump;
         // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
@@ -772,6 +774,8 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
+              if (!scrubbingRef.current) setFsTime(t);
+              if (typeof d === "number" && d > 0) setFsDuration(d);
               // 큰 점프만 seek 로 간주 (정상 재생 중 상태 변화는 무시)
               const jump = t - lastTimeRef.current;
               if (jump > 4 && !allowSeek && t > maxAllowedRef.current + 2) {
@@ -846,6 +850,8 @@ function VideoPage() {
               const wallDelta = (nowMs - lastWall) / 1000;
               lastWall = nowMs;
               currentTimeRef.current = t;
+              if (!scrubbingRef.current) setFsTime(t);
+              if (typeof d === "number" && d > 0) setFsDuration(d);
               const jump = t - lastTimeRef.current;
               // 실제 재생분만 누적 (정상 진행 구간, tick 3초 기준)
               if (jump > 0 && jump <= 4) watchedAccRef.current += jump;
