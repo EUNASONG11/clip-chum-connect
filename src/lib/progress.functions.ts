@@ -84,14 +84,18 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    // 영상의 완료 기준을 조회
-    const { data: video } = await context.supabase
+    // 영상의 완료 기준을 조회 (삭제되었거나 접근 불가한 영상이면 조용히 무시)
+    const { data: video, error: videoErr } = await context.supabase
       .from("videos")
-      .select("completion_ratio, duration")
+      .select("completion_ratio, duration, deleted_at")
       .eq("id", data.videoId)
       .maybeSingle();
+    if (videoErr || !video || video.deleted_at) {
+      return { watched_ratio: 0, is_completed: false, skipped: true };
+    }
     const completionRatio = Number(video?.completion_ratio ?? 0.9);
     const duration = data.duration ?? video?.duration ?? null;
+
 
     // 기존 진도
     const { data: prev } = await context.supabase
@@ -145,7 +149,7 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       }
     }
 
-    return { watched_ratio: ratio, is_completed: nowCompleted };
+    return { watched_ratio: ratio, is_completed: nowCompleted, skipped: false };
   });
 
 
