@@ -927,13 +927,13 @@ function VideoPage() {
               {isPlayerExpanded ? (
                 <>
                 <div className="pointer-events-none absolute inset-0 z-[105] flex items-center justify-center">
-                <div className="pointer-events-auto relative aspect-video" style={fsStyle}>
+                <div className="pointer-events-none relative aspect-video" style={fsStyle}>
                   <div
 
                     className={cn(
                       "absolute top-0 left-0 right-0 z-[110] flex h-16 items-start justify-end p-3 transition-opacity duration-300",
                       showFsControls
-                        ? "bg-gradient-to-b from-black/70 to-transparent opacity-100"
+                        ? "pointer-events-auto bg-gradient-to-b from-black/70 to-transparent opacity-100"
                         : "pointer-events-none opacity-0"
                     )}
                     onClick={(e) => {
@@ -980,7 +980,7 @@ function VideoPage() {
                   toggleFsControls();
                 }}
                 className={cn(
-                  "absolute top-3 left-3 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-colors active:scale-95",
+                  "pointer-events-auto absolute top-3 left-3 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-colors active:scale-95",
                   showFsControls
                     ? "bg-black/70 opacity-100"
                     : "bg-black/50 opacity-70 hover:bg-black/80 hover:opacity-100"
@@ -1000,7 +1000,7 @@ function VideoPage() {
                 }}
                 className={cn(
                   "absolute top-3 left-16 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-opacity active:scale-95",
-                  showFsControls ? "opacity-100" : "pointer-events-none opacity-0"
+                  showFsControls ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
                 )}
                 aria-label="사용법 안내 다시 보기"
               >
@@ -1010,7 +1010,7 @@ function VideoPage() {
               {/* 전체화면 사용법 안내 */}
               {showFsGuide && (
                 <div
-                  className="absolute inset-0 z-[130] bg-black/85 backdrop-blur-sm"
+                  className="pointer-events-auto absolute inset-0 z-[130] bg-black/85 backdrop-blur-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
