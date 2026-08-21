@@ -827,18 +827,13 @@ function VideoPage() {
               >
                 {/* iframe은 useEffect에서 동적으로 삽입됩니다. */}
                 {isPlayerExpanded && (
-                  <>
-                    {/* 상단 85%: 탭하면 커스텀 컨트롤 토글 */}
-                    <div
-                      className="absolute top-0 left-0 right-0 z-[105] h-[85%] cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFsControls();
-                      }}
-                    />
-                    {/* 하단 15%: 비메오/유튜브 자체 컨트롤(진도바)에 이벤트를 통과시킴 */}
-                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-[105] h-[15%]" />
-                  </>
+                  <div
+                    className="absolute inset-0 z-[105] cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleFsControls();
+                    }}
+                  />
                 )}
               </div>
 
