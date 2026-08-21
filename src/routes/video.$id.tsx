@@ -143,16 +143,11 @@ function VideoPage() {
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
-  const [fsTime, setFsTime] = useState(0);
-  const [fsDuration, setFsDuration] = useState(0);
-  const scrubbingRef = useRef(false);
-
   const nudge = (delta: number) => {
     const base = currentTimeRef.current || 0;
-    const max = fsDuration || durationRef.current || base;
+    const max = durationRef.current || base;
     const target = Math.max(0, Math.min(max, base + delta));
     seekRef.current?.(target);
-    setFsTime(target);
   };
 
   const revealFsControls = () => {
@@ -240,28 +235,6 @@ function VideoPage() {
     };
   }, []);
 
-  // 전체화면 진도바용 시간/길이 폴링
-  useEffect(() => {
-    if (!isPlayerExpanded) return;
-    const tick = async () => {
-      const player = playerRef.current;
-      try {
-        if (video?.source === "vimeo" && player) {
-          const [t, d] = await Promise.all([player.getCurrentTime(), player.getDuration()]);
-          if (typeof d === "number" && d > 0) setFsDuration(d);
-          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
-        } else if (video?.source === "youtube" && player) {
-          const d = player.getDuration?.();
-          const t = player.getCurrentTime?.();
-          if (typeof d === "number" && d > 0) setFsDuration(d);
-          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
-        }
-      } catch {}
-    };
-    void tick();
-    const iv = window.setInterval(tick, 500);
-    return () => window.clearInterval(iv);
-  }, [isPlayerExpanded, video?.source]);
 
   useEffect(() => {
     if (!isPlayerExpanded) {
