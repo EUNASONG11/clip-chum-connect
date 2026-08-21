@@ -980,7 +980,7 @@ function VideoPage() {
                   toggleFsControls();
                 }}
                 className={cn(
-                  "absolute top-3 left-3 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-colors active:scale-95",
+                  "pointer-events-auto absolute top-3 left-3 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-colors active:scale-95",
                   showFsControls
                     ? "bg-black/70 opacity-100"
                     : "bg-black/50 opacity-70 hover:bg-black/80 hover:opacity-100"
