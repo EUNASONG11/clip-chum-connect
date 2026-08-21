@@ -841,6 +841,7 @@ function VideoPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
             <div
+              ref={wrapperRef}
               className={
                 isPlayerExpanded
                   ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black"
