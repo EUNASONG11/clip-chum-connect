@@ -962,7 +962,7 @@ function VideoPage() {
               {/* 전체화면 하단 진도바 (직접 조작 가능) */}
               <div
                 className={cn(
-                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
+                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-black px-4 pb-5 pt-4 shadow-[0_-24px_32px_16px_rgba(0,0,0,0.9)] transition-opacity duration-300",
                   showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 onClick={(e) => e.stopPropagation()}
