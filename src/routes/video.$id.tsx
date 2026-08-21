@@ -153,6 +153,8 @@ function VideoPage() {
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     setShowFsControls(false);
+    // 다음 탭에서 iframe 포커스 변화를 다시 감지할 수 있도록 포커스를 회수한다
+    try { wrapperRef.current?.focus?.(); } catch {}
   };
 
   const toggleFsControls = () => {
