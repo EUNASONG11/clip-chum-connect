@@ -999,7 +999,7 @@ function VideoPage() {
               {/* 전체화면 사용법 안내 */}
               {showFsGuide && (
                 <div
-                  className="absolute inset-0 z-[130] bg-black/80 backdrop-blur-sm"
+                  className="absolute inset-0 z-[130] bg-black/85 backdrop-blur-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
@@ -1011,34 +1011,64 @@ function VideoPage() {
                     <X className="h-5 w-5" />
                   </button>
 
-                  <p className="absolute top-4 left-4 text-sm font-bold text-white">[튜토리얼]</p>
+                  <p className="absolute top-4 left-4 text-sm font-bold text-white">[전체화면 사용법]</p>
 
                   {/* 좌측 상단 안내 */}
-                  <div className="absolute top-16 left-4 max-w-[42%] text-white">
-                    <p className="text-[11px] font-semibold text-primary">↖ 컨트롤 열기/닫기</p>
-                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                  <div className="absolute top-16 left-4 max-w-[46%] text-white">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white ring-1 ring-white/20">
+                        <Menu className="h-4 w-4" />
+                      </span>
+                      <span className="text-[11px] font-semibold text-primary">컨트롤 열기/닫기</span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/80">
                       화면 아무 곳을 탭하거나 이 버튼을 눌러 버튼들을 보이거나 숨길 수 있어요.
                     </p>
-                    <p className="mt-3 text-[11px] font-semibold text-primary">ⓘ 사용법 다시 보기</p>
-                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/70 text-white ring-1 ring-white/20">
+                        <Info className="h-4 w-4" />
+                      </span>
+                      <span className="text-[11px] font-semibold text-primary">사용법 다시 보기</span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/80">
                       이 안내창을 다시 열 수 있어요.
                     </p>
                   </div>
 
                   {/* 우측 상단 안내 */}
-                  <div className="absolute top-16 right-4 max-w-[42%] text-right text-white">
-                    <p className="text-[11px] font-semibold text-primary">자막 / 닫기 ↗</p>
-                    <p className="mt-1 text-[11px] leading-snug text-white/80">
-                      자막을 켜고 끄거나, 전체화면을 종료할 수 있어요.
+                  <div className="absolute top-16 right-4 max-w-[46%] text-right text-white">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-[11px] font-semibold text-primary">자막 켜기/끄기</span>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-black/70 text-white ring-1 ring-white/20">
+                        <Subtitles className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/80">
+                      자막이 있는 영상에서 자막을 켜고 끌 수 있어요.
+                    </p>
+                    <div className="mt-3 flex items-center justify-end gap-2">
+                      <span className="text-[11px] font-semibold text-primary">전체화면 닫기</span>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-black/70 text-white ring-1 ring-white/20">
+                        <Minimize2 className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-white/80">
+                      전체화면을 종료하고 원래 페이지로 돌아가요.
                     </p>
                   </div>
 
                   {/* 중앙 안내 */}
                   <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-white">
-                    <div className="mx-auto inline-flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-3 ring-1 ring-white/20">
-                      <RotateCcw className="h-5 w-5" />
-                      <Play className="h-6 w-6 fill-current" />
-                      <RotateCw className="h-5 w-5" />
+                    <div className="mx-auto inline-flex items-center gap-3 rounded-2xl bg-white/10 px-5 py-3 ring-1 ring-white/20">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/60 ring-1 ring-white/20">
+                        <RotateCcw className="h-5 w-5" />
+                      </span>
+                      <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-black/70 ring-1 ring-white/20">
+                        <Play className="h-7 w-7 fill-current" />
+                      </span>
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/60 ring-1 ring-white/20">
+                        <RotateCw className="h-5 w-5" />
+                      </span>
                     </div>
                     <p className="mt-2 text-[11px] leading-snug text-white/80">
                       10초 뒤로 · 재생/일시정지 · 10초 앞으로
@@ -1047,7 +1077,12 @@ function VideoPage() {
 
                   {/* 하단 안내 */}
                   <div className="absolute inset-x-0 bottom-6 px-6 text-center text-white">
-                    <p className="text-[11px] font-semibold text-primary">↓ 진도바</p>
+                    <div className="mx-auto flex max-w-xs items-center gap-2 rounded-full bg-white/10 px-3 py-2 ring-1 ring-white/20">
+                      <div className="h-1.5 flex-1 rounded-full bg-white/30">
+                        <div className="h-1.5 w-2/3 rounded-full bg-primary" />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[11px] font-semibold text-primary">진도바</p>
                     <p className="mt-1 text-[11px] leading-snug text-white/80">
                       화면을 탭하면 영상 자체 진도바와 설정(화질·배속)이 나타납니다.
                     </p>
