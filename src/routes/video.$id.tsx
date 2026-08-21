@@ -107,6 +107,8 @@ function VideoPage() {
   const { id } = Route.useParams();
   const [video, setVideo] = useState<Video | null | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
