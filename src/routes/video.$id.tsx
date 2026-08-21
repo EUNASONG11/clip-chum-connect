@@ -427,9 +427,9 @@ function VideoPage() {
           if (!opened) setIsPlayerExpanded(true);
         })();
       };
-      player.on("play", () => setIsPlaying(true));
-      player.on("pause", () => setIsPlaying(false));
-      player.on("ended", () => setIsPlaying(false));
+      player.on("play", () => { setIsPlaying(true); revealFsControls(); });
+      player.on("pause", () => { setIsPlaying(false); revealFsControls(); });
+      player.on("ended", () => { setIsPlaying(false); revealFsControls(); });
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
