@@ -1107,6 +1107,56 @@ function VideoPage() {
               </button>
             </div>
           )}
+
+          {!isPlayerExpanded && (
+            <div className="flex items-center gap-2 border-t border-white/10 bg-black px-3 py-2.5">
+              <button
+                type="button"
+                onClick={() => nudge(-10)}
+                className="rounded-full bg-white/10 p-2 text-white active:scale-95"
+                aria-label="10초 뒤로"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => togglePlayPause()}
+                className="rounded-full bg-white/15 p-2.5 text-white active:scale-95"
+                aria-label={isPlaying ? "일시정지" : "재생"}
+              >
+                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
+              </button>
+              <button
+                type="button"
+                onClick={() => nudge(10)}
+                className="rounded-full bg-white/10 p-2 text-white active:scale-95"
+                aria-label="10초 앞으로"
+              >
+                <RotateCw className="h-4 w-4" />
+              </button>
+              <span className="w-11 shrink-0 text-right font-mono text-xs text-white">{fmtTime(fsTime)}</span>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(1, fsDuration)}
+                step={1}
+                value={Math.min(fsTime, Math.max(1, fsDuration))}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  scrubbingRef.current = true;
+                  setFsTime(next);
+                  scheduleFullscreenSeek(next);
+                }}
+                onPointerUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
+                onTouchEnd={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
+                onMouseUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
+                onKeyUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
+                className="h-5 w-full cursor-pointer accent-primary"
+                aria-label="재생 위치"
+              />
+              <span className="w-11 shrink-0 font-mono text-xs text-white/70">{fmtTime(fsDuration)}</span>
+            </div>
+          )}
             </div>
 
 
