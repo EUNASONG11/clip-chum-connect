@@ -927,7 +927,7 @@ function VideoPage() {
               {isPlayerExpanded ? (
                 <>
                 <div className="pointer-events-none absolute inset-0 z-[105] flex items-center justify-center">
-                <div className="pointer-events-auto relative" style={fsStyle}>
+                <div className="pointer-events-auto relative aspect-video" style={fsStyle}>
                   <div
 
                     className={cn(
