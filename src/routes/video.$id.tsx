@@ -464,6 +464,7 @@ function VideoPage() {
             iframe.allowFullscreen = true;
             iframe.title = video.title;
             iframe.className = "absolute inset-0 h-full w-full";
+            iframe.addEventListener("focus", revealFsControls);
             el.appendChild(iframe);
             return new VimeoPlayer(iframe);
           })()
