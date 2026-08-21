@@ -148,6 +148,7 @@ function VideoPage() {
   const scrubbingRef = useRef(false);
   const seekCommitTimerRef = useRef<number | null>(null);
   const seekRequestIdRef = useRef(0);
+  const lastSeekCommitRef = useRef<{ value: number; at: number } | null>(null);
 
   const commitFullscreenSeek = (value: number) => {
     const next = Number(value);
@@ -157,6 +158,10 @@ function VideoPage() {
       window.clearTimeout(seekCommitTimerRef.current);
       seekCommitTimerRef.current = null;
     }
+    const now = Date.now();
+    const previous = lastSeekCommitRef.current;
+    if (previous && previous.value === next && now - previous.at < 500) return;
+    lastSeekCommitRef.current = { value: next, at: now };
     const requestId = ++seekRequestIdRef.current;
 
     scrubbingRef.current = true;
