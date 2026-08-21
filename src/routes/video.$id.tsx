@@ -1000,7 +1000,7 @@ function VideoPage() {
                 }}
                 className={cn(
                   "absolute top-3 left-16 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-opacity active:scale-95",
-                  showFsControls ? "opacity-100" : "pointer-events-none opacity-0"
+                  showFsControls ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
                 )}
                 aria-label="사용법 안내 다시 보기"
               >
