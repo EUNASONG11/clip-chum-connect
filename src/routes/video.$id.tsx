@@ -168,6 +168,7 @@ function VideoPage() {
     const check = () => {
       const active = document.activeElement as HTMLElement | null;
       if (active && active.tagName === "IFRAME" && wrapper?.contains(active)) {
+        try { active.blur(); } catch {}
         revealFsControls();
       }
     };
