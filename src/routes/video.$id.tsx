@@ -800,11 +800,24 @@ function VideoPage() {
           })();
         };
         let lastWall = Date.now();
-        // 건너뛰기 감시 전용 고속 루프 (0.25초) — 3초 주기 진도 저장과 분리해 즉시 되돌린다
+        // 건너뛰기 감시 전용 고속 루프 (0.25초)
+        // 허용 상한(maxAllowed) 성장도 이 루프에서 처리한다 —
+        // 3초 주기 루프에서만 성장시키면 그 사이 재생분이 "건너뛰기"로 오인돼
+        // 같은 구간을 반복 되돌리는 현상이 생긴다.
+        let guardWall = Date.now();
         const guardIv = setInterval(() => {
-          if (allowSeek) return;
           try {
+            const nowMs = Date.now();
+            const dt = (nowMs - guardWall) / 1000;
+            guardWall = nowMs;
+            if (player.getPlayerState?.() !== 1) return;
             const t = player.getCurrentTime?.() ?? 0;
+            // 정상 재생 진행분(실제 흐른 시간 × 허용 배속 + 여유)만큼 상한을 늘린다
+            if (t > maxAllowedRef.current) {
+              const allowedGrowth = Math.max(0, dt * (maxRate + 0.5)) + 0.5;
+              maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
+            }
+            if (allowSeek) return;
             if (t > maxAllowedRef.current + 2) {
               logSeek(lastTimeRef.current, t, true);
               player.seekTo?.(maxAllowedRef.current, true);
@@ -821,17 +834,11 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               const nowMs = Date.now();
-              const wallDelta = (nowMs - lastWall) / 1000;
               lastWall = nowMs;
               currentTimeRef.current = t;
               const jump = t - lastTimeRef.current;
               // 실제 재생분만 누적 (정상 진행 구간, tick 3초 기준)
               if (jump > 0 && jump <= 4) watchedAccRef.current += jump;
-              // 정상 재생 진행분(실제 흐른 시간의 최대배속+0.5배)만큼 먼저 성장 허용
-              if (jump <= 4 && t > maxAllowedRef.current) {
-                const allowedGrowth = Math.max(0, wallDelta * (maxRate + 0.5));
-                maxAllowedRef.current = Math.min(t, maxAllowedRef.current + allowedGrowth);
-              }
               if (jump > 4) isSeekingRef.current = true;
               if (!allowSeek && t > maxAllowedRef.current + 2) {
                 logSeek(lastTimeRef.current, t, true);
@@ -842,6 +849,7 @@ function VideoPage() {
                 if (allowSeek && t > maxAllowedRef.current) maxAllowedRef.current = t;
                 send(t, d);
               }
+
 
               if (state === 1) isSeekingRef.current = false;
               lastTimeRef.current = t;
