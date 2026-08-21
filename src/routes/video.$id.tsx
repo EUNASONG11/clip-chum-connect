@@ -171,24 +171,47 @@ function VideoPage() {
     else revealFsControls();
   };
 
-  // 전체화면에서 컨트롤이 숨겨져 있을 때: 화면(iframe 포함) 어디를 탭하든
-  // 즉시 커스텀 컨트롤이 함께 보이게 한다. (포커스 폴링 대신 즉시 이벤트 사용)
+  // 전체화면에서 컨트롤이 숨겨져 있을 때: iframe 터치를 다양한 방식으로 감지해
+  // 즉시 커스텀 컨트롤이 함께 보이게 한다.
   useEffect(() => {
     if (!isPlayerExpanded || showFsControls) return;
-    const wrapper = wrapperRef.current;
-    const onIframeFocus = () => {
-      const active = document.activeElement as HTMLElement | null;
-      if (active && active.tagName === "IFRAME" && wrapper?.contains(active)) {
-        revealFsControls();
+
+    const reveal = () => revealFsControls();
+
+    // 문서 포커스가 iframe 안으로 이동했을 때
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === "IFRAME" && containerRef.current?.contains(target)) {
+        reveal();
       }
     };
-    // iframe 내부를 탭하면 부모 창에서 blur가 즉시 발생한다
-    window.addEventListener("blur", onIframeFocus);
-    const onPointerDown = () => revealFsControls();
-    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("focusin", onFocusIn);
+
+    // 부모 창이 blur 되면 iframe이 포커스를 얻은 것으로 간주
+    const onWindowBlur = () => {
+      window.requestAnimationFrame(() => {
+        const active = document.activeElement as HTMLElement | null;
+        if (active?.tagName === "IFRAME" && containerRef.current?.contains(active)) {
+          reveal();
+        }
+      });
+    };
+    window.addEventListener("blur", onWindowBlur);
+
+    // activeElement 폴링: 모바일 브라우저에서 blur/focus 이벤트가 누락될 때 대비
+    let lastActive: Element | null = null;
+    const iv = window.setInterval(() => {
+      const active = document.activeElement;
+      if (active && active !== lastActive && active.tagName === "IFRAME" && containerRef.current?.contains(active)) {
+        reveal();
+      }
+      lastActive = active;
+    }, 120);
+
     return () => {
-      window.removeEventListener("blur", onIframeFocus);
-      document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("blur", onWindowBlur);
+      window.clearInterval(iv);
     };
   }, [isPlayerExpanded, showFsControls]);
 
@@ -441,6 +464,7 @@ function VideoPage() {
             iframe.allowFullscreen = true;
             iframe.title = video.title;
             iframe.className = "absolute inset-0 h-full w-full";
+            iframe.addEventListener("focus", revealFsControls);
             el.appendChild(iframe);
             return new VimeoPlayer(iframe);
           })()
@@ -625,6 +649,7 @@ function VideoPage() {
       iframe.allowFullscreen = true;
       iframe.title = video.title;
       iframe.className = "absolute inset-0 h-full w-full";
+      iframe.addEventListener("focus", revealFsControls);
       container.appendChild(iframe);
       iframeRef.current = iframe;
       cleanup = () => {
