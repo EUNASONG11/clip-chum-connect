@@ -134,12 +134,24 @@ function VideoPage() {
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
+  const [fsTime, setFsTime] = useState(0);
+  const [fsDuration, setFsDuration] = useState(0);
+  const scrubbingRef = useRef(false);
+
+  const nudge = (delta: number) => {
+    const base = currentTimeRef.current || 0;
+    const max = fsDuration || durationRef.current || base;
+    const target = Math.max(0, Math.min(max, base + delta));
+    seekRef.current?.(target);
+    setFsTime(target);
+  };
 
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
   };
+
 
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
