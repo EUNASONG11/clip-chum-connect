@@ -77,7 +77,7 @@ function formatDuration(sec: number | null) {
 function getVimeoEmbedUrl(video: Video) {
   if (!video.player_embed_url) return null;
   const separator = video.player_embed_url.includes("?") ? "&" : "?";
-  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0&share=0&embed=0&pip=0&dnt=1&controls=0&keyboard=0`;
+  return `${video.player_embed_url}${separator}title=0&byline=0&portrait=0&vimeo_logo=0&responsive=1&fullscreen=0&share=0&embed=0&pip=0&dnt=1`;
 }
 
 async function requestElementFullscreen(element: Element | null) {
@@ -113,7 +113,7 @@ function VideoPage() {
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
   const durationRef = useRef<number | null>(null);
-  const seekRef = useRef<(sec: number) => Promise<void>>(async () => {});
+  const seekRef = useRef<(sec: number) => void>(() => {});
   const fullscreenRef = useRef<() => void>(() => {});
   const captionsRef = useRef<(on: boolean) => void>(() => {});
   const captionsOnRef = useRef(false);
@@ -146,47 +146,12 @@ function VideoPage() {
   const [fsTime, setFsTime] = useState(0);
   const [fsDuration, setFsDuration] = useState(0);
   const scrubbingRef = useRef(false);
-  const seekCommitTimerRef = useRef<number | null>(null);
-  const seekRequestIdRef = useRef(0);
-  const lastSeekCommitRef = useRef<{ value: number; at: number } | null>(null);
-
-  const commitFullscreenSeek = (value: number) => {
-    const next = Number(value);
-    if (!Number.isFinite(next)) return;
-
-    if (seekCommitTimerRef.current) {
-      window.clearTimeout(seekCommitTimerRef.current);
-      seekCommitTimerRef.current = null;
-    }
-    const now = Date.now();
-    const previous = lastSeekCommitRef.current;
-    if (previous && previous.value === next && now - previous.at < 500) return;
-    lastSeekCommitRef.current = { value: next, at: now };
-    const requestId = ++seekRequestIdRef.current;
-
-    scrubbingRef.current = true;
-    setFsTime(next);
-    void seekRef.current(next).finally(() => {
-      if (requestId !== seekRequestIdRef.current) return;
-      scrubbingRef.current = false;
-      setFsTime(currentTimeRef.current);
-    });
-    revealFsControls();
-  };
-
-  const scheduleFullscreenSeek = (value: number) => {
-    if (seekCommitTimerRef.current) window.clearTimeout(seekCommitTimerRef.current);
-    seekCommitTimerRef.current = window.setTimeout(() => {
-      seekCommitTimerRef.current = null;
-      commitFullscreenSeek(value);
-    }, 160);
-  };
 
   const nudge = (delta: number) => {
     const base = currentTimeRef.current || 0;
     const max = fsDuration || durationRef.current || base;
     const target = Math.max(0, Math.min(max, base + delta));
-    void seekRef.current(target);
+    seekRef.current?.(target);
     setFsTime(target);
   };
 
@@ -502,7 +467,6 @@ function VideoPage() {
         try {
           durationCached = await player.getDuration();
           durationRef.current = durationCached;
-          if (typeof durationCached === "number" && durationCached > 0) setFsDuration(durationCached);
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
@@ -570,7 +534,6 @@ function VideoPage() {
           }
         }
         currentTimeRef.current = t;
-        if (!scrubbingRef.current) setFsTime(t);
         // 실제 재생분만 누적 (정상 진행 구간)
         if (jump > 0 && jump <= 2) watchedAccRef.current += jump;
         // 재생속도 기반 검증: 실제 흐른 시간의 (최대배속+0.5)배 이내 증분만 max 로 승격
@@ -612,7 +575,7 @@ function VideoPage() {
         send(d.seconds, durationCached);
       });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
-      seekRef.current = async (sec: number) => {
+      seekRef.current = (sec: number) => {
         // 건너뛰기 금지 설정이면 아직 시청하지 않은 지점으로는 이동 불가
         let target = sec;
         if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
@@ -620,40 +583,9 @@ function VideoPage() {
           target = maxAllowedRef.current;
         }
         if (target > maxAllowedRef.current) maxAllowedRef.current = target;
-        isSeekingRef.current = true;
         lastTimeRef.current = target;
-        currentTimeRef.current = target;
-        setFsTime(target);
-        try {
-          await player.ready();
-          let resolved = target;
-          // 일부 모바일 WebView에서는 첫 setCurrentTime 메시지가 유실될 수 있어
-          // 실제 위치를 확인하고 짧게 재시도한다.
-          for (let attempt = 0; attempt < 3; attempt += 1) {
-            const actual = await player.setCurrentTime(target);
-            resolved = typeof actual === "number" ? actual : target;
-            await new Promise((resolve) => window.setTimeout(resolve, 120));
-            const confirmed = await player.getCurrentTime();
-            if (typeof confirmed === "number") resolved = confirmed;
-            if (Math.abs(resolved - target) <= 1.5) break;
-          }
-          currentTimeRef.current = resolved;
-          lastTimeRef.current = resolved;
-          setFsTime(resolved);
-          await player.play();
-        } catch {
-          try {
-            const actual = await player.getCurrentTime();
-            if (typeof actual === "number") {
-              currentTimeRef.current = actual;
-              lastTimeRef.current = actual;
-              setFsTime(actual);
-            }
-          } catch {}
-        } finally {
-          isSeekingRef.current = false;
-          lastWallRef.current = Date.now();
-        }
+        player.setCurrentTime(target).catch(() => {});
+        player.play().catch(() => {});
       };
       fullscreenRef.current = () => {
         void (async () => {
@@ -774,8 +706,6 @@ function VideoPage() {
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
-              if (!scrubbingRef.current) setFsTime(t);
-              if (typeof d === "number" && d > 0) setFsDuration(d);
               // 큰 점프만 seek 로 간주 (정상 재생 중 상태 변화는 무시)
               const jump = t - lastTimeRef.current;
               if (jump > 4 && !allowSeek && t > maxAllowedRef.current + 2) {
@@ -797,20 +727,14 @@ function VideoPage() {
             },
           },
         });
-        seekRef.current = async (sec: number) => {
+        seekRef.current = (sec: number) => {
           let target = sec;
           if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
             logSeek(currentTimeRef.current, sec, true);
             target = maxAllowedRef.current;
           }
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
-          currentTimeRef.current = target;
-          lastTimeRef.current = target;
-          setFsTime(target);
-          try {
-            player.seekTo?.(target, true);
-            player.playVideo?.();
-          } catch {}
+          try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
         };
         // YouTube 자막은 플레이어 하단의 기본 CC 버튼이 직접 제어한다.
         captionsRef.current = () => {};
@@ -850,8 +774,6 @@ function VideoPage() {
               const wallDelta = (nowMs - lastWall) / 1000;
               lastWall = nowMs;
               currentTimeRef.current = t;
-              if (!scrubbingRef.current) setFsTime(t);
-              if (typeof d === "number" && d > 0) setFsDuration(d);
               const jump = t - lastTimeRef.current;
               // 실제 재생분만 누적 (정상 진행 구간, tick 3초 기준)
               if (jump > 0 && jump <= 4) watchedAccRef.current += jump;
@@ -1040,7 +962,7 @@ function VideoPage() {
               {/* 전체화면 하단 진도바 (직접 조작 가능) */}
               <div
                 className={cn(
-                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-black px-4 pb-5 pt-4 shadow-[0_-24px_32px_16px_rgba(0,0,0,0.9)] transition-opacity duration-300",
+                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
                   showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
                 onClick={(e) => e.stopPropagation()}
@@ -1058,20 +980,19 @@ function VideoPage() {
                     const next = Number(e.target.value);
                     scrubbingRef.current = true;
                     setFsTime(next);
-                    scheduleFullscreenSeek(next);
                     revealFsControls();
                   }}
                   onPointerUp={(e) => {
-                    commitFullscreenSeek(Number(e.currentTarget.value));
-                  }}
-                  onTouchEnd={(e) => {
-                    commitFullscreenSeek(Number(e.currentTarget.value));
-                  }}
-                  onMouseUp={(e) => {
-                    commitFullscreenSeek(Number(e.currentTarget.value));
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
                   }}
                   onKeyUp={(e) => {
-                    commitFullscreenSeek(Number(e.currentTarget.value));
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
                   }}
                   className="h-6 w-full cursor-pointer accent-primary"
                   aria-label="재생 위치"
@@ -1105,56 +1026,6 @@ function VideoPage() {
               >
                 <Maximize2 className="h-3.5 w-3.5" /> 전체화면
               </button>
-            </div>
-          )}
-
-          {!isPlayerExpanded && (
-            <div className="flex items-center gap-2 border-t border-white/10 bg-black px-3 py-2.5">
-              <button
-                type="button"
-                onClick={() => nudge(-10)}
-                className="rounded-full bg-white/10 p-2 text-white active:scale-95"
-                aria-label="10초 뒤로"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => togglePlayPause()}
-                className="rounded-full bg-white/15 p-2.5 text-white active:scale-95"
-                aria-label={isPlaying ? "일시정지" : "재생"}
-              >
-                {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-current" />}
-              </button>
-              <button
-                type="button"
-                onClick={() => nudge(10)}
-                className="rounded-full bg-white/10 p-2 text-white active:scale-95"
-                aria-label="10초 앞으로"
-              >
-                <RotateCw className="h-4 w-4" />
-              </button>
-              <span className="w-11 shrink-0 text-right font-mono text-xs text-white">{fmtTime(fsTime)}</span>
-              <input
-                type="range"
-                min={0}
-                max={Math.max(1, fsDuration)}
-                step={1}
-                value={Math.min(fsTime, Math.max(1, fsDuration))}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  scrubbingRef.current = true;
-                  setFsTime(next);
-                  scheduleFullscreenSeek(next);
-                }}
-                onPointerUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
-                onTouchEnd={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
-                onMouseUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
-                onKeyUp={(e) => commitFullscreenSeek(Number(e.currentTarget.value))}
-                className="h-5 w-full cursor-pointer accent-primary"
-                aria-label="재생 위치"
-              />
-              <span className="w-11 shrink-0 font-mono text-xs text-white/70">{fmtTime(fsDuration)}</span>
             </div>
           )}
             </div>
