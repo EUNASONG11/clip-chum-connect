@@ -649,6 +649,7 @@ function VideoPage() {
       iframe.allowFullscreen = true;
       iframe.title = video.title;
       iframe.className = "absolute inset-0 h-full w-full";
+      iframe.addEventListener("focus", revealFsControls);
       container.appendChild(iframe);
       iframeRef.current = iframe;
       cleanup = () => {
