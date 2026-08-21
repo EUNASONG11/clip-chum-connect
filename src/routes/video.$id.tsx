@@ -146,25 +146,35 @@ function VideoPage() {
   const [fsTime, setFsTime] = useState(0);
   const [fsDuration, setFsDuration] = useState(0);
   const scrubbingRef = useRef(false);
-  const lastCommittedSeekRef = useRef<{ seconds: number; at: number } | null>(null);
+  const seekCommitTimerRef = useRef<number | null>(null);
+  const seekRequestIdRef = useRef(0);
 
-  const commitFullscreenSeek = (input: HTMLInputElement) => {
-    const next = Number(input.value);
+  const commitFullscreenSeek = (value: number) => {
+    const next = Number(value);
     if (!Number.isFinite(next)) return;
 
-    const previous = lastCommittedSeekRef.current;
-    const now = Date.now();
-    // 모바일에서 pointerup과 touchend가 연달아 발생해도 한 번만 이동한다.
-    if (previous && previous.seconds === next && now - previous.at < 400) return;
-    lastCommittedSeekRef.current = { seconds: next, at: now };
+    if (seekCommitTimerRef.current) {
+      window.clearTimeout(seekCommitTimerRef.current);
+      seekCommitTimerRef.current = null;
+    }
+    const requestId = ++seekRequestIdRef.current;
 
     scrubbingRef.current = true;
     setFsTime(next);
     void seekRef.current(next).finally(() => {
+      if (requestId !== seekRequestIdRef.current) return;
       scrubbingRef.current = false;
       setFsTime(currentTimeRef.current);
     });
     revealFsControls();
+  };
+
+  const scheduleFullscreenSeek = (value: number) => {
+    if (seekCommitTimerRef.current) window.clearTimeout(seekCommitTimerRef.current);
+    seekCommitTimerRef.current = window.setTimeout(() => {
+      seekCommitTimerRef.current = null;
+      commitFullscreenSeek(value);
+    }, 160);
   };
 
   const nudge = (delta: number) => {
@@ -608,8 +618,18 @@ function VideoPage() {
         currentTimeRef.current = target;
         setFsTime(target);
         try {
-          const actual = await player.setCurrentTime(target);
-          const resolved = typeof actual === "number" ? actual : target;
+          await player.ready();
+          let resolved = target;
+          // 일부 모바일 WebView에서는 첫 setCurrentTime 메시지가 유실될 수 있어
+          // 실제 위치를 확인하고 짧게 재시도한다.
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            const actual = await player.setCurrentTime(target);
+            resolved = typeof actual === "number" ? actual : target;
+            await new Promise((resolve) => window.setTimeout(resolve, 120));
+            const confirmed = await player.getCurrentTime();
+            if (typeof confirmed === "number") resolved = confirmed;
+            if (Math.abs(resolved - target) <= 1.5) break;
+          }
           currentTimeRef.current = resolved;
           lastTimeRef.current = resolved;
           setFsTime(resolved);
@@ -1027,19 +1047,20 @@ function VideoPage() {
                     const next = Number(e.target.value);
                     scrubbingRef.current = true;
                     setFsTime(next);
+                    scheduleFullscreenSeek(next);
                     revealFsControls();
                   }}
                   onPointerUp={(e) => {
-                    commitFullscreenSeek(e.currentTarget);
+                    commitFullscreenSeek(Number(e.currentTarget.value));
                   }}
                   onTouchEnd={(e) => {
-                    commitFullscreenSeek(e.currentTarget);
+                    commitFullscreenSeek(Number(e.currentTarget.value));
                   }}
                   onMouseUp={(e) => {
-                    commitFullscreenSeek(e.currentTarget);
+                    commitFullscreenSeek(Number(e.currentTarget.value));
                   }}
                   onKeyUp={(e) => {
-                    commitFullscreenSeek(e.currentTarget);
+                    commitFullscreenSeek(Number(e.currentTarget.value));
                   }}
                   className="h-6 w-full cursor-pointer accent-primary"
                   aria-label="재생 위치"
