@@ -172,6 +172,25 @@ function VideoPage() {
     else revealFsControls();
   };
 
+  // 전체화면 진입 시 최초 1회 사용법 안내 표시
+  useEffect(() => {
+    if (!isPlayerExpanded) {
+      setShowFsGuide(false);
+      return;
+    }
+    try {
+      if (!localStorage.getItem("fsGuideSeen")) setShowFsGuide(true);
+    } catch {
+      setShowFsGuide(true);
+    }
+  }, [isPlayerExpanded]);
+
+  const closeFsGuide = () => {
+    setShowFsGuide(false);
+    try { localStorage.setItem("fsGuideSeen", "1"); } catch {}
+  };
+
+
   // 전체화면에서 컨트롤이 숨겨져 있을 때: iframe 터치를 다양한 방식으로 감지해
   // 즉시 커스텀 컨트롤이 함께 보이게 한다.
   useEffect(() => {
