@@ -150,10 +150,14 @@ function VideoPage() {
     fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
   };
 
-
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
     setShowFsControls(false);
+  };
+
+  const toggleFsControls = () => {
+    if (showFsControls) hideFsControls();
+    else revealFsControls();
   };
 
   const exitNativeFullscreen = async () => {
