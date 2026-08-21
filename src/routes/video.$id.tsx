@@ -160,6 +160,21 @@ function VideoPage() {
     else revealFsControls();
   };
 
+  // 전체화면에서 컨트롤이 숨겨져 있을 때: 탭이 플레이어(iframe)로 전달되어
+  // 비메오/유튜브 자체 진도바가 나타나고, 동시에 커스텀 컨트롤도 함께 보이게 한다.
+  useEffect(() => {
+    if (!isPlayerExpanded || showFsControls) return;
+    const wrapper = wrapperRef.current;
+    const check = () => {
+      const active = document.activeElement as HTMLElement | null;
+      if (active && active.tagName === "IFRAME" && wrapper?.contains(active)) {
+        revealFsControls();
+      }
+    };
+    const iv = window.setInterval(check, 150);
+    return () => window.clearInterval(iv);
+  }, [isPlayerExpanded, showFsControls]);
+
   const exitNativeFullscreen = async () => {
     const d = document as any;
     try {
