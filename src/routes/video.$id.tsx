@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Menu, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, Maximize2, Menu, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles, X } from "lucide-react";
 
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
@@ -132,6 +132,7 @@ function VideoPage() {
   const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(false);
+  const [showFsGuide, setShowFsGuide] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const fsFallbackRef = useRef(false);
@@ -170,6 +171,25 @@ function VideoPage() {
     if (showFsControls) hideFsControls();
     else revealFsControls();
   };
+
+  // 전체화면 진입 시 최초 1회 사용법 안내 표시
+  useEffect(() => {
+    if (!isPlayerExpanded) {
+      setShowFsGuide(false);
+      return;
+    }
+    try {
+      if (!localStorage.getItem("fsGuideSeen")) setShowFsGuide(true);
+    } catch {
+      setShowFsGuide(true);
+    }
+  }, [isPlayerExpanded]);
+
+  const closeFsGuide = () => {
+    setShowFsGuide(false);
+    try { localStorage.setItem("fsGuideSeen", "1"); } catch {}
+  };
+
 
   // 전체화면에서 컨트롤이 숨겨져 있을 때: iframe 터치를 다양한 방식으로 감지해
   // 즉시 커스텀 컨트롤이 함께 보이게 한다.
@@ -958,6 +978,91 @@ function VideoPage() {
               >
                 <Menu className="h-5 w-5" />
               </button>
+
+              {/* 사용법 다시 보기 */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  revealFsControls();
+                  setShowFsGuide(true);
+                }}
+                className={cn(
+                  "absolute top-3 left-16 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/70 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-opacity active:scale-95",
+                  showFsControls ? "opacity-100" : "pointer-events-none opacity-0"
+                )}
+                aria-label="사용법 안내 다시 보기"
+              >
+                <Info className="h-5 w-5" />
+              </button>
+
+              {/* 전체화면 사용법 안내 */}
+              {showFsGuide && (
+                <div
+                  className="absolute inset-0 z-[130] bg-black/80 backdrop-blur-sm"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); closeFsGuide(); }}
+                    className="absolute top-3 right-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/25 active:scale-95"
+                    aria-label="안내 닫기"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+
+                  <p className="absolute top-4 left-4 text-sm font-bold text-white">[튜토리얼]</p>
+
+                  {/* 좌측 상단 안내 */}
+                  <div className="absolute top-16 left-4 max-w-[42%] text-white">
+                    <p className="text-[11px] font-semibold text-primary">↖ 컨트롤 열기/닫기</p>
+                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                      화면 아무 곳을 탭하거나 이 버튼을 눌러 버튼들을 보이거나 숨길 수 있어요.
+                    </p>
+                    <p className="mt-3 text-[11px] font-semibold text-primary">ⓘ 사용법 다시 보기</p>
+                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                      이 안내창을 다시 열 수 있어요.
+                    </p>
+                  </div>
+
+                  {/* 우측 상단 안내 */}
+                  <div className="absolute top-16 right-4 max-w-[42%] text-right text-white">
+                    <p className="text-[11px] font-semibold text-primary">자막 / 닫기 ↗</p>
+                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                      자막을 켜고 끄거나, 전체화면을 종료할 수 있어요.
+                    </p>
+                  </div>
+
+                  {/* 중앙 안내 */}
+                  <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-white">
+                    <div className="mx-auto inline-flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-3 ring-1 ring-white/20">
+                      <RotateCcw className="h-5 w-5" />
+                      <Play className="h-6 w-6 fill-current" />
+                      <RotateCw className="h-5 w-5" />
+                    </div>
+                    <p className="mt-2 text-[11px] leading-snug text-white/80">
+                      10초 뒤로 · 재생/일시정지 · 10초 앞으로
+                    </p>
+                  </div>
+
+                  {/* 하단 안내 */}
+                  <div className="absolute inset-x-0 bottom-6 px-6 text-center text-white">
+                    <p className="text-[11px] font-semibold text-primary">↓ 진도바</p>
+                    <p className="mt-1 text-[11px] leading-snug text-white/80">
+                      화면을 탭하면 영상 자체 진도바와 설정(화질·배속)이 나타납니다.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); closeFsGuide(); }}
+                      className="mt-4 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground active:scale-95"
+                    >
+                      확인했어요
+                    </button>
+                  </div>
+                </div>
+              )}
+
+
 
               <div
                 className={cn(
