@@ -994,7 +994,7 @@ function VideoPage() {
                     seekRef.current?.(next);
                     revealFsControls();
                   }}
-                  className="h-6 w-full cursor-pointer accent-primary"
+                  className="h-6 w-full cursor-pointer accent-blue-500"
                   aria-label="재생 위치"
                 />
                 <span className="w-12 shrink-0 font-mono text-xs text-white/70">
