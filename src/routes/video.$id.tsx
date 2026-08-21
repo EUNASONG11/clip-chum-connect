@@ -862,23 +862,15 @@ function VideoPage() {
 
               {isPlayerExpanded ? (
                 <>
-                  {!showFsControls && (
-                    <div
-                      className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        revealFsControls();
-                      }}
-                    />
-                  )}
                   <div
                     className={cn(
-                      "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
-                      showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                      "absolute top-0 left-0 right-0 z-[110] flex h-16 items-start justify-end p-3 transition-opacity duration-300",
+                      showFsControls ? "bg-gradient-to-b from-black/70 to-transparent opacity-100" : "opacity-0"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      hideFsControls();
+                      if (showFsControls) hideFsControls();
+                      else revealFsControls();
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -959,48 +951,6 @@ function VideoPage() {
                 </button>
               </div>
 
-              {/* 전체화면 하단 진도바 (직접 조작 가능) */}
-              <div
-                className={cn(
-                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
-                  showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="w-12 shrink-0 text-right font-mono text-xs text-white">
-                  {fmtTime(fsTime)}
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(1, fsDuration)}
-                  step={1}
-                  value={Math.min(fsTime, Math.max(1, fsDuration))}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    scrubbingRef.current = true;
-                    setFsTime(next);
-                    revealFsControls();
-                  }}
-                  onPointerUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
-                  }}
-                  onKeyUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
-                  }}
-                  className="h-6 w-full cursor-pointer accent-blue-500"
-                  aria-label="재생 위치"
-                />
-                <span className="w-12 shrink-0 font-mono text-xs text-white/70">
-                  {fmtTime(fsDuration)}
-                </span>
-              </div>
             </>
 
 
