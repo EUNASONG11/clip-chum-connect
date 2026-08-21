@@ -240,6 +240,29 @@ function VideoPage() {
     };
   }, []);
 
+  // 전체화면 진도바용 시간/길이 폴링
+  useEffect(() => {
+    if (!isPlayerExpanded) return;
+    const tick = async () => {
+      const player = playerRef.current;
+      try {
+        if (video?.source === "vimeo" && player) {
+          const [t, d] = await Promise.all([player.getCurrentTime(), player.getDuration()]);
+          if (typeof d === "number" && d > 0) setFsDuration(d);
+          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
+        } else if (video?.source === "youtube" && player) {
+          const d = player.getDuration?.();
+          const t = player.getCurrentTime?.();
+          if (typeof d === "number" && d > 0) setFsDuration(d);
+          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
+        }
+      } catch {}
+    };
+    void tick();
+    const iv = window.setInterval(tick, 500);
+    return () => window.clearInterval(iv);
+  }, [isPlayerExpanded, video?.source]);
+
   useEffect(() => {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
@@ -248,7 +271,8 @@ function VideoPage() {
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
+
 
 
     const previousOverflow = document.body.style.overflow;
