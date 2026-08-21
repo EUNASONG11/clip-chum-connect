@@ -178,18 +178,21 @@ function VideoPage() {
   };
 
   const enterFullscreen = async () => {
+    // 래퍼 전체를 전체화면으로 → 우리가 만든 진도바/재생 버튼이 전체화면에서도 보인다
     const opened =
-      (await requestElementFullscreen(containerRef.current)) ||
-      (await requestElementFullscreen(iframeRef.current));
+      (await requestElementFullscreen(wrapperRef.current)) ||
+      (await requestElementFullscreen(containerRef.current));
     if (opened) {
       fsFallbackRef.current = false;
       setFsFallback(false);
+      setIsPlayerExpanded(true);
     } else {
       fsFallbackRef.current = true;
       setFsFallback(true);
       setIsPlayerExpanded(true);
     }
   };
+
 
   const exitFullscreen = async () => {
     await exitNativeFullscreen();
