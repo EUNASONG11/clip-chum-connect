@@ -873,6 +873,18 @@ function VideoPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     revealFsControls();
+                    nudge(-10);
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/60 p-3 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
+                  aria-label="10초 뒤로"
+                >
+                  <RotateCcw className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
                     togglePlayPause();
                   }}
                   className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
@@ -884,8 +896,64 @@ function VideoPage() {
                     <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
+                    nudge(10);
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/60 p-3 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
+                  aria-label="10초 앞으로"
+                >
+                  <RotateCw className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* 전체화면 하단 진도바 (직접 조작 가능) */}
+              <div
+                className={cn(
+                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
+                  showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="w-12 shrink-0 text-right font-mono text-xs text-white">
+                  {fmtTime(fsTime)}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, fsDuration)}
+                  step={1}
+                  value={Math.min(fsTime, Math.max(1, fsDuration))}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    scrubbingRef.current = true;
+                    setFsTime(next);
+                    revealFsControls();
+                  }}
+                  onPointerUp={(e) => {
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
+                  }}
+                  onKeyUp={(e) => {
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
+                  }}
+                  className="h-6 w-full cursor-pointer accent-primary"
+                  aria-label="재생 위치"
+                />
+                <span className="w-12 shrink-0 font-mono text-xs text-white/70">
+                  {fmtTime(fsDuration)}
+                </span>
               </div>
             </>
+
 
           ) : (
             <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
