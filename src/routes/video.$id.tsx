@@ -160,21 +160,27 @@ function VideoPage() {
     else revealFsControls();
   };
 
-  // 전체화면에서 컨트롤이 숨겨져 있을 때: 탭이 플레이어(iframe)로 전달되어
-  // 비메오/유튜브 자체 진도바가 나타나고, 동시에 커스텀 컨트롤도 함께 보이게 한다.
+  // 전체화면에서 컨트롤이 숨겨져 있을 때: 화면(iframe 포함) 어디를 탭하든
+  // 즉시 커스텀 컨트롤이 함께 보이게 한다. (포커스 폴링 대신 즉시 이벤트 사용)
   useEffect(() => {
     if (!isPlayerExpanded || showFsControls) return;
     const wrapper = wrapperRef.current;
-    const check = () => {
+    const onIframeFocus = () => {
       const active = document.activeElement as HTMLElement | null;
       if (active && active.tagName === "IFRAME" && wrapper?.contains(active)) {
-        try { active.blur(); } catch {}
         revealFsControls();
       }
     };
-    const iv = window.setInterval(check, 150);
-    return () => window.clearInterval(iv);
+    // iframe 내부를 탭하면 부모 창에서 blur가 즉시 발생한다
+    window.addEventListener("blur", onIframeFocus);
+    const onPointerDown = () => revealFsControls();
+    document.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("blur", onIframeFocus);
+      document.removeEventListener("pointerdown", onPointerDown, true);
+    };
   }, [isPlayerExpanded, showFsControls]);
+
 
   const exitNativeFullscreen = async () => {
     const d = document as any;
