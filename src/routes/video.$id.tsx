@@ -4,7 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, Subtitles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles } from "lucide-react";
+
+function fmtTime(sec: number) {
+  const s = Math.max(0, Math.floor(sec || 0));
+  const m = Math.floor(s / 60);
+  return `${m}:${String(s % 60).padStart(2, "0")}`;
+}
+
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -100,6 +107,8 @@ function VideoPage() {
   const { id } = Route.useParams();
   const [video, setVideo] = useState<Video | null | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
@@ -134,12 +143,24 @@ function VideoPage() {
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
+  const [fsTime, setFsTime] = useState(0);
+  const [fsDuration, setFsDuration] = useState(0);
+  const scrubbingRef = useRef(false);
+
+  const nudge = (delta: number) => {
+    const base = currentTimeRef.current || 0;
+    const max = fsDuration || durationRef.current || base;
+    const target = Math.max(0, Math.min(max, base + delta));
+    seekRef.current?.(target);
+    setFsTime(target);
+  };
 
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
   };
+
 
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
@@ -159,18 +180,21 @@ function VideoPage() {
   };
 
   const enterFullscreen = async () => {
+    // 래퍼 전체를 전체화면으로 → 우리가 만든 진도바/재생 버튼이 전체화면에서도 보인다
     const opened =
-      (await requestElementFullscreen(containerRef.current)) ||
-      (await requestElementFullscreen(iframeRef.current));
+      (await requestElementFullscreen(wrapperRef.current)) ||
+      (await requestElementFullscreen(containerRef.current));
     if (opened) {
       fsFallbackRef.current = false;
       setFsFallback(false);
+      setIsPlayerExpanded(true);
     } else {
       fsFallbackRef.current = true;
       setFsFallback(true);
       setIsPlayerExpanded(true);
     }
   };
+
 
   const exitFullscreen = async () => {
     await exitNativeFullscreen();
@@ -216,6 +240,29 @@ function VideoPage() {
     };
   }, []);
 
+  // 전체화면 진도바용 시간/길이 폴링
+  useEffect(() => {
+    if (!isPlayerExpanded) return;
+    const tick = async () => {
+      const player = playerRef.current;
+      try {
+        if (video?.source === "vimeo" && player) {
+          const [t, d] = await Promise.all([player.getCurrentTime(), player.getDuration()]);
+          if (typeof d === "number" && d > 0) setFsDuration(d);
+          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
+        } else if (video?.source === "youtube" && player) {
+          const d = player.getDuration?.();
+          const t = player.getCurrentTime?.();
+          if (typeof d === "number" && d > 0) setFsDuration(d);
+          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
+        }
+      } catch {}
+    };
+    void tick();
+    const iv = window.setInterval(tick, 500);
+    return () => window.clearInterval(iv);
+  }, [isPlayerExpanded, video?.source]);
+
   useEffect(() => {
     if (!isPlayerExpanded) {
       if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
@@ -224,7 +271,8 @@ function VideoPage() {
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 2600);
+    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
+
 
 
     const previousOverflow = document.body.style.overflow;
@@ -793,6 +841,7 @@ function VideoPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div>
             <div
+              ref={wrapperRef}
               className={
                 isPlayerExpanded
                   ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black"
@@ -873,6 +922,18 @@ function VideoPage() {
                   onClick={(e) => {
                     e.stopPropagation();
                     revealFsControls();
+                    nudge(-10);
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/60 p-3 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
+                  aria-label="10초 뒤로"
+                >
+                  <RotateCcw className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
                     togglePlayPause();
                   }}
                   className="pointer-events-auto rounded-full bg-black/70 p-5 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95 sm:p-6"
@@ -884,8 +945,64 @@ function VideoPage() {
                     <Play className="h-8 w-8 fill-current sm:h-10 sm:w-10" />
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    revealFsControls();
+                    nudge(10);
+                  }}
+                  className="pointer-events-auto rounded-full bg-black/60 p-3 text-white shadow-2xl ring-1 ring-white/20 backdrop-blur active:scale-95"
+                  aria-label="10초 앞으로"
+                >
+                  <RotateCw className="h-6 w-6" />
+                </button>
+              </div>
+
+              {/* 전체화면 하단 진도바 (직접 조작 가능) */}
+              <div
+                className={cn(
+                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
+                  showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <span className="w-12 shrink-0 text-right font-mono text-xs text-white">
+                  {fmtTime(fsTime)}
+                </span>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(1, fsDuration)}
+                  step={1}
+                  value={Math.min(fsTime, Math.max(1, fsDuration))}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    scrubbingRef.current = true;
+                    setFsTime(next);
+                    revealFsControls();
+                  }}
+                  onPointerUp={(e) => {
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
+                  }}
+                  onKeyUp={(e) => {
+                    const next = Number((e.currentTarget as HTMLInputElement).value);
+                    scrubbingRef.current = false;
+                    seekRef.current?.(next);
+                    revealFsControls();
+                  }}
+                  className="h-6 w-full cursor-pointer accent-primary"
+                  aria-label="재생 위치"
+                />
+                <span className="w-12 shrink-0 font-mono text-xs text-white/70">
+                  {fmtTime(fsDuration)}
+                </span>
               </div>
             </>
+
 
           ) : (
             <div className="absolute bottom-14 right-3 z-[110] flex items-center gap-1.5">
