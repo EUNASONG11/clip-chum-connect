@@ -826,12 +826,12 @@ function VideoPage() {
                 style={isPlayerExpanded ? fsStyle : undefined}
               >
                 {/* iframe은 useEffect에서 동적으로 삽입됩니다. */}
-                {isPlayerExpanded && (
+                {isPlayerExpanded && showFsControls && (
                   <div
                     className="absolute inset-0 z-[105] cursor-pointer"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFsControls();
+                      hideFsControls();
                     }}
                   />
                 )}
