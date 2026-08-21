@@ -1010,7 +1010,7 @@ function VideoPage() {
               {/* 전체화면 사용법 안내 */}
               {showFsGuide && (
                 <div
-                  className="absolute inset-0 z-[130] bg-black/85 backdrop-blur-sm"
+                  className="pointer-events-auto absolute inset-0 z-[130] bg-black/85 backdrop-blur-sm"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <button
