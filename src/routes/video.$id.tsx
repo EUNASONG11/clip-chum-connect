@@ -113,7 +113,7 @@ function VideoPage() {
   const lastSentRef = useRef(0);
   const currentTimeRef = useRef(0);
   const durationRef = useRef<number | null>(null);
-  const seekRef = useRef<(sec: number) => void>(() => {});
+  const seekRef = useRef<(sec: number) => Promise<void>>(async () => {});
   const fullscreenRef = useRef<() => void>(() => {});
   const captionsRef = useRef<(on: boolean) => void>(() => {});
   const captionsOnRef = useRef(false);
@@ -146,12 +146,32 @@ function VideoPage() {
   const [fsTime, setFsTime] = useState(0);
   const [fsDuration, setFsDuration] = useState(0);
   const scrubbingRef = useRef(false);
+  const lastCommittedSeekRef = useRef<{ seconds: number; at: number } | null>(null);
+
+  const commitFullscreenSeek = (input: HTMLInputElement) => {
+    const next = Number(input.value);
+    if (!Number.isFinite(next)) return;
+
+    const previous = lastCommittedSeekRef.current;
+    const now = Date.now();
+    // 모바일에서 pointerup과 touchend가 연달아 발생해도 한 번만 이동한다.
+    if (previous && previous.seconds === next && now - previous.at < 400) return;
+    lastCommittedSeekRef.current = { seconds: next, at: now };
+
+    scrubbingRef.current = true;
+    setFsTime(next);
+    void seekRef.current(next).finally(() => {
+      scrubbingRef.current = false;
+      setFsTime(currentTimeRef.current);
+    });
+    revealFsControls();
+  };
 
   const nudge = (delta: number) => {
     const base = currentTimeRef.current || 0;
     const max = fsDuration || durationRef.current || base;
     const target = Math.max(0, Math.min(max, base + delta));
-    seekRef.current?.(target);
+    void seekRef.current(target);
     setFsTime(target);
   };
 
@@ -575,7 +595,7 @@ function VideoPage() {
         send(d.seconds, durationCached);
       });
       player.on("ended", (d: any) => send(d.seconds ?? durationCached ?? 0, durationCached, true));
-      seekRef.current = (sec: number) => {
+      seekRef.current = async (sec: number) => {
         // 건너뛰기 금지 설정이면 아직 시청하지 않은 지점으로는 이동 불가
         let target = sec;
         if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
@@ -583,9 +603,30 @@ function VideoPage() {
           target = maxAllowedRef.current;
         }
         if (target > maxAllowedRef.current) maxAllowedRef.current = target;
+        isSeekingRef.current = true;
         lastTimeRef.current = target;
-        player.setCurrentTime(target).catch(() => {});
-        player.play().catch(() => {});
+        currentTimeRef.current = target;
+        setFsTime(target);
+        try {
+          const actual = await player.setCurrentTime(target);
+          const resolved = typeof actual === "number" ? actual : target;
+          currentTimeRef.current = resolved;
+          lastTimeRef.current = resolved;
+          setFsTime(resolved);
+          await player.play();
+        } catch {
+          try {
+            const actual = await player.getCurrentTime();
+            if (typeof actual === "number") {
+              currentTimeRef.current = actual;
+              lastTimeRef.current = actual;
+              setFsTime(actual);
+            }
+          } catch {}
+        } finally {
+          isSeekingRef.current = false;
+          lastWallRef.current = Date.now();
+        }
       };
       fullscreenRef.current = () => {
         void (async () => {
@@ -727,14 +768,20 @@ function VideoPage() {
             },
           },
         });
-        seekRef.current = (sec: number) => {
+        seekRef.current = async (sec: number) => {
           let target = sec;
           if (!effectiveAllowSeek && sec > maxAllowedRef.current + 1) {
             logSeek(currentTimeRef.current, sec, true);
             target = maxAllowedRef.current;
           }
           if (target > maxAllowedRef.current) maxAllowedRef.current = target;
-          try { player.seekTo?.(target, true); player.playVideo?.(); } catch {}
+          currentTimeRef.current = target;
+          lastTimeRef.current = target;
+          setFsTime(target);
+          try {
+            player.seekTo?.(target, true);
+            player.playVideo?.();
+          } catch {}
         };
         // YouTube 자막은 플레이어 하단의 기본 CC 버튼이 직접 제어한다.
         captionsRef.current = () => {};
@@ -983,16 +1030,16 @@ function VideoPage() {
                     revealFsControls();
                   }}
                   onPointerUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
+                    commitFullscreenSeek(e.currentTarget);
+                  }}
+                  onTouchEnd={(e) => {
+                    commitFullscreenSeek(e.currentTarget);
+                  }}
+                  onMouseUp={(e) => {
+                    commitFullscreenSeek(e.currentTarget);
                   }}
                   onKeyUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
+                    commitFullscreenSeek(e.currentTarget);
                   }}
                   className="h-6 w-full cursor-pointer accent-primary"
                   aria-label="재생 위치"
