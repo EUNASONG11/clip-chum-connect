@@ -853,8 +853,7 @@ function VideoPage() {
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (showFsControls) hideFsControls();
-                      else revealFsControls();
+                      toggleFsControls();
                     }}
                   >
                     <div className="flex items-center gap-2">
