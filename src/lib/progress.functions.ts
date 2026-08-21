@@ -149,7 +149,7 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       }
     }
 
-    return { watched_ratio: ratio, is_completed: nowCompleted };
+    return { watched_ratio: ratio, is_completed: nowCompleted, skipped: false };
   });
 
 
