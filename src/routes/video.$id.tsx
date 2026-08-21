@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import VimeoPlayer from "@vimeo/player";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
-import { ArrowLeft, CheckCircle2, Maximize2, Menu, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Info, Maximize2, Menu, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles, X } from "lucide-react";
 
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
