@@ -670,6 +670,7 @@ function VideoPage() {
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               setIsPlaying(e.data === 1);
+              revealFsControls();
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
