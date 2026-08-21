@@ -937,9 +937,28 @@ function VideoPage() {
                     aria-label="전체화면 닫기"
                   >
                     <Minimize2 className="h-5 w-5 sm:h-6 sm:w-6" /> 닫기
-                  </button>
+                    </button>
                 </div>
               </div>
+
+              {/* 전체화면 항상 노출 컨트롤 토글 버튼 */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFsControls();
+                }}
+                className={cn(
+                  "absolute top-3 left-3 z-[120] inline-flex h-10 w-10 items-center justify-center rounded-full text-white shadow-2xl ring-1 ring-white/20 backdrop-blur transition-colors active:scale-95",
+                  showFsControls
+                    ? "bg-black/70 opacity-100"
+                    : "bg-black/50 opacity-70 hover:bg-black/80 hover:opacity-100"
+                )}
+                aria-label={showFsControls ? "컨트롤 숨기기" : "컨트롤 보이기"}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
               <div
                 className={cn(
                   "absolute inset-0 z-[110] flex items-center justify-center gap-6 transition-opacity duration-300 pointer-events-none",
