@@ -6,12 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles } from "lucide-react";
 
-function fmtTime(sec: number) {
-  const s = Math.max(0, Math.floor(sec || 0));
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2, "0")}`;
-}
-
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
@@ -143,16 +137,11 @@ function VideoPage() {
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
-  const [fsTime, setFsTime] = useState(0);
-  const [fsDuration, setFsDuration] = useState(0);
-  const scrubbingRef = useRef(false);
-
   const nudge = (delta: number) => {
     const base = currentTimeRef.current || 0;
-    const max = fsDuration || durationRef.current || base;
+    const max = durationRef.current || base;
     const target = Math.max(0, Math.min(max, base + delta));
     seekRef.current?.(target);
-    setFsTime(target);
   };
 
   const revealFsControls = () => {
@@ -240,28 +229,6 @@ function VideoPage() {
     };
   }, []);
 
-  // 전체화면 진도바용 시간/길이 폴링
-  useEffect(() => {
-    if (!isPlayerExpanded) return;
-    const tick = async () => {
-      const player = playerRef.current;
-      try {
-        if (video?.source === "vimeo" && player) {
-          const [t, d] = await Promise.all([player.getCurrentTime(), player.getDuration()]);
-          if (typeof d === "number" && d > 0) setFsDuration(d);
-          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
-        } else if (video?.source === "youtube" && player) {
-          const d = player.getDuration?.();
-          const t = player.getCurrentTime?.();
-          if (typeof d === "number" && d > 0) setFsDuration(d);
-          if (!scrubbingRef.current && typeof t === "number") setFsTime(t);
-        }
-      } catch {}
-    };
-    void tick();
-    const iv = window.setInterval(tick, 500);
-    return () => window.clearInterval(iv);
-  }, [isPlayerExpanded, video?.source]);
 
   useEffect(() => {
     if (!isPlayerExpanded) {
@@ -862,23 +829,15 @@ function VideoPage() {
 
               {isPlayerExpanded ? (
                 <>
-                  {!showFsControls && (
-                    <div
-                      className="absolute inset-x-0 top-0 bottom-[20%] z-[105]"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        revealFsControls();
-                      }}
-                    />
-                  )}
                   <div
                     className={cn(
-                      "absolute inset-0 z-[110] flex items-start justify-end p-4 transition-opacity duration-300",
-                      showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
+                      "absolute top-0 left-0 right-0 z-[110] flex h-16 items-start justify-end p-3 transition-opacity duration-300",
+                      showFsControls ? "bg-gradient-to-b from-black/70 to-transparent opacity-100" : "opacity-0"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      hideFsControls();
+                      if (showFsControls) hideFsControls();
+                      else revealFsControls();
                     }}
                   >
                     <div className="flex items-center gap-2">
@@ -959,48 +918,6 @@ function VideoPage() {
                 </button>
               </div>
 
-              {/* 전체화면 하단 진도바 (직접 조작 가능) */}
-              <div
-                className={cn(
-                  "absolute inset-x-0 bottom-0 z-[115] flex items-center gap-3 bg-gradient-to-t from-black/85 to-transparent px-4 pb-4 pt-8 transition-opacity duration-300",
-                  showFsControls ? "opacity-100" : "opacity-0 pointer-events-none"
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <span className="w-12 shrink-0 text-right font-mono text-xs text-white">
-                  {fmtTime(fsTime)}
-                </span>
-                <input
-                  type="range"
-                  min={0}
-                  max={Math.max(1, fsDuration)}
-                  step={1}
-                  value={Math.min(fsTime, Math.max(1, fsDuration))}
-                  onChange={(e) => {
-                    const next = Number(e.target.value);
-                    scrubbingRef.current = true;
-                    setFsTime(next);
-                    revealFsControls();
-                  }}
-                  onPointerUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
-                  }}
-                  onKeyUp={(e) => {
-                    const next = Number((e.currentTarget as HTMLInputElement).value);
-                    scrubbingRef.current = false;
-                    seekRef.current?.(next);
-                    revealFsControls();
-                  }}
-                  className="h-6 w-full cursor-pointer accent-blue-500"
-                  aria-label="재생 위치"
-                />
-                <span className="w-12 shrink-0 font-mono text-xs text-white/70">
-                  {fmtTime(fsDuration)}
-                </span>
-              </div>
             </>
 
 
