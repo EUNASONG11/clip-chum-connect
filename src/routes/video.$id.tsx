@@ -132,6 +132,7 @@ function VideoPage() {
   const [initialCompleted, setInitialCompleted] = useState(false);
   const [isPlayerExpanded, setIsPlayerExpanded] = useState(false);
   const [showFsControls, setShowFsControls] = useState(false);
+  const [showFsGuide, setShowFsGuide] = useState(false);
   const fsControlsTimerRef = useRef<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const fsFallbackRef = useRef(false);
