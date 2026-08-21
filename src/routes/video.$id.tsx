@@ -137,6 +137,17 @@ function VideoPage() {
   const fsFallbackRef = useRef(false);
   const [fsFallback, setFsFallback] = useState(false);
   const { style: fsStyle } = useRotatedFullscreen(isPlayerExpanded, fsFallback);
+  const focusFullscreenWrapper = () => {
+    window.requestAnimationFrame(() => {
+      try { wrapperRef.current?.focus({ preventScroll: true }); } catch {}
+    });
+  };
+
+  const dismissFsControls = () => {
+    setShowFsControls(false);
+    focusFullscreenWrapper();
+  };
+
   const nudge = (delta: number) => {
     const base = currentTimeRef.current || 0;
     const max = durationRef.current || base;
@@ -147,14 +158,12 @@ function VideoPage() {
   const revealFsControls = () => {
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
+    fsControlsTimerRef.current = window.setTimeout(dismissFsControls, 5000);
   };
 
   const hideFsControls = () => {
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    setShowFsControls(false);
-    // 다음 탭에서 iframe 포커스 변화를 다시 감지할 수 있도록 포커스를 회수한다
-    try { wrapperRef.current?.focus?.(); } catch {}
+    dismissFsControls();
   };
 
   const toggleFsControls = () => {
@@ -266,7 +275,7 @@ function VideoPage() {
     }
     setShowFsControls(true);
     if (fsControlsTimerRef.current) window.clearTimeout(fsControlsTimerRef.current);
-    fsControlsTimerRef.current = window.setTimeout(() => setShowFsControls(false), 5000);
+    fsControlsTimerRef.current = window.setTimeout(dismissFsControls, 5000);
 
 
 
@@ -838,6 +847,7 @@ function VideoPage() {
           <div>
             <div
               ref={wrapperRef}
+              tabIndex={-1}
               className={
                 isPlayerExpanded
                   ? "fixed inset-0 z-[100] flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-black"
