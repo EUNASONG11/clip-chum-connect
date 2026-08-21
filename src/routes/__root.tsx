@@ -122,6 +122,35 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const clearAuthTokens = () => {
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith("sb-")) {
+            localStorage.removeItem(key);
+          }
+        });
+        Object.keys(sessionStorage).forEach((key) => {
+          if (key.startsWith("sb-")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+        document.cookie.split(";").forEach((cookie) => {
+          const [name] = cookie.split("=");
+          const trimmedName = name.trim();
+          if (trimmedName.startsWith("sb-")) {
+            document.cookie = `${trimmedName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+          }
+        });
+      } catch {
+        // storage 접근 불가 시 무시
+      }
+    };
+
+    window.addEventListener("beforeunload", clearAuthTokens);
+    return () => window.removeEventListener("beforeunload", clearAuthTokens);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <InAppBrowserNotice />
