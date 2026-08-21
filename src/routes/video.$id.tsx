@@ -427,9 +427,9 @@ function VideoPage() {
           if (!opened) setIsPlayerExpanded(true);
         })();
       };
-      player.on("play", () => setIsPlaying(true));
-      player.on("pause", () => setIsPlaying(false));
-      player.on("ended", () => setIsPlaying(false));
+      player.on("play", () => { setIsPlaying(true); revealFsControls(); });
+      player.on("pause", () => { setIsPlaying(false); revealFsControls(); });
+      player.on("ended", () => { setIsPlaying(false); revealFsControls(); });
       player.ready().then(async () => {
         try {
           durationCached = await player.getDuration();
@@ -670,6 +670,7 @@ function VideoPage() {
             onPlaybackRateChange: () => enforceRate(),
             onStateChange: (e: any) => {
               setIsPlaying(e.data === 1);
+              revealFsControls();
               const t = player.getCurrentTime?.() ?? 0;
               const d = player.getDuration?.() ?? null;
               currentTimeRef.current = t;
@@ -832,7 +833,9 @@ function VideoPage() {
                   <div
                     className={cn(
                       "absolute top-0 left-0 right-0 z-[110] flex h-16 items-start justify-end p-3 transition-opacity duration-300",
-                      showFsControls ? "bg-gradient-to-b from-black/70 to-transparent opacity-100" : "opacity-0"
+                      showFsControls
+                        ? "bg-gradient-to-b from-black/70 to-transparent opacity-100"
+                        : "pointer-events-none opacity-0"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
