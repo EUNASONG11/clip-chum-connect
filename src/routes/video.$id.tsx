@@ -6,12 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/SiteHeader";
 import { ArrowLeft, CheckCircle2, Maximize2, Minimize2, Pause, Play, RotateCcw, RotateCw, Subtitles } from "lucide-react";
 
-function fmtTime(sec: number) {
-  const s = Math.max(0, Math.floor(sec || 0));
-  const m = Math.floor(s / 60);
-  return `${m}:${String(s % 60).padStart(2, "0")}`;
-}
-
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { CommentsSection } from "@/components/CommentsSection";
