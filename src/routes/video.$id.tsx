@@ -927,13 +927,13 @@ function VideoPage() {
               {isPlayerExpanded ? (
                 <>
                 <div className="pointer-events-none absolute inset-0 z-[105] flex items-center justify-center">
-                <div className="pointer-events-auto relative aspect-video" style={fsStyle}>
+                <div className="pointer-events-none relative aspect-video" style={fsStyle}>
                   <div
 
                     className={cn(
                       "absolute top-0 left-0 right-0 z-[110] flex h-16 items-start justify-end p-3 transition-opacity duration-300",
                       showFsControls
-                        ? "bg-gradient-to-b from-black/70 to-transparent opacity-100"
+                        ? "pointer-events-auto bg-gradient-to-b from-black/70 to-transparent opacity-100"
                         : "pointer-events-none opacity-0"
                     )}
                     onClick={(e) => {
