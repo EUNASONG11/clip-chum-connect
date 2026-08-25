@@ -536,7 +536,9 @@ export function ExternalAssignmentPanel({
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{t.name}</span>
+                        <BranchBadge branch={t.branch} />
                         <Badge
+
                           variant={
                             t.status === "failed"
                               ? "destructive"
