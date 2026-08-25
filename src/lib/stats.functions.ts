@@ -260,7 +260,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         .select("id, title, duration, created_at, sort_order")
         .eq("class_id", data.classId)
         .is("deleted_at", null)
-        .order("sort_order", { ascending: true }),
+        .order("created_at", { ascending: true }),
       supabaseAdmin
         .from("class_enrollment_history")
         .select("created_at")
