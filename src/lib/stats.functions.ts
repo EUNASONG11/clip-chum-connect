@@ -11,19 +11,23 @@ async function isAdmin(context: any) {
   return !!data;
 }
 
-async function isInstructor(context: any) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "instructor",
-  });
+
+// 역할 조회를 1회 쿼리로 처리 (has_role RPC 2회 호출 대체)
+async function roleFlags(context: any) {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .is("deleted_at", null);
   if (error) throw new Error(error.message);
-  return !!data;
+  const roles = new Set(((data ?? []) as any[]).map((r: any) => r.role));
+  const flags = { admin: roles.has("admin"), instructor: roles.has("instructor") };
+  if (!flags.admin && !flags.instructor) {
+    throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+  }
+  return flags;
 }
 
-async function assertAdminOrInstructor(context: any) {
-  const [admin, instructor] = await Promise.all([isAdmin(context), isInstructor(context)]);
-  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
-}
 
 async function assertOwnClassOrAdmin(context: any, classId: string) {
   const admin = await isAdmin(context);
@@ -77,8 +81,8 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
 export const getOverviewStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdminOrInstructor(context);
-    const admin = await isAdmin(context);
+    const { admin } = await roleFlags(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let classIds: string[] = [];
@@ -132,8 +136,8 @@ export const getOverviewStats = createServerFn({ method: "GET" })
 export const getClassStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdminOrInstructor(context);
-    const admin = await isAdmin(context);
+    const { admin } = await roleFlags(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let allowedIds: string[] | null = null;
