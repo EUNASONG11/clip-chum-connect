@@ -6,8 +6,10 @@ import {
   getMyStatus,
   checkEmailExists,
   resolveStudentLogin,
+  syncStudentPassword,
   getMyMustChangePassword,
 } from "@/lib/vimeo.functions";
+
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
