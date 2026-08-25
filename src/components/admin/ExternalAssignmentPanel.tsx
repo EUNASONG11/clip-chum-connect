@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { BranchBadge } from "@/components/BranchBadge";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -536,7 +538,9 @@ export function ExternalAssignmentPanel({
                     <span className="min-w-0">
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{t.name}</span>
+                        <BranchBadge branch={t.branch} />
                         <Badge
+
                           variant={
                             t.status === "failed"
                               ? "destructive"
