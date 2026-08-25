@@ -466,7 +466,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
         return {
           user_id: u,
           name: info?.name ?? "이름 미확인",
+          branch: info?.branch ?? null,
           identified: info?.identified ?? false,
+
           completed_videos: byUser.get(u)?.completed ?? 0,
           last_completed_at: byUser.get(u)?.last ?? null,
           status: st?.status ?? "not_sent",
