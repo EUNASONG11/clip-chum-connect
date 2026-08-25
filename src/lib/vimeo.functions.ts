@@ -851,19 +851,52 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
       if (userErr || !userRes?.user?.email) {
         throw new Error("계정 정보를 불러올 수 없습니다.");
       }
-      const initialPassword = phoneDigits.slice(-8);
-      // 입력한 전화번호(본인/학부모 무관) 뒷 8자리로 비밀번호를 동기화하여 로그인 보장.
-      await supabaseAdmin.auth.admin.updateUserById(row.auth_user_id, {
-        password: initialPassword,
-      });
+      // 비밀번호 재설정(비용이 큰 Auth 쓰기)은 하지 않는다.
+      // 로그인이 실패한 경우에만 syncStudentPassword로 1회 동기화한다.
       return {
         email: userRes.user.email,
-        initialPassword,
+        initialPassword: phoneDigits.slice(-8),
       };
     }
 
     throw new Error("이름 또는 전화번호가 일치하는 계정을 찾을 수 없습니다.");
   });
+
+// 학생 로그인 실패 시에만 호출: 입력한 전화번호 뒷 8자리로 비밀번호를 재동기화
+export const syncStudentPassword = createServerFn({ method: "POST" })
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        phone: z.string().trim().min(4).max(30),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const name = data.name.trim();
+    const phoneDigits = data.phone.replace(/[^0-9]/g, "");
+    if (phoneDigits.length < 8) throw new Error("전화번호가 올바르지 않습니다.");
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, is_deleted")
+      .eq("name", name)
+      .or(`phone.eq.${phoneDigits},parent_phone.eq.${phoneDigits}`)
+      .limit(3);
+    if (error) throw new Error(error.message);
+    const active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    if (active.length !== 1) throw new Error("계정을 특정할 수 없습니다. 관리자에게 문의하세요.");
+
+    const password = phoneDigits.slice(-8);
+    const { error: upErr } = await supabaseAdmin.auth.admin.updateUserById(
+      active[0].auth_user_id!,
+      { password },
+    );
+    if (upErr) throw new Error(upErr.message);
+    return { password };
+  });
+
 
 // ============= 강사 계정 일괄 생성 & 최초 비밀번호 변경 =============
 
