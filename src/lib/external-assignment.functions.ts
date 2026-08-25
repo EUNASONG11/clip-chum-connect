@@ -418,13 +418,21 @@ export const listResyncTargets = createServerFn({ method: "GET" })
 
     const { data: students } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, external_id")
+      .select("auth_user_id, name, external_id, branch")
       .in("auth_user_id", userIds);
-    const nameById = new Map<string, { name: string; identified: boolean }>();
+    const nameById = new Map<
+      string,
+      { name: string; identified: boolean; branch: string | null }
+    >();
     for (const s of students ?? []) {
       if (s.auth_user_id)
-        nameById.set(s.auth_user_id, { name: s.name, identified: !!s.external_id });
+        nameById.set(s.auth_user_id, {
+          name: s.name,
+          identified: !!s.external_id,
+          branch: (s.branch as string | null) ?? null,
+        });
     }
+
 
     // 최근 전송 상태 (해당 수강반 링크 기준)
     const { data: links } = await supabaseAdmin
