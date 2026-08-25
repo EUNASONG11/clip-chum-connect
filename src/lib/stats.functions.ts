@@ -11,14 +11,6 @@ async function isAdmin(context: any) {
   return !!data;
 }
 
-async function isInstructor(context: any) {
-  const { data, error } = await context.supabase.rpc("has_role", {
-    _user_id: context.userId,
-    _role: "instructor",
-  });
-  if (error) throw new Error(error.message);
-  return !!data;
-}
 
 // 역할 조회를 1회 쿼리로 처리 (has_role RPC 2회 호출 대체)
 async function roleFlags(context: any) {
