@@ -20,10 +20,22 @@ async function isInstructor(context: any) {
   return !!data;
 }
 
-async function assertAdminOrInstructor(context: any) {
-  const [admin, instructor] = await Promise.all([isAdmin(context), isInstructor(context)]);
-  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+// 역할 조회를 1회 쿼리로 처리 (has_role RPC 2회 호출 대체)
+async function roleFlags(context: any) {
+  const { data, error } = await context.supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", context.userId)
+    .is("deleted_at", null);
+  if (error) throw new Error(error.message);
+  const roles = new Set(((data ?? []) as any[]).map((r: any) => r.role));
+  const flags = { admin: roles.has("admin"), instructor: roles.has("instructor") };
+  if (!flags.admin && !flags.instructor) {
+    throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+  }
+  return flags;
 }
+
 
 async function assertOwnClassOrAdmin(context: any, classId: string) {
   const admin = await isAdmin(context);
