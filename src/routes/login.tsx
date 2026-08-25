@@ -75,10 +75,21 @@ function AuthPage() {
       const { email: resolvedEmail, initialPassword } = await resolveStudentLogin({
         data: { name, phone },
       });
-      const { error } = await supabase.auth.signInWithPassword({
+      let { error } = await supabase.auth.signInWithPassword({
         email: resolvedEmail,
         password: initialPassword,
       });
+      if (error) {
+        // 비밀번호가 어긋난 계정만 1회 동기화 후 재시도 (전체 로그인 부하 감소)
+        try {
+          const { password } = await syncStudentPassword({ data: { name, phone } });
+          const retry = await supabase.auth.signInWithPassword({
+            email: resolvedEmail,
+            password,
+          });
+          error = retry.error;
+        } catch {}
+      }
       if (error) {
         toast.error("로그인에 실패했습니다. 관리자에게 문의하세요.");
         return;
@@ -93,6 +104,7 @@ function AuthPage() {
       setLoading(false);
     }
   };
+
 
   const submitAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
