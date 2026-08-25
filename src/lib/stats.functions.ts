@@ -89,8 +89,8 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
 export const getOverviewStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdminOrInstructor(context);
-    const admin = await isAdmin(context);
+    const { admin } = await roleFlags(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let classIds: string[] = [];
@@ -144,8 +144,8 @@ export const getOverviewStats = createServerFn({ method: "GET" })
 export const getClassStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdminOrInstructor(context);
-    const admin = await isAdmin(context);
+    const { admin } = await roleFlags(context);
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     let allowedIds: string[] | null = null;
