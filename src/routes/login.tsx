@@ -112,45 +112,35 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("가입 완료! 관리자 승인 후 이용 가능합니다.");
-        setMode("signin");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          const msg = (error.message ?? "").toLowerCase();
-          if (msg.includes("invalid") || msg.includes("credentials")) {
-            try {
-              const { exists } = await checkEmailExists({ data: { email } });
-              if (!exists) {
-                toast.error("등록되지 않은 이메일입니다.");
-              } else {
-                toast.error("비밀번호가 올바르지 않습니다.");
-              }
-            } catch {
-              toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        if (msg.includes("invalid") || msg.includes("credentials")) {
+          try {
+            const { exists } = await checkEmailExists({ data: { email } });
+            if (!exists) {
+              toast.error("등록되지 않은 이메일입니다.");
+            } else {
+              toast.error("비밀번호가 올바르지 않습니다.");
             }
-            return;
+          } catch {
+            toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
           }
-          throw error;
+          return;
         }
-        try {
-          await ensureStudentRole();
-        } catch {}
-        await routeByStatus(navigate);
+        throw error;
       }
+      try {
+        await ensureStudentRole();
+      } catch {}
+      await routeByStatus(navigate);
     } catch (err: any) {
       toast.error(err.message ?? "오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
