@@ -227,18 +227,13 @@ function AuthPage() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "처리 중..." : mode === "signin" ? "로그인" : "가입하기"}
+                  {loading ? "처리 중..." : "로그인"}
                 </Button>
               </form>
-              <button
-                type="button"
-                className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              >
-                {mode === "signin"
-                  ? "계정이 없으신가요? 회원가입"
-                  : "이미 계정이 있으신가요? 로그인"}
-              </button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                계정은 관리자가 발급합니다. 필요하시면 관리자에게 문의하세요.
+              </p>
+
             </TabsContent>
           </Tabs>
         </CardContent>
