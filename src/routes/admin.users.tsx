@@ -147,9 +147,9 @@ function UsersPage() {
     const pending: UserRow[] = [];
     for (const u of users) {
       if (u.isAdmin) admin.push(u);
-      else if (u.isInstructor) instructor.push(u);
-      else if (u.isStudent) student.push(u);
-      else pending.push(u);
+      if (u.isInstructor) instructor.push(u);
+      if (u.isStudent) student.push(u);
+      if (!u.isAdmin && !u.isInstructor && !u.isStudent) pending.push(u);
     }
     return { admin, instructor, student, pending };
   }, [users]);
