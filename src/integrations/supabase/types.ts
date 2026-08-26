@@ -1065,6 +1065,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      instructor_can_access_class: {
+        Args: { _class_id: string; _uid: string }
+        Returns: boolean
+      }
       is_video_class_instructor: {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean

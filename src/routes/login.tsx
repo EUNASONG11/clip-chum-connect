@@ -56,9 +56,9 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
 
   // 관리자 로그인 (이메일 + 비밀번호)
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -112,45 +112,35 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("가입 완료! 관리자 승인 후 이용 가능합니다.");
-        setMode("signin");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          const msg = (error.message ?? "").toLowerCase();
-          if (msg.includes("invalid") || msg.includes("credentials")) {
-            try {
-              const { exists } = await checkEmailExists({ data: { email } });
-              if (!exists) {
-                toast.error("등록되지 않은 이메일입니다.");
-              } else {
-                toast.error("비밀번호가 올바르지 않습니다.");
-              }
-            } catch {
-              toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        if (msg.includes("invalid") || msg.includes("credentials")) {
+          try {
+            const { exists } = await checkEmailExists({ data: { email } });
+            if (!exists) {
+              toast.error("등록되지 않은 이메일입니다.");
+            } else {
+              toast.error("비밀번호가 올바르지 않습니다.");
             }
-            return;
+          } catch {
+            toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
           }
-          throw error;
+          return;
         }
-        try {
-          await ensureStudentRole();
-        } catch {}
-        await routeByStatus(navigate);
+        throw error;
       }
+      try {
+        await ensureStudentRole();
+      } catch {}
+      await routeByStatus(navigate);
     } catch (err: any) {
       toast.error(err.message ?? "오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -237,18 +227,13 @@ function AuthPage() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "처리 중..." : mode === "signin" ? "로그인" : "가입하기"}
+                  {loading ? "처리 중..." : "로그인"}
                 </Button>
               </form>
-              <button
-                type="button"
-                className="mt-3 w-full text-center text-sm text-muted-foreground hover:text-foreground"
-                onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              >
-                {mode === "signin"
-                  ? "계정이 없으신가요? 회원가입"
-                  : "이미 계정이 있으신가요? 로그인"}
-              </button>
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                계정은 관리자가 발급합니다. 필요하시면 관리자에게 문의하세요.
+              </p>
+
             </TabsContent>
           </Tabs>
         </CardContent>
