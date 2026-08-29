@@ -222,9 +222,18 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
+  const [statsFrom, setStatsFrom] = useState("");
+  const [statsTo, setStatsTo] = useState("");
   const { data: studentStats = [], isFetching: statsFetching, refetch: refetchStats } = useQuery({
-    queryKey: ["admin", "class", id, "student-stats"],
-    queryFn: () => getClassStudentStats({ data: { classId: id } }),
+    queryKey: ["admin", "class", id, "student-stats", statsFrom, statsTo],
+    queryFn: () =>
+      getClassStudentStats({
+        data: {
+          classId: id,
+          ...(statsFrom ? { from: statsFrom } : {}),
+          ...(statsTo ? { to: statsTo } : {}),
+        },
+      }),
   });
 
   const { data: folders = [] } = useQuery({
@@ -1450,6 +1459,36 @@ function ClassDetailPage() {
             </CardTitle>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <div className="flex items-center gap-1">
+                <Input
+                  type="date"
+                  value={statsFrom}
+                  onChange={(e) => setStatsFrom(e.target.value)}
+                  className="h-8 w-full sm:w-36 text-xs"
+                  title="영상 등록일 시작"
+                />
+                <span className="shrink-0 text-xs text-muted-foreground">~</span>
+                <Input
+                  type="date"
+                  value={statsTo}
+                  onChange={(e) => setStatsTo(e.target.value)}
+                  className="h-8 w-full sm:w-36 text-xs"
+                  title="영상 등록일 종료"
+                />
+                {(statsFrom || statsTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 shrink-0 px-2 text-xs"
+                    onClick={() => {
+                      setStatsFrom("");
+                      setStatsTo("");
+                    }}
+                  >
+                    기간 해제
+                  </Button>
+                )}
+              </div>
               <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
                 <SelectTrigger className="h-8 w-full sm:w-36">
                   <SelectValue placeholder="필터" />

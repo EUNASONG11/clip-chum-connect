@@ -196,13 +196,32 @@ export const getClassStats = createServerFn({ method: "GET" })
 // 특정 수강반 학생별 상세 (관리자: 전체, 강사: 본인 수강반)
 export const getClassStudentStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ classId: z.string().uuid() }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        from: z.string().optional(),
+        to: z.string().optional(),
+      })
+      .parse(i),
+  )
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: agg, error: aggErr } = await supabaseAdmin.rpc("class_student_stats_agg", {
-      _class_id: data.classId,
-    });
+    // 기간 필터: 영상 등록일(created_at) 기준 [from 00:00, to+1일 00:00) — KST 기준으로 해석
+    const fromTs = data.from ? new Date(`${data.from}T00:00:00+09:00`).toISOString() : undefined;
+    const toTs = data.to ? new Date(`${data.to}T00:00:00+09:00`).toISOString() : undefined;
+    const toExclusive = toTs
+      ? new Date(new Date(toTs).getTime() + 24 * 60 * 60 * 1000).toISOString()
+      : undefined;
+    const { data: agg, error: aggErr } = await supabaseAdmin.rpc(
+      "class_student_stats_agg_range",
+      {
+        _class_id: data.classId,
+        _from: fromTs,
+        _to: toExclusive,
+      },
+    );
     if (aggErr) throw new Error(aggErr.message);
     const rows = (agg ?? []) as any[];
     const studentIds = rows.map((r: any) => r.user_id);

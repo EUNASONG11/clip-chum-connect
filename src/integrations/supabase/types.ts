@@ -1058,6 +1058,17 @@ export type Database = {
           video_total: number
         }[]
       }
+      class_student_stats_agg_range: {
+        Args: { _class_id: string; _from?: string; _to?: string }
+        Returns: {
+          completed: number
+          enrolled_at: string
+          last_activity: string
+          sum_ratio: number
+          user_id: string
+          video_total: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
