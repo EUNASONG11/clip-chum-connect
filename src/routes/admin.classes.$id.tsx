@@ -223,8 +223,15 @@ function ClassDetailPage() {
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
   const { data: studentStats = [], isFetching: statsFetching, refetch: refetchStats } = useQuery({
-    queryKey: ["admin", "class", id, "student-stats"],
-    queryFn: () => getClassStudentStats({ data: { classId: id } }),
+    queryKey: ["admin", "class", id, "student-stats", statsFrom, statsTo],
+    queryFn: () =>
+      getClassStudentStats({
+        data: {
+          classId: id,
+          ...(statsFrom ? { from: statsFrom } : {}),
+          ...(statsTo ? { to: statsTo } : {}),
+        },
+      }),
   });
 
   const { data: folders = [] } = useQuery({
@@ -250,6 +257,8 @@ function ClassDetailPage() {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
   const [statsSort, setStatsSort] = useState<"name" | "completed" | "ratio" | "recent">("name");
+  const [statsFrom, setStatsFrom] = useState("");
+  const [statsTo, setStatsTo] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historySearchDebounced, setHistorySearchDebounced] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(20);
