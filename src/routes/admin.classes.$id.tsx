@@ -1449,9 +1449,9 @@ function ClassDetailPage() {
               </Button>
             </CardTitle>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <Select value={statsFilter} onValueChange={(v) => setStatsFilter(v as any)}>
-                <SelectTrigger className="h-8 w-full sm:w-40">
+                <SelectTrigger className="h-8 w-full sm:w-36">
                   <SelectValue placeholder="필터" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1461,7 +1461,7 @@ function ClassDetailPage() {
                 </SelectContent>
               </Select>
               <Select value={statsBranchFilter} onValueChange={setStatsBranchFilter}>
-                <SelectTrigger className="h-8 w-full sm:w-40">
+                <SelectTrigger className="h-8 w-full sm:w-36">
                   <SelectValue placeholder="교육원" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1475,7 +1475,7 @@ function ClassDetailPage() {
                 </SelectContent>
               </Select>
               <Select value={statsSort} onValueChange={(v) => setStatsSort(v as any)}>
-                <SelectTrigger className="h-8 w-full sm:w-40">
+                <SelectTrigger className="h-8 w-full sm:w-36">
                   <SelectValue placeholder="정렬" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1489,7 +1489,7 @@ function ClassDetailPage() {
                 value={String(statsPageSize)}
                 onValueChange={(v) => setStatsPageSize(Number(v))}
               >
-                <SelectTrigger className="h-8 w-full sm:w-32">
+                <SelectTrigger className="h-8 w-full sm:w-28">
                   <SelectValue placeholder="페이지당 인원" />
                 </SelectTrigger>
                 <SelectContent>
