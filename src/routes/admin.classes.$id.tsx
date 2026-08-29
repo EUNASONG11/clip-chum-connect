@@ -222,6 +222,8 @@ function ClassDetailPage() {
     queryKey: ["admin", "class", id, "videos"],
     queryFn: () => listClassVideos({ data: { classId: id } }),
   });
+  const [statsFrom, setStatsFrom] = useState("");
+  const [statsTo, setStatsTo] = useState("");
   const { data: studentStats = [], isFetching: statsFetching, refetch: refetchStats } = useQuery({
     queryKey: ["admin", "class", id, "student-stats", statsFrom, statsTo],
     queryFn: () =>
@@ -257,8 +259,6 @@ function ClassDetailPage() {
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
   const [statsSort, setStatsSort] = useState<"name" | "completed" | "ratio" | "recent">("name");
-  const [statsFrom, setStatsFrom] = useState("");
-  const [statsTo, setStatsTo] = useState("");
   const [historySearch, setHistorySearch] = useState("");
   const [historySearchDebounced, setHistorySearchDebounced] = useState("");
   const [historyPageSize, setHistoryPageSize] = useState(20);
