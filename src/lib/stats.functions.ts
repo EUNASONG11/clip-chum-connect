@@ -209,11 +209,11 @@ export const getClassStudentStats = createServerFn({ method: "GET" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // 기간 필터: 영상 등록일(created_at) 기준 [from 00:00, to+1일 00:00) — KST 기준으로 해석
-    const fromTs = data.from ? new Date(`${data.from}T00:00:00+09:00`).toISOString() : null;
-    const toTs = data.to ? new Date(`${data.to}T00:00:00+09:00`).toISOString() : null;
+    const fromTs = data.from ? new Date(`${data.from}T00:00:00+09:00`).toISOString() : undefined;
+    const toTs = data.to ? new Date(`${data.to}T00:00:00+09:00`).toISOString() : undefined;
     const toExclusive = toTs
       ? new Date(new Date(toTs).getTime() + 24 * 60 * 60 * 1000).toISOString()
-      : null;
+      : undefined;
     const { data: agg, error: aggErr } = await supabaseAdmin.rpc(
       "class_student_stats_agg_range",
       {
