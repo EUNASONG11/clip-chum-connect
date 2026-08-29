@@ -656,8 +656,8 @@ function ClassDetailPage() {
 
 
 
-  // 반 평균 학습 시청률 요약
-  const statRows = studentStats as any[];
+  // 반 평균 학습 시청률 요약 (학습 현황 필터와 연동)
+  const statRows = filteredStudentStats as any[];
   const classAvgRatio =
     statRows.length > 0
       ? statRows.reduce((sum, r) => sum + Number(r.avg_watched_ratio ?? 0), 0) / statRows.length
