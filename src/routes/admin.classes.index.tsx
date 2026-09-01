@@ -220,6 +220,26 @@ function ClassesPage() {
         }
       }
 
+      if (row?.id && pendingFolders.length > 0) {
+        const idMap = new Map<number, string>();
+        // 최상위 폴더 먼저 생성한 뒤 하위 폴더 생성
+        for (const pass of [null, "child"] as const) {
+          for (let i = 0; i < pendingFolders.length; i++) {
+            const f = pendingFolders[i]!;
+            if (pass === null ? f.parent !== null : f.parent === null) continue;
+            const created: any = await createClassFolder({
+              data: {
+                classId: row.id,
+                name: f.name,
+                parentFolderId: f.parent === null ? null : (idMap.get(f.parent) ?? null),
+              },
+            });
+            if (created?.id) idMap.set(i, created.id);
+          }
+        }
+      }
+
+
       setName("");
       setDesc("");
       setAlwaysActive(false);
