@@ -130,9 +130,18 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
             authUserId = created.user.id;
           }
 
-          // 신규 계정은 역할을 부여하지 않고 "승인 대기" 상태로 둠.
-          // 관리자가 사용자 관리 페이지에서 승인해야 학생 권한이 부여됩니다.
+          // 승인 대기 제도 폐지: 신규 계정은 즉시 학생 권한 부여
+          if (authUserId) {
+            const { error: roleErr } = await supabaseAdmin
+              .from("user_roles")
+              .upsert(
+                { user_id: authUserId, role: "student" },
+                { onConflict: "user_id,role", ignoreDuplicates: true },
+              );
+            if (roleErr) console.error("grant student role failed", roleErr);
+          }
         }
+
 
         // Upsert mirror row.
         const { error: upsertErr } = await supabaseAdmin

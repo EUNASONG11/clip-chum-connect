@@ -35,11 +35,6 @@ async function routeByStatus(navigate: ReturnType<typeof useNavigate>) {
       }
     } catch {}
     const s = await getMyStatus();
-    if (s.isPending) {
-      toast.error("관리자 승인 대기 중입니다. 승인 후 이용 가능합니다.");
-      await supabase.auth.signOut();
-      return;
-    }
     navigate({ to: s.isAdmin || s.isInstructor ? "/admin" : "/" });
   } catch {
     navigate({ to: "/" });
