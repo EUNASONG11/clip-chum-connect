@@ -326,7 +326,7 @@ export const claimAdminIfNone = createServerFn({ method: "POST" })
     return { claimed: true };
   });
 
-// 6-1) 로그인 사용자가 아무 역할도 없으면 '승인 대기(pending)' 부여
+// 6-1) 로그인 사용자가 아무 역할도 없으면 자동으로 '학생' 역할 부여 (승인 대기 없음)
 export const ensureStudentRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -338,7 +338,7 @@ export const ensureStudentRole = createServerFn({ method: "POST" })
     if ((count ?? 0) === 0) {
       await supabaseAdmin
         .from("user_roles")
-        .insert({ user_id: context.userId, role: "pending" });
+        .insert({ user_id: context.userId, role: "student" });
     }
     return { ok: true };
   });
@@ -547,9 +547,9 @@ export const listUsers = createServerFn({ method: "GET" })
         // 관리자·강사는 external_students 상태와 무관하게 항상 표시
         if (u.isAdmin || u.isInstructor) return true;
         const status = extMap.get(u.id)?.enrollment_status ?? null;
-        // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
-        if (!status) return !u.isStudent && !u.isPending;
-        if (status === "휴원") return !u.isStudent && !u.isPending;
+        // enrollment_status가 null이거나 '휴원'인 학생은 목록에서 제외
+        if (!status) return false;
+        if (status === "휴원") return false;
         return true;
       });
   });
@@ -571,7 +571,6 @@ export const grantAdminByEmail = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: target.id, role: "admin" });
     if (insErr && !insErr.message.includes("duplicate")) throw new Error(insErr.message);
-    await supabaseAdmin.from("user_roles").delete().eq("user_id", target.id).eq("role", "pending");
     return { ok: true, userId: target.id };
   });
 
@@ -607,11 +606,6 @@ export const approveUser = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    await supabaseAdmin
-      .from("user_roles")
-      .delete()
-      .eq("user_id", data.userId)
-      .eq("role", "pending");
     const { error } = await supabaseAdmin
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
@@ -633,13 +627,8 @@ export const bulkApproveUsers = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // pending 역할 제거
-    await supabaseAdmin
-      .from("user_roles")
-      .delete()
-      .in("user_id", data.userIds)
-      .eq("role", "pending");
     // 대상 역할 부여 (중복은 무시)
+
     const rows = data.userIds.map((user_id) => ({ user_id, role: data.role }));
     const { error } = await supabaseAdmin
       .from("user_roles")
@@ -648,27 +637,8 @@ export const bulkApproveUsers = createServerFn({ method: "POST" })
     return { ok: true, count: data.userIds.length };
   });
 
-// 6-5c) 승인된 사용자를 승인 대기로 되돌리기
-export const revertToPending = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
-  .handler(async ({ data, context }) => {
-    await assertAdmin(context);
-    if (data.userId === context.userId) throw new Error("자기 자신은 되돌릴 수 없습니다.");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // 기존 역할(student, admin) 제거
-    await supabaseAdmin
-      .from("user_roles")
-      .delete()
-      .eq("user_id", data.userId)
-      .in("role", ["student", "admin", "instructor"]);
-    // pending 역할 부여
-    const { error } = await supabaseAdmin
-      .from("user_roles")
-      .upsert({ user_id: data.userId, role: "pending" }, { onConflict: "user_id,role", ignoreDuplicates: true });
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
+// 6-5c) (제거) 승인 대기 제도 폐지로 되돌리기 기능 없음
+
 
 // 6-6) 사용자 삭제(가입 거절) - 소프트 삭제: user_roles 를 소프트 삭제하고 auth 계정은 보존
 export const rejectUser = createServerFn({ method: "POST" })
