@@ -572,7 +572,6 @@ export const grantAdminByEmail = createServerFn({ method: "POST" })
       .insert({ user_id: target.id, role: "admin" });
     if (insErr && !insErr.message.includes("duplicate")) throw new Error(insErr.message);
     return { ok: true, userId: target.id };
-    return { ok: true, userId: target.id };
   });
 
 // 6-4) 관리자 권한 회수
