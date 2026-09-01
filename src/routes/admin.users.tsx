@@ -231,7 +231,8 @@ function UsersPage() {
           <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <div className="ml-auto flex items-center gap-2">
-            <LocalStudentDialog onCreated={refetch} />
+            {tab === "student" && <LocalStudentDialog onCreated={refetch} />}
+            {tab === "instructor" && <LocalInstructorDialog onCreated={refetch} />}
             {/* <Button
 
               size="sm"
