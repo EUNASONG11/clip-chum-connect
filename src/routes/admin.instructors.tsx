@@ -84,12 +84,26 @@ function InstructorsPage() {
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
+  const [branchFilter, setBranchFilter] = useState<string>("__all__");
+
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      const b = (r.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    const byBranch =
+      branchFilter === "__all__"
+        ? rows
+        : rows.filter((r) => (r.branch ?? "").trim() === branchFilter);
     const byCohort = (() => {
-      if (cohortFilter.length === 0) return rows;
-      return rows.filter((r) => {
+      if (cohortFilter.length === 0) return byBranch;
+      return byBranch.filter((r) => {
         const list = r.cohorts ?? [];
         const matchesNone = cohortFilter.includes("__none__") && list.length === 0;
         const matchesCohort = list.some((c) => cohortFilter.includes(c));
@@ -103,7 +117,7 @@ function InstructorsPage() {
         (r.email ?? "").toLowerCase().includes(needle) ||
         (r.phone ?? "").includes(needle),
     );
-  }, [rows, q, cohortFilter]);
+  }, [rows, q, cohortFilter, branchFilter]);
 
   const withEmail = rows.filter((r) => (r.email ?? "").trim()).length;
   const withAccount = rows.filter((r) => r.auth_user_id).length;
