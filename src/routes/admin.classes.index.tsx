@@ -102,6 +102,36 @@ function ClassesPage() {
   const [instSearching, setInstSearching] = useState(false);
   const [pickedInstructors, setPickedInstructors] = useState<any[]>([]);
 
+  // 생성 시 함께 만들 폴더 목록 (parent: 상위 폴더 index 또는 null)
+  const [pendingFolders, setPendingFolders] = useState<{ name: string; parent: number | null }[]>([]);
+  const [folderName, setFolderName] = useState("");
+  const [folderParent, setFolderParent] = useState<string>("__root__");
+
+  const addPendingFolder = () => {
+    const nm = folderName.trim();
+    if (!nm) return toast.error("폴더 이름을 입력하세요.");
+    const parent = folderParent === "__root__" ? null : Number(folderParent);
+    if (pendingFolders.some((f) => f.name === nm && f.parent === parent)) {
+      return toast.error("같은 위치에 동일한 이름의 폴더가 있습니다.");
+    }
+    setPendingFolders((prev) => [...prev, { name: nm, parent }]);
+    setFolderName("");
+  };
+
+  const removePendingFolder = (idx: number) => {
+    setPendingFolders((prev) =>
+      prev
+        .filter((_, i) => i !== idx)
+        // 삭제된 폴더의 하위 폴더는 최상위로 승격하고, index 참조를 재조정
+        .map((f) => {
+          if (f.parent === null) return f;
+          if (f.parent === idx) return { ...f, parent: null };
+          return { ...f, parent: f.parent > idx ? f.parent - 1 : f.parent };
+        }),
+    );
+    setFolderParent("__root__");
+  };
+
   const runInstructorSearch = async () => {
     if (!instQuery.trim()) return toast.error("강사 이름 또는 이메일을 입력하세요.");
     setInstSearching(true);
