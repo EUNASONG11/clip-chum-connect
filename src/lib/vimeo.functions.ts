@@ -1219,3 +1219,77 @@ export const createLocalStudent = createServerFn({ method: "POST" })
 
     return { ok: true as const, userId: authUserId, email, initialPassword: password };
   });
+
+
+// ============= 자체(로컬) 강사 등록 =============
+// instructors 테이블에 직접 추가하고 이메일 기반 계정을 즉시 생성합니다.
+export const createLocalInstructor = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        name: z.string().trim().min(1).max(100),
+        email: z.string().trim().email().max(255),
+        phone: z.string().trim().max(30).optional().default(""),
+        branch: z.string().trim().max(50).optional().default(""),
+        cohorts: z.array(z.string().trim().min(1).max(20)).max(50).optional().default([]),
+        tempPassword: z.string().trim().max(50).optional().default(""),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const email = data.email.toLowerCase();
+    const phone = data.phone.replace(/[^0-9]/g, "") || null;
+    const password = data.tempPassword.trim() || "12345678";
+    const cohorts = Array.from(new Set(data.cohorts.filter(Boolean)));
+
+    const { data: dup } = await supabaseAdmin
+      .from("instructors")
+      .select("id")
+      .eq("email", email)
+      .limit(1);
+    if (dup && dup.length > 0) {
+      return { ok: false as const, error: "동일한 이메일로 등록된 강사가 이미 있습니다." };
+    }
+
+    let authUserId: string | null = null;
+    const { data: created, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name: data.name, source: "instructor-local" },
+    });
+    if (createErr) {
+      const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const found = list?.users.find((u) => (u.email ?? "").toLowerCase() === email);
+      if (!found) {
+        return { ok: false as const, error: createErr.message };
+      }
+      authUserId = found.id;
+    } else {
+      authUserId = created?.user?.id ?? null;
+    }
+    if (!authUserId) return { ok: false as const, error: "계정 생성에 실패했습니다." };
+
+    const { error: insErr } = await supabaseAdmin.from("instructors").insert({
+      name: data.name,
+      email,
+      phone,
+      branch: data.branch.trim() || null,
+      cohorts,
+      cohort: cohorts[0] ?? null,
+      auth_user_id: authUserId,
+      must_change_password: true,
+    } as any);
+    if (insErr) return { ok: false as const, error: insErr.message };
+
+    const { error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: authUserId, role: "instructor" }, { onConflict: "user_id,role" });
+    if (roleErr) return { ok: false as const, error: roleErr.message };
+
+    return { ok: true as const, userId: authUserId, email, initialPassword: password };
+  });
