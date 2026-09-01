@@ -23,6 +23,13 @@ import {
   bulkCreateInstructorAccounts,
   resetInstructorPassword,
 } from "@/lib/vimeo.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { AdminOnly } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
@@ -77,12 +84,26 @@ function InstructorsPage() {
   const [busy, setBusy] = useState(false);
   const [q, setQ] = useState("");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
+  const [branchFilter, setBranchFilter] = useState<string>("__all__");
+
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    rows.forEach((r) => {
+      const b = (r.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [rows]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
+    const byBranch =
+      branchFilter === "__all__"
+        ? rows
+        : rows.filter((r) => (r.branch ?? "").trim() === branchFilter);
     const byCohort = (() => {
-      if (cohortFilter.length === 0) return rows;
-      return rows.filter((r) => {
+      if (cohortFilter.length === 0) return byBranch;
+      return byBranch.filter((r) => {
         const list = r.cohorts ?? [];
         const matchesNone = cohortFilter.includes("__none__") && list.length === 0;
         const matchesCohort = list.some((c) => cohortFilter.includes(c));
@@ -96,7 +117,7 @@ function InstructorsPage() {
         (r.email ?? "").toLowerCase().includes(needle) ||
         (r.phone ?? "").includes(needle),
     );
-  }, [rows, q, cohortFilter]);
+  }, [rows, q, cohortFilter, branchFilter]);
 
   const withEmail = rows.filter((r) => (r.email ?? "").trim()).length;
   const withAccount = rows.filter((r) => r.auth_user_id).length;
@@ -174,6 +195,19 @@ function InstructorsPage() {
                 className="max-w-sm"
                 inputClassName="pl-8"
               />
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger className="h-9 w-full sm:w-40">
+                  <SelectValue placeholder="교육원 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">교육원 전체</SelectItem>
+                  {branchOptions.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <CohortMultiSelect
                 options={COHORT_OPTIONS}
                 selected={cohortFilter}
