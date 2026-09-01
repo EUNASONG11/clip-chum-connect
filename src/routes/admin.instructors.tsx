@@ -195,6 +195,19 @@ function InstructorsPage() {
                 className="max-w-sm"
                 inputClassName="pl-8"
               />
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger className="h-9 w-full sm:w-40">
+                  <SelectValue placeholder="교육원 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">교육원 전체</SelectItem>
+                  {branchOptions.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <CohortMultiSelect
                 options={COHORT_OPTIONS}
                 selected={cohortFilter}
