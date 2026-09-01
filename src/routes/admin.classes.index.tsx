@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil, Search, UserCog } from "lucide-react";
+import { Trash2, Users, Plus, List, ImagePlus, X, Tag, Loader2, Pencil, Search, UserCog, Folder, FolderPlus } from "lucide-react";
 import {
   listClasses,
   createClass,
@@ -31,6 +31,7 @@ import {
   getCategoryClassCounts,
   searchInstructors,
   assignInstructor,
+  createClassFolder,
 } from "@/lib/classes.functions";
 import { ClassThumbnailUploader } from "@/components/ClassThumbnailUploader";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
@@ -101,6 +102,36 @@ function ClassesPage() {
   const [instResults, setInstResults] = useState<any[]>([]);
   const [instSearching, setInstSearching] = useState(false);
   const [pickedInstructors, setPickedInstructors] = useState<any[]>([]);
+
+  // 생성 시 함께 만들 폴더 목록 (parent: 상위 폴더 index 또는 null)
+  const [pendingFolders, setPendingFolders] = useState<{ name: string; parent: number | null }[]>([]);
+  const [folderName, setFolderName] = useState("");
+  const [folderParent, setFolderParent] = useState<string>("__root__");
+
+  const addPendingFolder = () => {
+    const nm = folderName.trim();
+    if (!nm) return toast.error("폴더 이름을 입력하세요.");
+    const parent = folderParent === "__root__" ? null : Number(folderParent);
+    if (pendingFolders.some((f) => f.name === nm && f.parent === parent)) {
+      return toast.error("같은 위치에 동일한 이름의 폴더가 있습니다.");
+    }
+    setPendingFolders((prev) => [...prev, { name: nm, parent }]);
+    setFolderName("");
+  };
+
+  const removePendingFolder = (idx: number) => {
+    setPendingFolders((prev) =>
+      prev
+        .filter((_, i) => i !== idx)
+        // 삭제된 폴더의 하위 폴더는 최상위로 승격하고, index 참조를 재조정
+        .map((f) => {
+          if (f.parent === null) return f;
+          if (f.parent === idx) return { ...f, parent: null };
+          return { ...f, parent: f.parent > idx ? f.parent - 1 : f.parent };
+        }),
+    );
+    setFolderParent("__root__");
+  };
 
   const runInstructorSearch = async () => {
     if (!instQuery.trim()) return toast.error("강사 이름 또는 이메일을 입력하세요.");
@@ -190,6 +221,26 @@ function ClassesPage() {
         }
       }
 
+      if (row?.id && pendingFolders.length > 0) {
+        const idMap = new Map<number, string>();
+        // 최상위 폴더 먼저 생성한 뒤 하위 폴더 생성
+        for (const pass of [null, "child"] as const) {
+          for (let i = 0; i < pendingFolders.length; i++) {
+            const f = pendingFolders[i]!;
+            if (pass === null ? f.parent !== null : f.parent === null) continue;
+            const created: any = await createClassFolder({
+              data: {
+                classId: row.id,
+                name: f.name,
+                parentFolderId: f.parent === null ? null : (idMap.get(f.parent) ?? null),
+              },
+            });
+            if (created?.id) idMap.set(i, created.id);
+          }
+        }
+      }
+
+
       setName("");
       setDesc("");
       setAlwaysActive(false);
@@ -201,6 +252,9 @@ function ClassesPage() {
       setThumbPreview(null);
       setPickedInstructors([]);
       setInstResults([]);
+      setPendingFolders([]);
+      setFolderName("");
+      setFolderParent("__root__");
       setInstQuery("");
       if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
@@ -537,6 +591,66 @@ function ClassesPage() {
                     onChange={(e) => pickThumb(e.target.files?.[0] ?? null)}
                   />
                 </div>
+              </div>
+              <div className="rounded-md border p-3">
+                <Label className="flex items-center gap-1">
+                  <FolderPlus className="h-4 w-4" /> 폴더 (선택)
+                </Label>
+                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={folderName}
+                    onChange={(e) => setFolderName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addPendingFolder();
+                      }
+                    }}
+                    placeholder="폴더 이름"
+                    className="flex-1"
+                  />
+                  <Select value={folderParent} onValueChange={setFolderParent}>
+                    <SelectTrigger className="sm:w-48">
+                      <SelectValue placeholder="상위 폴더" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__root__">최상위</SelectItem>
+                      {pendingFolders.map((f, i) =>
+                        f.parent === null ? (
+                          <SelectItem key={i} value={String(i)}>
+                            {f.name} 하위
+                          </SelectItem>
+                        ) : null,
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" variant="outline" onClick={addPendingFolder}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {pendingFolders.length === 0 ? (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    폴더를 미리 추가하면 수강반 생성과 함께 만들어집니다. (2단계까지)
+                  </p>
+                ) : (
+                  <ul className="mt-2 space-y-1">
+                    {pendingFolders.map((f, i) => (
+                      <li
+                        key={i}
+                        className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-sm"
+                      >
+                        <span className="flex items-center gap-1 truncate">
+                          {f.parent !== null && <span className="text-muted-foreground">└</span>}
+                          <Folder className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="truncate">{f.name}</span>
+                        </span>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => removePendingFolder(i)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
               <div className="rounded-md border p-3">
                 <Label className="flex items-center gap-1">
