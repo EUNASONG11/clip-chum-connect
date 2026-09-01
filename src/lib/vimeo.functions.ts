@@ -326,7 +326,7 @@ export const claimAdminIfNone = createServerFn({ method: "POST" })
     return { claimed: true };
   });
 
-// 6-1) 로그인 사용자가 아무 역할도 없으면 '승인 대기(pending)' 부여
+// 6-1) 로그인 사용자가 아무 역할도 없으면 자동으로 '학생' 역할 부여 (승인 대기 없음)
 export const ensureStudentRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -338,7 +338,7 @@ export const ensureStudentRole = createServerFn({ method: "POST" })
     if ((count ?? 0) === 0) {
       await supabaseAdmin
         .from("user_roles")
-        .insert({ user_id: context.userId, role: "pending" });
+        .insert({ user_id: context.userId, role: "student" });
     }
     return { ok: true };
   });
@@ -547,9 +547,9 @@ export const listUsers = createServerFn({ method: "GET" })
         // 관리자·강사는 external_students 상태와 무관하게 항상 표시
         if (u.isAdmin || u.isInstructor) return true;
         const status = extMap.get(u.id)?.enrollment_status ?? null;
-        // enrollment_status가 null이거나 '휴원'인 학생(또는 미승인 학생)은 제외
-        if (!status) return !u.isStudent && !u.isPending;
-        if (status === "휴원") return !u.isStudent && !u.isPending;
+        // enrollment_status가 null이거나 '휴원'인 학생은 목록에서 제외
+        if (!status) return false;
+        if (status === "휴원") return false;
         return true;
       });
   });
