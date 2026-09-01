@@ -23,6 +23,13 @@ import {
   bulkCreateInstructorAccounts,
   resetInstructorPassword,
 } from "@/lib/vimeo.functions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { AdminOnly } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
