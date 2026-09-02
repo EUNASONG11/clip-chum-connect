@@ -164,8 +164,33 @@ function UsersPage() {
     return { admin, branch_admin, instructor, student };
   }, [users]);
 
+  // 학생 탭: 서버 사이드 검색·페이지네이션 (전체 사용자 로딩 없이 빠르게 조회)
+  const studentQuery = useQuery({
+    queryKey: ["admin", "students", debouncedSearch, branchFilter, page],
+    queryFn: async () =>
+      (await listStudentUsers({
+        data: {
+          search: debouncedSearch,
+          branch: branchFilter === "__all__" ? "" : branchFilter,
+          page,
+          pageSize: PAGE_SIZE,
+        },
+      })) as { total: number; rows: UserRow[] },
+    enabled: isStudentTab,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
 
-  const branchOptions = useMemo(() => {
+  const studentBranchQuery = useQuery({
+    queryKey: ["admin", "student-branches"],
+    queryFn: async () => (await listStudentBranches()) as string[],
+    enabled: isStudentTab,
+    staleTime: 10 * 60_000,
+  });
+
+  const isFetching = isStudentTab ? studentQuery.isFetching : usersFetching;
+
+  const derivedBranchOptions = useMemo(() => {
     const set = new Set<string>();
     users.forEach((u) => {
       const b = (u.branch ?? "").trim();
@@ -173,6 +198,8 @@ function UsersPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [users]);
+
+  const branchOptions = isStudentTab ? (studentBranchQuery.data ?? []) : derivedBranchOptions;
 
   const cohortOptions = useMemo(() => {
     const set = new Set<string>();
@@ -189,6 +216,7 @@ function UsersPage() {
   const isStaffTab = tab === "instructor" || tab === "branch_admin";
 
   const filtered = useMemo(() => {
+    if (isStudentTab) return studentQuery.data?.rows ?? [];
     const rows = buckets[tab];
     const terms = search
       .trim()
@@ -213,15 +241,21 @@ function UsersPage() {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search, branchFilter, cohortFilter]);
+  }, [buckets, tab, search, branchFilter, cohortFilter, isStudentTab, studentQuery.data]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const studentTotal = studentQuery.data?.total ?? 0;
+  const totalCount = isStudentTab ? studentTotal : filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * PAGE_SIZE;
-  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const paged = isStudentTab ? filtered : filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
-  const refetch = () => qc.refetchQueries({ queryKey: ["admin", "users"] });
+  const refetch = () => {
+    qc.refetchQueries({ queryKey: ["admin", "users"] });
+    qc.invalidateQueries({ queryKey: ["admin", "students"] });
+  };
+
 
   const doRevokeAdmin = async (u: UserRow) => {
     if (!confirm(`${u.email} 의 관리자 권한을 회수하시겠습니까?`)) return;
