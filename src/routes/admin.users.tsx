@@ -362,7 +362,7 @@ function UsersPage() {
             <TabsTrigger value="student" className="shrink-0 gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 shrink-0" /> 학생
               <span className="ml-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-accent-foreground">
-                {buckets.student.length}
+                {isStudentTab ? studentTotal : buckets.student.length}
               </span>
             </TabsTrigger>
           </TabsList>
