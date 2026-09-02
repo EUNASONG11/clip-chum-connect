@@ -207,7 +207,7 @@ export const Route = createFileRoute("/admin/classes/$id")({
 function ClassDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
-  const { isAdmin, isInstructor } = useAdminRole();
+  const { isAdmin, isInstructor, isBranchAdmin } = useAdminRole();
   const { data: cls } = useQuery({
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
@@ -758,7 +758,7 @@ function ClassDetailPage() {
       />
 
 
-      {!canWrite && (
+      {!canWrite && !isBranchAdmin && (
         <p className="rounded-md border border-dashed bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
           이 수강반에 배정된 강사가 아니므로 <span className="font-semibold">조회만</span> 가능합니다. 배정·설정 변경이 필요하면 관리자에게 요청하세요.
         </p>
