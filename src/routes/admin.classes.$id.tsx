@@ -207,7 +207,7 @@ export const Route = createFileRoute("/admin/classes/$id")({
 function ClassDetailPage() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
-  const { isAdmin, isInstructor } = useAdminRole();
+  const { isAdmin, isInstructor, isBranchAdmin } = useAdminRole();
   const { data: cls } = useQuery({
     queryKey: ["admin", "class", id],
     queryFn: () => getClass({ data: { id } }),
