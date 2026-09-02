@@ -59,6 +59,14 @@ async function assertOwnClassOrAdmin(
 
   const admin = await isAdmin(context);
   if (admin) return;
+  // 교육원 관리자: 담당 교육원(또는 미지정) 수강반이면 허용
+  {
+    const { data: canAccess } = await context.supabase.rpc("instructor_can_access_class", {
+      _uid: context.userId,
+      _class_id: classId,
+    });
+    if (canAccess && (await isBranchAdmin(context))) return;
+  }
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("classes")
