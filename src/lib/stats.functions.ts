@@ -21,13 +21,32 @@ async function roleFlags(context: any) {
     .is("deleted_at", null);
   if (error) throw new Error(error.message);
   const roles = new Set(((data ?? []) as any[]).map((r: any) => r.role));
-  const flags = { admin: roles.has("admin"), instructor: roles.has("instructor") };
-  if (!flags.admin && !flags.instructor) {
+  const flags = {
+    admin: roles.has("admin"),
+    instructor: roles.has("instructor"),
+    branchAdmin: roles.has("branch_admin"),
+  };
+  if (!flags.admin && !flags.instructor && !flags.branchAdmin) {
     throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
   }
   return flags;
 }
 
+
+// 교육원 관리자가 담당하는 교육원의 수강반 id 목록
+async function branchAdminClassIds(context: any, supabaseAdmin: any) {
+  const { data: branch } = await context.supabase.rpc("branch_admin_branch", {
+    _uid: context.userId,
+  });
+  const b = ((branch as string | null) ?? "").trim();
+  if (!b) return [] as string[];
+  const { data } = await supabaseAdmin
+    .from("classes")
+    .select("id")
+    .eq("branch", b)
+    .is("deleted_at", null);
+  return ((data ?? []) as any[]).map((c: any) => c.id as string);
+}
 
 async function assertOwnClassOrAdmin(context: any, classId: string) {
   const admin = await isAdmin(context);
@@ -81,7 +100,7 @@ async function assertOwnClassOrAdmin(context: any, classId: string) {
 export const getOverviewStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { admin } = await roleFlags(context);
+    const { admin, branchAdmin } = await roleFlags(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -100,6 +119,9 @@ export const getOverviewStats = createServerFn({ method: "GET" })
       const set = new Set<string>();
       (owned.data ?? []).forEach((c: any) => set.add(c.id));
       (assigned.data ?? []).forEach((c: any) => set.add(c.class_id));
+      if (branchAdmin) {
+        (await branchAdminClassIds(context, supabaseAdmin)).forEach((id) => set.add(id));
+      }
       classIds = Array.from(set);
     }
 
@@ -136,7 +158,7 @@ export const getOverviewStats = createServerFn({ method: "GET" })
 export const getClassStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { admin } = await roleFlags(context);
+    const { admin, branchAdmin } = await roleFlags(context);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -152,6 +174,9 @@ export const getClassStats = createServerFn({ method: "GET" })
       const set = new Set<string>();
       (owned.data ?? []).forEach((c: any) => set.add(c.id));
       (assigned.data ?? []).forEach((c: any) => set.add(c.class_id));
+      if (branchAdmin) {
+        (await branchAdminClassIds(context, supabaseAdmin)).forEach((id) => set.add(id));
+      }
       allowedIds = Array.from(set);
       if (allowedIds.length === 0) return [];
     }

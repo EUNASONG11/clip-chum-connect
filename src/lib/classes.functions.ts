@@ -197,6 +197,11 @@ export const listClasses = createServerFn({ method: "GET" })
       const withCreators = await withCreatorNames(supabaseAdmin, data ?? []);
       return await withStudentNames(supabaseAdmin, withCreators);
     }
+    // 교육원 관리자: 담당 교육원 전체 조회
+    const { data: baBranch } = await context.supabase.rpc("branch_admin_branch", {
+      _uid: context.userId,
+    });
+    const adminBranch = ((baBranch as string | null) ?? "").trim();
     // 강사: 본인이 만든 것 + 배정된 것 + 본인 기수로 지정된 카테고리의 반 전체
     const [{ data: assigned }, { data: enrolled }, { data: me }] = await Promise.all([
       supabaseAdmin
@@ -221,6 +226,7 @@ export const listClasses = createServerFn({ method: "GET" })
     ]);
     const ids = Array.from(idSet);
     const orParts = [`created_by.eq.${context.userId}`];
+    if (adminBranch) orParts.push(`branch.eq.${adminBranch}`);
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const myCohorts: string[] = Array.from(
       new Set([
@@ -251,6 +257,7 @@ export const listClasses = createServerFn({ method: "GET" })
       const b = (c.branch ?? "").toString().trim();
       if (!b) return true; // 모든 교육원 공개
       if (allBranches) return true; // 전체 교육원 조회 허용 강사
+      if (adminBranch && b === adminBranch) return true; // 교육원 관리자: 담당 교육원 전체
       if (c.created_by === context.userId || idSet.has(c.id)) return true;
       return !!myBranch && b === myBranch;
     });
