@@ -461,12 +461,26 @@ function UsersPage() {
                 paged.map((u) => {
 
                   const busy = busyId === u.id;
+                  const expanded = expandedId === u.id;
                   return (
+                    <>
                     <tr key={u.id} className="border-t transition hover:bg-muted/30">
 
 
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex items-center gap-2.5">
+                          {isStudentTab && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(expanded ? null : u.id)}
+                              aria-label={expanded ? "학습 이력 닫기" : "학습 이력 열기"}
+                              className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted"
+                            >
+                              <ChevronRight
+                                className={`h-4 w-4 transition-transform ${expanded ? "rotate-90" : ""}`}
+                              />
+                            </button>
+                          )}
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
