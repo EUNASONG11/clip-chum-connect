@@ -48,6 +48,7 @@ type UserRow = {
   isAdmin: boolean;
   isStudent: boolean;
   isInstructor: boolean;
+  isBranchAdmin: boolean;
   isPending: boolean;
   class_count: number;
   branch: string | null;
@@ -63,7 +64,8 @@ const usersQueryOptions = queryOptions({
   gcTime: 10 * 60_000,
 });
 
-type TabKey = "admin" | "instructor" | "student";
+type TabKey = "admin" | "branch_admin" | "instructor" | "student";
+
 
 export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
@@ -73,11 +75,12 @@ function Badge({
   tone,
   children,
 }: {
-  tone: "admin" | "instructor" | "student";
+  tone: "admin" | "branch_admin" | "instructor" | "student";
   children: React.ReactNode;
 }) {
   const map = {
     admin: "bg-primary/10 text-primary border-primary/20",
+    branch_admin: "bg-amber-100 text-amber-700 border-amber-200",
     instructor: "bg-sky-100 text-sky-700 border-sky-200",
     student: "bg-accent/60 text-accent-foreground border-accent",
   } as const;
@@ -125,6 +128,7 @@ function UsersPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
+    branch_admin: 1,
     instructor: 1,
     student: 1,
   });
@@ -135,14 +139,16 @@ function UsersPage() {
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
+    const branch_admin: UserRow[] = [];
     const instructor: UserRow[] = [];
     const student: UserRow[] = [];
     for (const u of users) {
       if (u.isAdmin) admin.push(u);
+      if (u.isBranchAdmin) branch_admin.push(u);
       if (u.isInstructor) instructor.push(u);
       if (u.isStudent) student.push(u);
     }
-    return { admin, instructor, student };
+    return { admin, branch_admin, instructor, student };
   }, [users]);
 
 
@@ -217,9 +223,21 @@ function UsersPage() {
   };
 
   const roleLabel = (u: UserRow) =>
-    u.isAdmin ? "관리자" : u.isInstructor ? "강사" : "학생";
-  const roleTone = (u: UserRow): "admin" | "instructor" | "student" =>
-    u.isAdmin ? "admin" : u.isInstructor ? "instructor" : "student";
+    u.isAdmin
+      ? "관리자"
+      : u.isBranchAdmin
+        ? "중간 관리자"
+        : u.isInstructor
+          ? "강사"
+          : "학생";
+  const roleTone = (u: UserRow): "admin" | "branch_admin" | "instructor" | "student" =>
+    u.isAdmin
+      ? "admin"
+      : u.isBranchAdmin
+        ? "branch_admin"
+        : u.isInstructor
+          ? "instructor"
+          : "student";
 
 
   return (
@@ -273,11 +291,17 @@ function UsersPage() {
             setCohortFilter([]);
           }}
         >
-          <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-3 sm:gap-0 sm:overflow-visible">
+          <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
             <TabsTrigger value="admin" className="shrink-0 gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> 관리자
               <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                 {buckets.admin.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="branch_admin" className="shrink-0 gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> 중간 관리자
+              <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
+                {buckets.branch_admin.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="instructor" className="shrink-0 gap-1.5">
@@ -303,7 +327,7 @@ function UsersPage() {
               value={search}
               onChange={(v) => {
                 setSearch(v);
-                setPages({ admin: 1, instructor: 1, student: 1 });
+                setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="w-full max-w-sm"
@@ -312,7 +336,7 @@ function UsersPage() {
               value={branchFilter}
               onValueChange={(v) => {
                 setBranchFilter(v);
-                setPages({ admin: 1, instructor: 1, student: 1 });
+                setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
             >
               <SelectTrigger className="h-9 w-full sm:w-48">
@@ -331,7 +355,7 @@ function UsersPage() {
                 selected={cohortFilter}
                 onChange={(v) => {
                   setCohortFilter(v);
-                  setPages({ admin: 1, instructor: 1, student: 1 });
+                  setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
                 }}
                 placeholder="기수 전체"
               />
