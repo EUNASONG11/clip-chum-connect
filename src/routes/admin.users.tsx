@@ -96,6 +96,8 @@ function UsersPage() {
   const qc = useQueryClient();
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
+  const { isAdmin: canManage } = useAdminRole();
+
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
