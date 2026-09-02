@@ -6,12 +6,17 @@ import { Link } from "@tanstack/react-router";
 type RoleState = {
   isAdmin: boolean;
   isInstructor: boolean;
+  isBranchAdmin: boolean;
+  /** 교육원 관리자의 담당 교육원 */
+  branch: string | null;
   isLoading: boolean;
 };
 
 export const AdminRoleContext = createContext<RoleState>({
   isAdmin: false,
   isInstructor: false,
+  isBranchAdmin: false,
+  branch: null,
   isLoading: true,
 });
 
@@ -20,11 +25,11 @@ export function useAdminRole() {
 }
 
 export function AdminOnly({ children }: { children: React.ReactNode }) {
-  const { isAdmin, isLoading } = useAdminRole();
+  const { isAdmin, isBranchAdmin, isLoading } = useAdminRole();
   if (isLoading) {
     return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
   }
-  if (!isAdmin) {
+  if (!isAdmin && !isBranchAdmin) {
     return (
       <div className="mx-auto max-w-md p-10 text-center">
         <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
@@ -42,9 +47,9 @@ export function AdminOnly({ children }: { children: React.ReactNode }) {
 }
 
 export function RoleGate({ children }: { children: React.ReactNode }) {
-  const { isAdmin, isInstructor, isLoading } = useAdminRole();
+  const { isAdmin, isInstructor, isBranchAdmin, isLoading } = useAdminRole();
   if (isLoading) return <p className="p-6 text-muted-foreground">권한을 확인하는 중...</p>;
-  if (!isAdmin && !isInstructor) {
+  if (!isAdmin && !isInstructor && !isBranchAdmin) {
     return (
       <div className="mx-auto max-w-md p-10 text-center">
         <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
