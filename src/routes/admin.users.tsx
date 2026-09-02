@@ -75,11 +75,12 @@ function Badge({
   tone,
   children,
 }: {
-  tone: "admin" | "instructor" | "student";
+  tone: "admin" | "branch_admin" | "instructor" | "student";
   children: React.ReactNode;
 }) {
   const map = {
     admin: "bg-primary/10 text-primary border-primary/20",
+    branch_admin: "bg-amber-100 text-amber-700 border-amber-200",
     instructor: "bg-sky-100 text-sky-700 border-sky-200",
     student: "bg-accent/60 text-accent-foreground border-accent",
   } as const;
@@ -222,9 +223,21 @@ function UsersPage() {
   };
 
   const roleLabel = (u: UserRow) =>
-    u.isAdmin ? "관리자" : u.isInstructor ? "강사" : "학생";
-  const roleTone = (u: UserRow): "admin" | "instructor" | "student" =>
-    u.isAdmin ? "admin" : u.isInstructor ? "instructor" : "student";
+    u.isAdmin
+      ? "관리자"
+      : u.isBranchAdmin
+        ? "중간 관리자"
+        : u.isInstructor
+          ? "강사"
+          : "학생";
+  const roleTone = (u: UserRow): "admin" | "branch_admin" | "instructor" | "student" =>
+    u.isAdmin
+      ? "admin"
+      : u.isBranchAdmin
+        ? "branch_admin"
+        : u.isInstructor
+          ? "instructor"
+          : "student";
 
 
   return (
@@ -278,11 +291,17 @@ function UsersPage() {
             setCohortFilter([]);
           }}
         >
-          <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-3 sm:gap-0 sm:overflow-visible">
+          <TabsList className="flex w-full max-w-2xl flex-nowrap gap-1 overflow-x-auto sm:grid sm:grid-cols-4 sm:gap-0 sm:overflow-visible">
             <TabsTrigger value="admin" className="shrink-0 gap-1.5">
               <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> 관리자
               <span className="ml-1 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
                 {buckets.admin.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="branch_admin" className="shrink-0 gap-1.5">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> 중간 관리자
+              <span className="ml-1 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-700">
+                {buckets.branch_admin.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="instructor" className="shrink-0 gap-1.5">
