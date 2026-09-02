@@ -548,6 +548,7 @@ export const listUsers = createServerFn({ method: "GET" })
           isAdmin,
           isStudent,
           isInstructor,
+          isBranchAdmin,
           isPending,
           class_count: classCount.get(u.id) ?? 0,
           branch: inst?.branch ?? ext?.branch ?? null,
