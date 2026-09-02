@@ -532,6 +532,15 @@ function UsersPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex flex-wrap justify-end gap-1.5">
+                          {isStudentTab && (canManage || isBranchAdmin) && (
+                            <StudentPhoneDialog
+                              authUserId={u.id}
+                              name={u.nickname || "학생"}
+                              phone={((u as any).rawPhone ?? "") as string}
+                              parentPhone={((u as any).rawParentPhone ?? "") as string}
+                              onSaved={() => studentQuery.refetch()}
+                            />
+                          )}
                           {canManage && u.isAdmin && (
                             <Button
                               size="sm"
