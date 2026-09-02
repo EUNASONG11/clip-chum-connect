@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { COHORT_OPTIONS } from "@/lib/cohort";
-import { AdminOnly } from "@/components/AdminRole";
+import { AdminOnly, useAdminRole } from "@/components/AdminRole";
 import { BranchBadge } from "@/components/BranchBadge";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
@@ -60,6 +60,7 @@ function InstructorsPage() {
     queryFn: async () => (await listInstructorRoster()) as Row[],
     staleTime: 30_000,
   });
+  const { isAdmin: canManage } = useAdminRole();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -244,6 +245,11 @@ function InstructorsPage() {
                             {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
                           </td>
                           <td className="py-2 pr-2">
+                            {!canManage ? (
+                              <span className="text-xs text-muted-foreground">
+                                {(r.cohorts ?? []).join(", ") || "미지정"}
+                              </span>
+                            ) : (
                             <CohortMultiSelect
                               options={COHORT_OPTIONS}
                               selected={r.cohorts ?? []}
@@ -263,6 +269,7 @@ function InstructorsPage() {
                                 }
                               }}
                             />
+                            )}
                           </td>
                           <td className="py-2 pr-2">
                             <div className="flex items-center gap-1">
@@ -302,17 +309,19 @@ function InstructorsPage() {
                                   <span className="text-sm text-foreground">
                                     {r.email || "-"}
                                   </span>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingId(r.id);
-                                      setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
-                                    }}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
+                                  {canManage && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingId(r.id);
+                                        setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -323,7 +332,7 @@ function InstructorsPage() {
                                 <span className="text-green-600">
                                   계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                 </span>
-                                {!r.must_change_password && (
+                                {canManage && !r.must_change_password && (
                                   <Button
                                     size="sm"
                                     variant="ghost"

@@ -37,6 +37,14 @@ const adminNavItems = [
   { title: "휴지통", url: "/admin/trash", icon: Trash2 },
 ];
 
+const branchAdminNavItems = [
+  { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
+  { title: "영상 관리", url: "/admin/videos", icon: Film },
+  { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
+  { title: "사용자 관리", url: "/admin/users", icon: Users },
+  { title: "강사 명부", url: "/admin/instructors", icon: GraduationCap },
+];
+
 const instructorNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
   { title: "영상 관리", url: "/admin/videos", icon: Film },
@@ -47,10 +55,16 @@ function AdminSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const { state, setOpenMobile } = useSidebar();
   const isExpanded = state === "expanded";
-  const { isAdmin, isInstructor } = useAdminRole();
-  const items = isAdmin ? adminNavItems : instructorNavItems;
-  const label = isAdmin ? "관리자" : isInstructor ? "강사" : "메뉴";
-  const badgeText = isAdmin ? "관리자" : isInstructor ? "강사" : "";
+  const { isAdmin, isInstructor, isBranchAdmin } = useAdminRole();
+  const items = isAdmin ? adminNavItems : isBranchAdmin ? branchAdminNavItems : instructorNavItems;
+  const label = isAdmin
+    ? "관리자"
+    : isBranchAdmin
+      ? "교육원 관리자"
+      : isInstructor
+        ? "강사"
+        : "메뉴";
+  const badgeText = isAdmin ? "관리자" : isBranchAdmin ? "교육원 관리자" : isInstructor ? "강사" : "";
 
   const handleNavClick = () => {
     if (typeof window !== "undefined" && window.innerWidth < 768) {
@@ -100,6 +114,8 @@ function AdminLayout() {
   const [checking, setChecking] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isInstructor, setIsInstructor] = useState(false);
+  const [isBranchAdmin, setIsBranchAdmin] = useState(false);
+  const [branch, setBranch] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -112,9 +128,11 @@ function AdminLayout() {
       try {
         try { await ensureStudentRole(); } catch {}
         const s = await getMyStatus();
-        if (s.isAdmin || s.isInstructor) {
+        if (s.isAdmin || s.isInstructor || (s as any).isBranchAdmin) {
           setIsAdmin(s.isAdmin);
           setIsInstructor(s.isInstructor);
+          setIsBranchAdmin(Boolean((s as any).isBranchAdmin));
+          setBranch(((s as any).branch as string | null) ?? null);
         } else if (s.isStudent) {
           // 학생 계정은 관리자 화면 대신 홈으로
           navigate({ to: "/", replace: true });
@@ -150,7 +168,7 @@ function AdminLayout() {
     );
   }
 
-  if (!isAdmin && !isInstructor) {
+  if (!isAdmin && !isInstructor && !isBranchAdmin) {
     return (
       <div className="min-h-screen">
         <SiteHeader />
@@ -169,7 +187,7 @@ function AdminLayout() {
   }
 
   return (
-    <AdminRoleContext.Provider value={{ isAdmin, isInstructor, isLoading: false }}>
+    <AdminRoleContext.Provider value={{ isAdmin, isInstructor, isBranchAdmin, branch, isLoading: false }}>
       <SidebarProvider>
         <div className="flex min-h-screen w-full bg-background">
           <AdminSidebar />
@@ -189,8 +207,8 @@ function AdminLayout() {
 }
 
 function MobileHeader() {
-  const { isAdmin, isInstructor } = useAdminRole();
-  const label = isAdmin ? "관리자" : isInstructor ? "강사" : "";
+  const { isAdmin, isInstructor, isBranchAdmin } = useAdminRole();
+  const label = isAdmin ? "관리자" : isBranchAdmin ? "교육원 관리자" : isInstructor ? "강사" : "";
 
   return (
     <div className="flex items-center gap-2 border-b bg-card px-2 py-2 md:hidden">

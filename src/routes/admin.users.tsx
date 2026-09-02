@@ -30,7 +30,7 @@ import {
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
 import { BranchBadge } from "@/components/BranchBadge";
-import { AdminOnly } from "@/components/AdminRole";
+import { AdminOnly, useAdminRole } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
@@ -96,6 +96,8 @@ function UsersPage() {
   const qc = useQueryClient();
   const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
+  const { isAdmin: canManage } = useAdminRole();
+
   const [search, setSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
@@ -231,8 +233,8 @@ function UsersPage() {
           <CardTitle className="text-lg">사용자 관리</CardTitle>
           {isFetching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
           <div className="ml-auto flex items-center gap-2">
-            {tab === "student" && <LocalStudentDialog onCreated={refetch} />}
-            {tab === "instructor" && <LocalInstructorDialog onCreated={refetch} />}
+            {canManage && tab === "student" && <LocalStudentDialog onCreated={refetch} />}
+            {canManage && tab === "instructor" && <LocalInstructorDialog onCreated={refetch} />}
             {/* <Button
 
               size="sm"
@@ -405,6 +407,11 @@ function UsersPage() {
                       </td>
                       {tab === "instructor" && (
                         <td className="whitespace-nowrap px-4 py-3">
+                          {!canManage ? (
+                            <span className="text-xs text-muted-foreground">
+                              {(((u as any).cohorts ?? []) as string[]).join(", ") || "미지정"}
+                            </span>
+                          ) : (
                           <CohortMultiSelect
                             options={COHORT_OPTIONS}
                             selected={((u as any).cohorts ?? []) as string[]}
@@ -424,6 +431,7 @@ function UsersPage() {
                               }
                             }}
                           />
+                          )}
                         </td>
                       )}
                       {tab !== "instructor" && (
@@ -434,7 +442,7 @@ function UsersPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex flex-wrap justify-end gap-1.5">
-                          {u.isAdmin && (
+                          {canManage && u.isAdmin && (
                             <Button
                               size="sm"
                               variant="outline"

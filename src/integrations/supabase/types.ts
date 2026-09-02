@@ -1025,6 +1025,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      branch_admin_branch: { Args: { _uid: string }; Returns: string }
       can_access_video: {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
@@ -1096,7 +1097,13 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user" | "student" | "pending" | "instructor"
+      app_role:
+        | "admin"
+        | "user"
+        | "student"
+        | "pending"
+        | "instructor"
+        | "branch_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1224,7 +1231,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user", "student", "pending", "instructor"],
+      app_role: [
+        "admin",
+        "user",
+        "student",
+        "pending",
+        "instructor",
+        "branch_admin",
+      ],
     },
   },
 } as const
