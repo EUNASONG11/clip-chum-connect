@@ -569,6 +569,121 @@ export const listUsers = createServerFn({ method: "GET" })
       });
   });
 
+// 6-2c) 학생 교육원 목록 (필터용)
+export const listStudentBranches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const scope = await getStaffScope(context);
+    if (scope.branch) return [scope.branch];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("external_students")
+      .select("branch")
+      .eq("is_deleted", false)
+      .not("branch", "is", null)
+      .limit(10000);
+    const set = new Set<string>();
+    (data ?? []).forEach((r: any) => {
+      const b = (r.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  });
+
+// 6-2b) 학생 목록 (서버 사이드 검색·페이지네이션) — external_students 기반이라 매우 빠름
+export const listStudentUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        search: z.string().optional().default(""),
+        branch: z.string().optional().default(""),
+        page: z.number().int().min(1).optional().default(1),
+        pageSize: z.number().int().min(1).max(100).optional().default(20),
+      })
+      .parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const scope = await getStaffScope(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const branch = scope.branch ?? (data.branch || "");
+    const terms = data.search.trim().split(/\s+/).filter(Boolean);
+
+    let q = supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, phone, branch, enrollment_status, created_at", { count: "exact" })
+      .not("auth_user_id", "is", null)
+      .eq("is_deleted", false)
+      .not("enrollment_status", "is", null)
+      .neq("enrollment_status", "휴원");
+
+    if (branch) q = q.eq("branch", branch);
+    for (const t of terms) {
+      const digits = t.replace(/[^0-9]/g, "");
+      const like = `%${t}%`;
+      q = digits.length >= 2 && digits.length === t.replace(/[-\s]/g, "").length
+        ? q.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`)
+        : q.or(`name.ilike.${like}`);
+    }
+
+    const from = (data.page - 1) * data.pageSize;
+    const { data: rows, count, error } = await q
+      .order("name", { ascending: true })
+      .range(from, from + data.pageSize - 1);
+    if (error) throw new Error(error.message);
+
+    const ids = (rows ?? []).map((r: any) => r.auth_user_id as string);
+    const [{ data: csRows }, { data: roleRows }] = await Promise.all([
+      ids.length
+        ? supabaseAdmin.from("class_students").select("user_id").in("user_id", ids).is("deleted_at", null)
+        : Promise.resolve({ data: [] as any[] }),
+      ids.length
+        ? supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids).is("deleted_at", null)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+    const classCount = new Map<string, number>();
+    (csRows ?? []).forEach((r: any) => classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1));
+    const roleMap = new Map<string, string[]>();
+    (roleRows ?? []).forEach((r: any) => {
+      const list = roleMap.get(r.user_id) ?? [];
+      list.push(r.role);
+      roleMap.set(r.user_id, list);
+    });
+
+    const formatPhone = (p: string | null | undefined) => {
+      if (!p) return "";
+      const d = p.replace(/[^0-9]/g, "");
+      if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;
+      if (d.length === 10) return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+      return p;
+    };
+
+    return {
+      total: count ?? 0,
+      rows: (rows ?? []).map((r: any) => {
+        const roles = roleMap.get(r.auth_user_id) ?? [];
+        return {
+          id: r.auth_user_id as string,
+          email: "",
+          nickname: r.name ?? "",
+          phone: formatPhone(r.phone),
+          created_at: r.created_at ?? "",
+          roles,
+          isAdmin: roles.includes("admin"),
+          isStudent: true,
+          isInstructor: roles.includes("instructor"),
+          isBranchAdmin: roles.includes("branch_admin"),
+          isPending: false,
+          class_count: classCount.get(r.auth_user_id) ?? 0,
+          branch: r.branch ?? null,
+          cohort: null,
+          cohorts: [],
+        };
+      }),
+    };
+  });
+
 
 
 // 6-3) 관리자 권한 부여 (이메일로)

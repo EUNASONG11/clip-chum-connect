@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
+import { keepPreviousData, queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import {
   listUsers,
+  listStudentUsers,
+  listStudentBranches,
   revokeAdmin,
   bulkCreateInstructorAccounts,
   updateInstructorCohort,
@@ -97,15 +99,26 @@ const PAGE_SIZE = 20;
 
 function UsersPage() {
   const qc = useQueryClient();
-  const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
+  const isStudentTab = tab === "student";
+  const { data: users = [], isFetching: usersFetching } = useQuery({
+    ...usersQueryOptions,
+    enabled: !isStudentTab,
+  });
   const { isAdmin: canManage } = useAdminRole();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
 
   async function runBackfill() {
     if (backfillBusy) return;
@@ -151,8 +164,33 @@ function UsersPage() {
     return { admin, branch_admin, instructor, student };
   }, [users]);
 
+  // 학생 탭: 서버 사이드 검색·페이지네이션 (전체 사용자 로딩 없이 빠르게 조회)
+  const studentQuery = useQuery({
+    queryKey: ["admin", "students", debouncedSearch, branchFilter, page],
+    queryFn: async () =>
+      (await listStudentUsers({
+        data: {
+          search: debouncedSearch,
+          branch: branchFilter === "__all__" ? "" : branchFilter,
+          page,
+          pageSize: PAGE_SIZE,
+        },
+      })) as { total: number; rows: UserRow[] },
+    enabled: isStudentTab,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
 
-  const branchOptions = useMemo(() => {
+  const studentBranchQuery = useQuery({
+    queryKey: ["admin", "student-branches"],
+    queryFn: async () => (await listStudentBranches()) as string[],
+    enabled: isStudentTab,
+    staleTime: 10 * 60_000,
+  });
+
+  const isFetching = isStudentTab ? studentQuery.isFetching : usersFetching;
+
+  const derivedBranchOptions = useMemo(() => {
     const set = new Set<string>();
     users.forEach((u) => {
       const b = (u.branch ?? "").trim();
@@ -160,6 +198,8 @@ function UsersPage() {
     });
     return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
   }, [users]);
+
+  const branchOptions = isStudentTab ? (studentBranchQuery.data ?? []) : derivedBranchOptions;
 
   const cohortOptions = useMemo(() => {
     const set = new Set<string>();
@@ -176,6 +216,7 @@ function UsersPage() {
   const isStaffTab = tab === "instructor" || tab === "branch_admin";
 
   const filtered = useMemo(() => {
+    if (isStudentTab) return studentQuery.data?.rows ?? [];
     const rows = buckets[tab];
     const terms = search
       .trim()
@@ -200,15 +241,21 @@ function UsersPage() {
       const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
       return terms.some((term) => haystack.includes(term));
     });
-  }, [buckets, tab, search, branchFilter, cohortFilter]);
+  }, [buckets, tab, search, branchFilter, cohortFilter, isStudentTab, studentQuery.data]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const studentTotal = studentQuery.data?.total ?? 0;
+  const totalCount = isStudentTab ? studentTotal : filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * PAGE_SIZE;
-  const paged = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const paged = isStudentTab ? filtered : filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
 
-  const refetch = () => qc.refetchQueries({ queryKey: ["admin", "users"] });
+  const refetch = () => {
+    qc.refetchQueries({ queryKey: ["admin", "users"] });
+    qc.invalidateQueries({ queryKey: ["admin", "students"] });
+  };
+
 
   const doRevokeAdmin = async (u: UserRow) => {
     if (!confirm(`${u.email} 의 관리자 권한을 회수하시겠습니까?`)) return;
@@ -315,7 +362,7 @@ function UsersPage() {
             <TabsTrigger value="student" className="shrink-0 gap-1.5">
               <GraduationCap className="h-3.5 w-3.5 shrink-0" /> 학생
               <span className="ml-1 rounded-full bg-accent px-1.5 text-[10px] font-semibold text-accent-foreground">
-                {buckets.student.length}
+                {isStudentTab ? studentTotal : buckets.student.length}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -489,11 +536,11 @@ function UsersPage() {
           </table>
         </div>
 
-        {filtered.length > 0 && (
+        {totalCount > 0 && (
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p className="text-xs text-muted-foreground">
-              총 <b>{filtered.length}</b>명 · {pageStart + 1}–
-              {Math.min(pageStart + PAGE_SIZE, filtered.length)} 표시
+              총 <b>{totalCount}</b>명 · {pageStart + 1}–
+              {Math.min(pageStart + PAGE_SIZE, totalCount)} 표시
             </p>
             <div className="flex items-center gap-1.5">
               <Button
