@@ -48,6 +48,7 @@ type UserRow = {
   isAdmin: boolean;
   isStudent: boolean;
   isInstructor: boolean;
+  isBranchAdmin: boolean;
   isPending: boolean;
   class_count: number;
   branch: string | null;
@@ -63,7 +64,8 @@ const usersQueryOptions = queryOptions({
   gcTime: 10 * 60_000,
 });
 
-type TabKey = "admin" | "instructor" | "student";
+type TabKey = "admin" | "branch_admin" | "instructor" | "student";
+
 
 export const Route = createFileRoute("/admin/users")({
   component: UsersPage,
