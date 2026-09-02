@@ -39,7 +39,7 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
 
   return (
     <div className="space-y-4 px-4 py-4">
-      {classes.map((c) => (
+      {classes.map((c: any) => (
         <div key={c.classId} className="rounded-lg border border-border/60 bg-background">
           <div className="flex flex-wrap items-center gap-2 border-b px-3 py-2">
             <span className="font-medium">{c.className}</span>
@@ -70,7 +70,7 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {c.videos.map((v) => (
+                  {c.videos.map((v: any) => (
                     <tr key={v.videoId} className="border-t">
                       <td className="max-w-[220px] truncate px-3 py-2">{v.title || "-"}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
