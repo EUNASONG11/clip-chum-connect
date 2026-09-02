@@ -26,9 +26,22 @@ async function isInstructor(context: { supabase: any; userId: string }) {
   return !!data;
 }
 
+async function isBranchAdmin(context: { supabase: any; userId: string }) {
+  const { data } = await context.supabase.rpc("has_role", {
+    _user_id: context.userId,
+    _role: "branch_admin",
+  });
+  return !!data;
+}
+
 async function assertAdminOrInstructor(context: { supabase: any; userId: string }) {
-  const [admin, instructor] = await Promise.all([isAdmin(context), isInstructor(context)]);
-  if (!admin && !instructor) throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
+  const [admin, instructor, branchAdmin] = await Promise.all([
+    isAdmin(context),
+    isInstructor(context),
+    isBranchAdmin(context),
+  ]);
+  if (!admin && !instructor && !branchAdmin)
+    throw new Error("관리자 또는 강사만 접근할 수 있습니다.");
 }
 
 function isClassActive(active_from: string | null, active_to: string | null) {
