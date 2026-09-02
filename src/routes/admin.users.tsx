@@ -127,6 +127,7 @@ function UsersPage() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [pages, setPages] = useState<Record<TabKey, number>>({
     admin: 1,
+    branch_admin: 1,
     instructor: 1,
     student: 1,
   });
@@ -137,14 +138,16 @@ function UsersPage() {
 
   const buckets = useMemo(() => {
     const admin: UserRow[] = [];
+    const branch_admin: UserRow[] = [];
     const instructor: UserRow[] = [];
     const student: UserRow[] = [];
     for (const u of users) {
       if (u.isAdmin) admin.push(u);
+      if (u.isBranchAdmin) branch_admin.push(u);
       if (u.isInstructor) instructor.push(u);
       if (u.isStudent) student.push(u);
     }
-    return { admin, instructor, student };
+    return { admin, branch_admin, instructor, student };
   }, [users]);
 
 
@@ -305,7 +308,7 @@ function UsersPage() {
               value={search}
               onChange={(v) => {
                 setSearch(v);
-                setPages({ admin: 1, instructor: 1, student: 1 });
+                setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
               placeholder="이름, 전화번호, 이메일 검색"
               className="w-full max-w-sm"
@@ -314,7 +317,7 @@ function UsersPage() {
               value={branchFilter}
               onValueChange={(v) => {
                 setBranchFilter(v);
-                setPages({ admin: 1, instructor: 1, student: 1 });
+                setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
             >
               <SelectTrigger className="h-9 w-full sm:w-48">
@@ -333,7 +336,7 @@ function UsersPage() {
                 selected={cohortFilter}
                 onChange={(v) => {
                   setCohortFilter(v);
-                  setPages({ admin: 1, instructor: 1, student: 1 });
+                  setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
                 }}
                 placeholder="기수 전체"
               />
