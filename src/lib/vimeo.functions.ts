@@ -529,6 +529,7 @@ export const listUsers = createServerFn({ method: "GET" })
         const isAdmin = roles.includes("admin");
         const isStudent = roles.includes("student");
         const isInstructor = roles.includes("instructor");
+        const isBranchAdmin = roles.includes("branch_admin");
         const isPending = !isAdmin && !isStudent && !isInstructor;
         const ext = extMap.get(u.id);
         const inst = instMap.get(u.id);
