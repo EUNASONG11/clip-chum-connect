@@ -173,6 +173,8 @@ function UsersPage() {
   }, [buckets.instructor]);
 
 
+  const isStaffTab = tab === "instructor" || tab === "branch_admin";
+
   const filtered = useMemo(() => {
     const rows = buckets[tab];
     const terms = search
@@ -185,7 +187,7 @@ function UsersPage() {
         ? rows
         : rows.filter((u) => (u.branch ?? "") === branchFilter);
     const byCohort =
-      tab !== "instructor" || cohortFilter.length === 0
+      !(tab === "instructor" || tab === "branch_admin") || cohortFilter.length === 0
         ? byBranch
         : byBranch.filter((u) => {
             const list = ((u as any).cohorts ?? []) as string[];
@@ -349,7 +351,7 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
-            {tab === "instructor" && (
+            {isStaffTab && (
               <CohortMultiSelect
                 options={cohortOptions.length > 0 ? cohortOptions : COHORT_OPTIONS}
                 selected={cohortFilter}
@@ -390,10 +392,10 @@ function UsersPage() {
                 <th className="min-w-[120px] whitespace-nowrap px-4 py-3">이름</th>
                 <th className="min-w-[110px] whitespace-nowrap px-4 py-3">전화번호</th>
                 <th className="min-w-[80px] whitespace-nowrap px-4 py-3">역할</th>
-                {tab === "instructor" && (
+                {isStaffTab && (
                   <th className="min-w-[110px] whitespace-nowrap px-4 py-3">기수</th>
                 )}
-                {tab !== "instructor" && (
+                {!isStaffTab && (
                   <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
                 )}
                 <th className="min-w-[100px] whitespace-nowrap px-4 py-3">가입일</th>
@@ -429,7 +431,7 @@ function UsersPage() {
                       <td className="whitespace-nowrap px-4 py-3">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
-                      {tab === "instructor" && (
+                      {isStaffTab && (
                         <td className="whitespace-nowrap px-4 py-3">
                           {!canManage ? (
                             <span className="text-xs text-muted-foreground">
@@ -458,7 +460,7 @@ function UsersPage() {
                           )}
                         </td>
                       )}
-                      {tab !== "instructor" && (
+                      {!isStaffTab && (
                         <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
                       )}
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
