@@ -99,15 +99,26 @@ const PAGE_SIZE = 20;
 
 function UsersPage() {
   const qc = useQueryClient();
-  const { data: users = [], isFetching } = useQuery(usersQueryOptions);
   const [tab, setTab] = useState<TabKey>("student");
+  const isStudentTab = tab === "student";
+  const { data: users = [], isFetching: usersFetching } = useQuery({
+    ...usersQueryOptions,
+    enabled: !isStudentTab,
+  });
   const { isAdmin: canManage } = useAdminRole();
 
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
 
   async function runBackfill() {
     if (backfillBusy) return;
