@@ -612,7 +612,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
 
     let q = supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone, branch, enrollment_status, created_at", { count: "exact" })
+      .select("auth_user_id, name, phone, parent_phone, branch, enrollment_status, created_at", { count: "exact" })
       .not("auth_user_id", "is", null)
       .eq("is_deleted", false)
       .not("enrollment_status", "is", null)
@@ -668,6 +668,8 @@ export const listStudentUsers = createServerFn({ method: "GET" })
           email: "",
           nickname: r.name ?? "",
           phone: formatPhone(r.phone),
+          rawPhone: (r.phone as string | null) ?? "",
+          rawParentPhone: (r.parent_phone as string | null) ?? "",
           created_at: r.created_at ?? "",
           roles,
           isAdmin: roles.includes("admin"),
@@ -1505,4 +1507,83 @@ export const createLocalInstructor = createServerFn({ method: "POST" })
     if (roleErr) return { ok: false as const, error: roleErr.message };
 
     return { ok: true as const, userId: authUserId, email, initialPassword: password };
+  });
+
+// ============= 학생 전화번호 수정 (로그인과 연결) =============
+// 관리자 또는 교육원 관리자(본인 담당 교육원 학생만)가 수정할 수 있습니다.
+// 학생 로그인은 이름 + 전화번호(본인/학부모)이며 비밀번호는 전화번호 뒤 8자리이므로,
+// 번호 변경 시 Auth 비밀번호도 함께 동기화합니다.
+export const updateStudentPhone = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        authUserId: z.string().uuid(),
+        phone: z.string().trim().max(30).optional().default(""),
+        parentPhone: z.string().trim().max(30).optional().default(""),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const scope = await getStaffScope(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const digits = (v: string) => v.replace(/[^0-9]/g, "") || null;
+    const phone = digits(data.phone);
+    const parentPhone = digits(data.parentPhone);
+    const loginPhone = phone ?? parentPhone;
+
+    const { data: student, error: sErr } = await supabaseAdmin
+      .from("external_students")
+      .select("id, name, branch, temp_password, is_deleted")
+      .eq("auth_user_id", data.authUserId)
+      .eq("is_deleted", false)
+      .maybeSingle();
+    if (sErr) throw new Error(sErr.message);
+    if (!student) return { ok: false as const, error: "학생 정보를 찾을 수 없습니다." };
+
+    if (!scope.isAdmin && student.branch !== scope.branch) {
+      return { ok: false as const, error: "담당 교육원 학생만 수정할 수 있습니다." };
+    }
+
+    if (!loginPhone && !student.temp_password) {
+      return {
+        ok: false as const,
+        error: "전화번호(본인 또는 학부모)를 최소 하나는 입력해야 합니다.",
+      };
+    }
+
+    if (loginPhone) {
+      const { data: dup } = await supabaseAdmin
+        .from("external_students")
+        .select("id")
+        .eq("name", student.name)
+        .eq("is_deleted", false)
+        .neq("id", student.id)
+        .or(`phone.eq.${loginPhone},parent_phone.eq.${loginPhone}`)
+        .limit(1);
+      if (dup && dup.length > 0) {
+        return {
+          ok: false as const,
+          error: "동일한 이름과 전화번호의 학생이 이미 있어 로그인이 충돌합니다.",
+        };
+      }
+    }
+
+    const { error: upErr } = await supabaseAdmin
+      .from("external_students")
+      .update({ phone, parent_phone: parentPhone })
+      .eq("id", student.id);
+    if (upErr) throw new Error(upErr.message);
+
+    let newPassword: string | null = null;
+    if (loginPhone && loginPhone.length >= 8) {
+      newPassword = loginPhone.slice(-8);
+      const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(data.authUserId, {
+        password: newPassword,
+      });
+      if (pwErr) throw new Error(pwErr.message);
+    }
+
+    return { ok: true as const, phone, parentPhone, newPassword };
   });

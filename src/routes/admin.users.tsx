@@ -39,6 +39,7 @@ import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
 import { LocalInstructorDialog } from "@/components/admin/LocalInstructorDialog";
 import { StudentLearningDetail } from "@/components/admin/StudentLearningDetail";
+import { StudentPhoneDialog } from "@/components/admin/StudentPhoneDialog";
 
 
 
@@ -107,7 +108,7 @@ function UsersPage() {
     ...usersQueryOptions,
     enabled: !isStudentTab,
   });
-  const { isAdmin: canManage } = useAdminRole();
+  const { isAdmin: canManage, isBranchAdmin } = useAdminRole();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -532,6 +533,15 @@ function UsersPage() {
                       </td>
                       <td className="whitespace-nowrap px-4 py-3">
                         <div className="flex flex-wrap justify-end gap-1.5">
+                          {isStudentTab && (canManage || isBranchAdmin) && (
+                            <StudentPhoneDialog
+                              authUserId={u.id}
+                              name={u.nickname || "학생"}
+                              phone={((u as any).rawPhone ?? "") as string}
+                              parentPhone={((u as any).rawParentPhone ?? "") as string}
+                              onSaved={() => studentQuery.refetch()}
+                            />
+                          )}
                           {canManage && u.isAdmin && (
                             <Button
                               size="sm"
