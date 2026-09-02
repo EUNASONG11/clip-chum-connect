@@ -81,8 +81,8 @@ export const createNotice = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => noticeInput.parse(input))
   .handler(async ({ data, context }) => {
-    const scope = await assertNoticeManager(context as any);
-    const branch = scope.isAdmin ? (data.branch || null) : (data.branch || null) ?? null;
+    await assertNoticeManager(context as any);
+    const branch = data.branch || null;
     const { error } = await context.supabase.from("notices").insert({
       title: data.title,
       body: data.body,
