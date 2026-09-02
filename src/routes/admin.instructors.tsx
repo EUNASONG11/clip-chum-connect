@@ -309,17 +309,19 @@ function InstructorsPage() {
                                   <span className="text-sm text-foreground">
                                     {r.email || "-"}
                                   </span>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setEditingId(r.id);
-                                      setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
-                                    }}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
+                                  {canManage && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setEditingId(r.id);
+                                        setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                      }}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -330,7 +332,7 @@ function InstructorsPage() {
                                 <span className="text-green-600">
                                   계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                 </span>
-                                {!r.must_change_password && (
+                                {canManage && !r.must_change_password && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
