@@ -569,6 +569,27 @@ export const listUsers = createServerFn({ method: "GET" })
       });
   });
 
+// 6-2c) 학생 교육원 목록 (필터용)
+export const listStudentBranches = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const scope = await getStaffScope(context);
+    if (scope.branch) return [scope.branch];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data } = await supabaseAdmin
+      .from("external_students")
+      .select("branch")
+      .eq("is_deleted", false)
+      .not("branch", "is", null)
+      .limit(10000);
+    const set = new Set<string>();
+    (data ?? []).forEach((r: any) => {
+      const b = (r.branch ?? "").trim();
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  });
+
 // 6-2b) 학생 목록 (서버 사이드 검색·페이지네이션) — external_students 기반이라 매우 빠름
 export const listStudentUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
