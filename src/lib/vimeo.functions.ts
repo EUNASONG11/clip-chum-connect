@@ -668,6 +668,8 @@ export const listStudentUsers = createServerFn({ method: "GET" })
           email: "",
           nickname: r.name ?? "",
           phone: formatPhone(r.phone),
+          rawPhone: (r.phone as string | null) ?? "",
+          rawParentPhone: (r.parent_phone as string | null) ?? "",
           created_at: r.created_at ?? "",
           roles,
           isAdmin: roles.includes("admin"),
