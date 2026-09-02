@@ -39,6 +39,7 @@ import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
 import { LocalInstructorDialog } from "@/components/admin/LocalInstructorDialog";
 import { StudentLearningDetail } from "@/components/admin/StudentLearningDetail";
+import { StudentPhoneDialog } from "@/components/admin/StudentPhoneDialog";
 
 
 
