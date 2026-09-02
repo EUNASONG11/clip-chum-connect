@@ -543,6 +543,14 @@ function UsersPage() {
                         </div>
                       </td>
                     </tr>
+                    {isStudentTab && expanded && (
+                      <tr className="border-t bg-muted/20">
+                        <td colSpan={6} className="p-0">
+                          <StudentLearningDetail userId={u.id} />
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>
                   );
                 })
               )}
