@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NoticeRouteImport } from './routes/notice'
 import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
@@ -29,6 +30,11 @@ import { Route as AdminVideoIdRouteImport } from './routes/admin.video.$id'
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
+const NoticeRoute = NoticeRouteImport.update({
+  id: '/notice',
+  path: '/notice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MypageRoute = MypageRouteImport.update({
   id: '/mypage',
   path: '/mypage',
@@ -132,6 +138,7 @@ export interface FileRoutesByFullPath {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/teams': typeof AdminTeamsRoute
@@ -197,6 +206,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
@@ -217,6 +227,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
@@ -238,6 +249,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/teams'
@@ -260,6 +272,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
   MypageRoute: typeof MypageRoute
+  NoticeRoute: typeof NoticeRoute
   ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
   ApiPublicWebhooksStudentsSyncRoute: typeof ApiPublicWebhooksStudentsSyncRoute
@@ -267,6 +280,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/notice': {
+      id: '/notice'
+      path: '/notice'
+      fullPath: '/notice'
+      preLoaderRoute: typeof NoticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mypage': {
       id: '/mypage'
       path: '/mypage'
@@ -439,6 +459,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
   MypageRoute: MypageRoute,
+  NoticeRoute: NoticeRoute,
   ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
   ApiPublicWebhooksStudentsSyncRoute: ApiPublicWebhooksStudentsSyncRoute,
