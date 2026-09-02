@@ -536,11 +536,11 @@ function UsersPage() {
           </table>
         </div>
 
-        {filtered.length > 0 && (
+        {totalCount > 0 && (
           <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
             <p className="text-xs text-muted-foreground">
-              총 <b>{filtered.length}</b>명 · {pageStart + 1}–
-              {Math.min(pageStart + PAGE_SIZE, filtered.length)} 표시
+              총 <b>{totalCount}</b>명 · {pageStart + 1}–
+              {Math.min(pageStart + PAGE_SIZE, totalCount)} 표시
             </p>
             <div className="flex items-center gap-1.5">
               <Button
