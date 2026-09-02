@@ -76,8 +76,21 @@ export function StudentPhoneDialog({ authUserId, name, phone, parentPhone, onSav
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="rounded-md border border-green-100 bg-green-50/60 p-3 dark:border-green-900 dark:bg-green-950/30">
+            <p className="text-xs font-medium text-muted-foreground">현재 등록된 번호</p>
+            <div className="mt-1.5 grid gap-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">학생</span>
+                <span className="font-medium">{phone || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">학부모</span>
+                <span className="font-medium">{parentPhone || "-"}</span>
+              </div>
+            </div>
+          </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sp-phone">학생 전화번호</Label>
+            <Label htmlFor="sp-phone">새 학생 전화번호</Label>
             <Input
               id="sp-phone"
               value={p}
@@ -87,7 +100,7 @@ export function StudentPhoneDialog({ authUserId, name, phone, parentPhone, onSav
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="sp-parent">학부모 전화번호</Label>
+            <Label htmlFor="sp-parent">새 학부모 전화번호</Label>
             <Input
               id="sp-parent"
               value={pp}
