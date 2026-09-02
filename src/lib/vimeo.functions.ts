@@ -612,7 +612,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
 
     let q = supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, phone, branch, enrollment_status, created_at", { count: "exact" })
+      .select("auth_user_id, name, phone, parent_phone, branch, enrollment_status, created_at", { count: "exact" })
       .not("auth_user_id", "is", null)
       .eq("is_deleted", false)
       .not("enrollment_status", "is", null)
