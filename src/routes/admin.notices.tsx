@@ -252,7 +252,6 @@ function AdminNoticesPage() {
               저장
             </Button>
           </DialogFooter>
-        </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
