@@ -33,6 +33,15 @@ async function assertAdminOrInstructorOnClass(
     _role: "admin",
   });
   if (adminData) return;
+  // 교육원 관리자: 담당 교육원(또는 미지정) 수강반이면 허용
+  const [{ data: baData }, { data: canAccess }] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "branch_admin" }),
+    context.supabase.rpc("instructor_can_access_class", {
+      _uid: context.userId,
+      _class_id: classId,
+    }),
+  ]);
+  if (baData && canAccess) return;
   const { data: cls } = await supabaseAdmin
     .from("classes")
     .select("created_by, category_id")
