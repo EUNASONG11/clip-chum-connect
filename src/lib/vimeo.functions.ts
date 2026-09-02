@@ -47,24 +47,13 @@ async function assertOwnClassOrAdmin(
   }).then((r: any) => r.data));
   if (!instructor) throw new Error("해당 수강반에 대한 권한이 없습니다.");
   if (!classId) throw new Error("수강반을 지정해야 합니다.");
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: cls } = await supabaseAdmin
-    .from("classes")
-    .select("created_by")
-    .eq("id", classId)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (cls?.created_by === context.userId) return;
-  const { data: assigned } = await supabaseAdmin
-    .from("class_instructors")
-    .select("class_id")
-    .eq("class_id", classId)
-    .eq("instructor_user_id", context.userId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (assigned) return;
+  const { data: canAccess } = await context.supabase.rpc("instructor_can_access_class", {
+    _uid: context.userId,
+    _class_id: classId,
+  });
+  if (canAccess) return;
   throw new Error("해당 수강반에 대한 권한이 없습니다.");
+
 }
 
 export async function vimeoFetch(path: string, init: RequestInit = {}) {
