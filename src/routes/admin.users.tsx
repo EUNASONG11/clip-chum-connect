@@ -107,7 +107,7 @@ function UsersPage() {
     ...usersQueryOptions,
     enabled: !isStudentTab,
   });
-  const { isAdmin: canManage } = useAdminRole();
+  const { isAdmin: canManage, isBranchAdmin } = useAdminRole();
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
