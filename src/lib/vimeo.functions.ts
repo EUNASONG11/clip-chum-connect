@@ -13,6 +13,17 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
   if (!data) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
+async function getStaffScope(context: { supabase: any; userId: string }) {
+  const [{ data: admin }, { data: branchAdmin }] = await Promise.all([
+    context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
+    context.supabase.rpc("branch_admin_branch", { _uid: context.userId }),
+  ]);
+  if (admin) return { isAdmin: true as const, branch: null as string | null };
+  const branch = (branchAdmin as string | null) ?? null;
+  if (branch) return { isAdmin: false as const, branch };
+  throw new Error("관리자 또는 교육원 관리자만 접근할 수 있습니다.");
+}
+
 async function assertAdminOrInstructor(context: { supabase: any; userId: string }) {
   const [{ data: admin }, { data: instructor }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
@@ -353,10 +364,21 @@ export const getMyStatus = createServerFn({ method: "GET" })
       .select("role")
       .eq("user_id", context.userId);
     const roles = (data ?? []).map((r: any) => r.role as string);
+    let branch: string | null = null;
+    if (roles.includes("branch_admin")) {
+      const { data: inst } = await supabaseAdmin
+        .from("instructors")
+        .select("branch")
+        .eq("auth_user_id", context.userId)
+        .maybeSingle();
+      branch = (inst as any)?.branch ?? null;
+    }
     return {
       isAdmin: roles.includes("admin"),
       isStudent: roles.includes("student"),
       isInstructor: roles.includes("instructor"),
+      isBranchAdmin: roles.includes("branch_admin"),
+      branch,
       isPending: !roles.includes("admin") && !roles.includes("student") && !roles.includes("instructor"),
     };
   });
@@ -366,7 +388,7 @@ export const getMyStatus = createServerFn({ method: "GET" })
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    const scope = await getStaffScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const retry = async <T,>(fn: () => Promise<T>, label: string, tries = 4): Promise<T> => {
@@ -544,6 +566,8 @@ export const listUsers = createServerFn({ method: "GET" })
         };
       })
       .filter((u: any) => {
+        // 교육원 관리자는 자기 교육원 소속만 조회
+        if (scope.branch && (u.branch ?? null) !== scope.branch) return false;
         // 관리자·강사는 external_students 상태와 무관하게 항상 표시
         if (u.isAdmin || u.isInstructor) return true;
         const status = extMap.get(u.id)?.enrollment_status ?? null;
@@ -997,12 +1021,14 @@ export const resetInstructorPassword = createServerFn({ method: "POST" })
 export const listInstructorRoster = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    const scope = await getStaffScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
+    let q = supabaseAdmin
       .from("instructors")
       .select("id, name, email, phone, branch, cohort, cohorts, auth_user_id, must_change_password")
       .order("name", { ascending: true });
+    if (scope.branch) q = q.eq("branch", scope.branch);
+    const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];
   });
