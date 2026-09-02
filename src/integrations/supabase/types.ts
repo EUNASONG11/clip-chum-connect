@@ -608,6 +608,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notices: {
+        Row: {
+          body: string
+          branch: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          is_pinned: boolean
+          is_published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          branch?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          branch?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_logs: {
         Row: {
           batch_id: string

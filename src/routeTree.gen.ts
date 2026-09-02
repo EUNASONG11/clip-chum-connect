@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as NoticeRouteImport } from './routes/notice'
 import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
@@ -22,6 +23,7 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUploadRouteImport } from './routes/admin.upload'
 import { Route as AdminTrashRouteImport } from './routes/admin.trash'
 import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
+import { Route as AdminNoticesRouteImport } from './routes/admin.notices'
 import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.index'
@@ -29,6 +31,11 @@ import { Route as AdminVideoIdRouteImport } from './routes/admin.video.$id'
 import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
+const NoticeRoute = NoticeRouteImport.update({
+  id: '/notice',
+  path: '/notice',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MypageRoute = MypageRouteImport.update({
   id: '/mypage',
   path: '/mypage',
@@ -94,6 +101,11 @@ const AdminTeamsRoute = AdminTeamsRouteImport.update({
   path: '/teams',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminNoticesRoute = AdminNoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminInstructorsRoute = AdminInstructorsRouteImport.update({
   id: '/instructors',
   path: '/instructors',
@@ -132,8 +144,10 @@ export interface FileRoutesByFullPath {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
+  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -152,8 +166,10 @@ export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
+  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -174,8 +190,10 @@ export interface FileRoutesById {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
+  '/notice': typeof NoticeRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
+  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -197,8 +215,10 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
+    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -217,8 +237,10 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
+    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -238,8 +260,10 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
+    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
+    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -260,6 +284,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   LoginRoute: typeof LoginRoute
   MypageRoute: typeof MypageRoute
+  NoticeRoute: typeof NoticeRoute
   ClassIdRoute: typeof ClassIdRoute
   VideoIdRoute: typeof VideoIdRoute
   ApiPublicWebhooksStudentsSyncRoute: typeof ApiPublicWebhooksStudentsSyncRoute
@@ -267,6 +292,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/notice': {
+      id: '/notice'
+      path: '/notice'
+      fullPath: '/notice'
+      preLoaderRoute: typeof NoticeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mypage': {
       id: '/mypage'
       path: '/mypage'
@@ -358,6 +390,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTeamsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/notices': {
+      id: '/admin/notices'
+      path: '/notices'
+      fullPath: '/admin/notices'
+      preLoaderRoute: typeof AdminNoticesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/instructors': {
       id: '/admin/instructors'
       path: '/instructors'
@@ -406,6 +445,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminInstructorsRoute: typeof AdminInstructorsRoute
+  AdminNoticesRoute: typeof AdminNoticesRoute
   AdminTeamsRoute: typeof AdminTeamsRoute
   AdminTrashRoute: typeof AdminTrashRoute
   AdminUploadRoute: typeof AdminUploadRoute
@@ -420,6 +460,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminInstructorsRoute: AdminInstructorsRoute,
+  AdminNoticesRoute: AdminNoticesRoute,
   AdminTeamsRoute: AdminTeamsRoute,
   AdminTrashRoute: AdminTrashRoute,
   AdminUploadRoute: AdminUploadRoute,
@@ -439,6 +480,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   LoginRoute: LoginRoute,
   MypageRoute: MypageRoute,
+  NoticeRoute: NoticeRoute,
   ClassIdRoute: ClassIdRoute,
   VideoIdRoute: VideoIdRoute,
   ApiPublicWebhooksStudentsSyncRoute: ApiPublicWebhooksStudentsSyncRoute,
