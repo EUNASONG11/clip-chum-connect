@@ -165,7 +165,7 @@ function ChangePasswordPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+
 
       <AlertDialog open={weakConfirmOpen} onOpenChange={setWeakConfirmOpen}>
         <AlertDialogContent>
