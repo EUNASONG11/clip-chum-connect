@@ -8,6 +8,31 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const COMMON_WEAK = [
+  "12345678", "123456789", "1234567890", "password", "qwerty123",
+  "abcd1234", "11111111", "00000000", "asdf1234", "1q2w3e4r",
+];
+
+/** 추측하기 쉬운 비밀번호인지 간단히 판단한다(차단이 아니라 경고용). */
+function isWeakPassword(pw: string) {
+  const v = pw.toLowerCase();
+  if (COMMON_WEAK.includes(v)) return true;
+  if (/^(.)\1+$/.test(v)) return true;
+  if (/^\d+$/.test(v)) return true;
+  if (/^[a-z]+$/.test(v)) return true;
+  return false;
+}
 
 export const Route = createFileRoute("/change-password")({
   head: () => ({
@@ -26,12 +51,33 @@ function ChangePasswordPage() {
   const [showPw1, setShowPw1] = useState(false);
   const [showPw2, setShowPw2] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [weakConfirmOpen, setWeakConfirmOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) navigate({ to: "/login", replace: true });
     });
   }, [navigate]);
+
+  const applyPassword = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pw1 });
+      if (error) throw error;
+      await clearMyMustChangePassword();
+      toast.success("비밀번호가 변경되었습니다.");
+      try {
+        const s = await getMyStatus();
+        navigate({ to: s.isAdmin || s.isInstructor ? "/admin" : "/", replace: true });
+      } catch {
+        navigate({ to: "/", replace: true });
+      }
+    } catch (err: any) {
+      toast.error(err.message ?? "비밀번호 변경에 실패했습니다.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,24 +93,11 @@ function ChangePasswordPage() {
       toast.error("초기 비밀번호와 다른 비밀번호를 사용하세요.");
       return;
     }
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.updateUser({ password: pw1 });
-      if (error) throw error;
-      await clearMyMustChangePassword();
-      toast.success("비밀번호가 변경되었습니다.");
-      try {
-        const s = await getMyStatus();
-        navigate({ to: s.isAdmin || s.isInstructor ? "/admin" : "/", replace: true });
-      } catch {
-        // 상태 조회 실패 시에는 관리자 페이지가 아니라 홈으로 보낸다
-        navigate({ to: "/", replace: true });
-      }
-    } catch (err: any) {
-      toast.error(err.message ?? "비밀번호 변경에 실패했습니다.");
-    } finally {
-      setLoading(false);
+    if (isWeakPassword(pw1)) {
+      setWeakConfirmOpen(true);
+      return;
     }
+    await applyPassword();
   };
 
   return (
@@ -132,6 +165,29 @@ function ChangePasswordPage() {
           </form>
         </CardContent>
       </Card>
+
+
+      <AlertDialog open={weakConfirmOpen} onOpenChange={setWeakConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>추측하기 쉬운 비밀번호입니다</AlertDialogTitle>
+            <AlertDialogDescription>
+              입력한 비밀번호는 다른 사람이 쉽게 추측할 수 있습니다. 그래도 이 비밀번호로 진행하시겠습니까?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>다시 입력</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setWeakConfirmOpen(false);
+                await applyPassword();
+              }}
+            >
+              이대로 진행
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
