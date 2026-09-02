@@ -19,6 +19,7 @@ import {
   Users,
   ShieldCheck,
   GraduationCap,
+  ChevronRight,
 } from "lucide-react";
 import {
   listUsers,
@@ -37,6 +38,7 @@ import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
 import { LocalInstructorDialog } from "@/components/admin/LocalInstructorDialog";
+import { StudentLearningDetail } from "@/components/admin/StudentLearningDetail";
 
 
 
@@ -111,6 +113,7 @@ function UsersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
 
@@ -463,8 +466,8 @@ function UsersPage() {
                   const busy = busyId === u.id;
                   const expanded = expandedId === u.id;
                   return (
-                    <>
-                    <tr key={u.id} className="border-t transition hover:bg-muted/30">
+                    <Fragment key={u.id}>
+                    <tr className="border-t transition hover:bg-muted/30">
 
 
                       <td className="whitespace-nowrap px-4 py-3">
