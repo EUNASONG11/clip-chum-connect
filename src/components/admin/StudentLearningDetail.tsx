@@ -70,7 +70,11 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {c.videos.map((v: any) => (
+                  {[...c.videos]
+                    .sort((a: any, b: any) =>
+                      (a.createdAt ?? "").localeCompare(b.createdAt ?? "")
+                    )
+                    .map((v: any) => (
                     <tr key={v.videoId} className="border-t">
                       <td className="max-w-[220px] truncate px-3 py-2">{v.title || "-"}</td>
                       <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
