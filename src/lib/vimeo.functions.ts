@@ -684,6 +684,87 @@ export const listStudentUsers = createServerFn({ method: "GET" })
     };
   });
 
+// 6-2d) 특정 학생 1명의 수강반 + 영상별 학습 이력 (펼칠 때만 조회)
+export const getStudentLearningDetail = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ userId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const scope = await getStaffScope(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: enrolls, error: eErr } = await supabaseAdmin
+      .from("class_students")
+      .select("class_id, created_at, classes!inner(id, name, branch, deleted_at)")
+      .eq("user_id", data.userId)
+      .is("deleted_at", null);
+    if (eErr) throw new Error(eErr.message);
+
+    const rows = (enrolls ?? []).filter((r: any) => {
+      const c = r.classes;
+      if (!c || c.deleted_at) return false;
+      if (scope.branch && c.branch && c.branch !== scope.branch) return false;
+      return true;
+    });
+    if (rows.length === 0) return { classes: [] as any[] };
+
+    const classIds = rows.map((r: any) => r.class_id as string);
+
+    const [{ data: videos, error: vErr }, { data: progress, error: pErr }] = await Promise.all([
+      supabaseAdmin
+        .from("videos")
+        .select("id, title, class_id, duration, created_at, week_label")
+        .in("class_id", classIds)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("video_progress")
+        .select("video_id, watched_ratio, is_completed, completed_at, watched_seconds, seek_attempts, updated_at")
+        .eq("user_id", data.userId),
+    ]);
+    if (vErr) throw new Error(vErr.message);
+    if (pErr) throw new Error(pErr.message);
+
+    const pMap = new Map<string, any>();
+    (progress ?? []).forEach((p: any) => pMap.set(p.video_id, p));
+
+    return {
+      classes: rows
+        .map((r: any) => {
+          const vids = (videos ?? []).filter((v: any) => v.class_id === r.class_id);
+          const items = vids.map((v: any) => {
+            const p = pMap.get(v.id);
+            return {
+              videoId: v.id as string,
+              title: (v.title ?? "") as string,
+              weekLabel: (v.week_label ?? null) as string | null,
+              duration: (v.duration ?? null) as number | null,
+              createdAt: (v.created_at ?? "") as string,
+              watchedRatio: Number(p?.watched_ratio ?? 0),
+              watchedSeconds: Number(p?.watched_seconds ?? 0),
+              seekAttempts: Number(p?.seek_attempts ?? 0),
+              isCompleted: !!p?.is_completed,
+              completedAt: (p?.completed_at ?? null) as string | null,
+              updatedAt: (p?.updated_at ?? null) as string | null,
+            };
+          });
+          const completed = items.filter((i) => i.isCompleted).length;
+          const avgRatio =
+            items.length > 0 ? items.reduce((s, i) => s + i.watchedRatio, 0) / items.length : 0;
+          return {
+            classId: r.class_id as string,
+            className: (r.classes?.name ?? "") as string,
+            branch: (r.classes?.branch ?? null) as string | null,
+            enrolledAt: (r.created_at ?? "") as string,
+            videoTotal: items.length,
+            completed,
+            avgRatio,
+            videos: items,
+          };
+        })
+        .sort((a, b) => a.className.localeCompare(b.className, "ko")),
+    };
+  });
+
 
 
 // 6-3) 관리자 권한 부여 (이메일로)
