@@ -226,7 +226,10 @@ export const listClasses = createServerFn({ method: "GET" })
     ]);
     const ids = Array.from(idSet);
     const orParts = [`created_by.eq.${context.userId}`];
-    if (adminBranch) orParts.push(`branch.eq.${adminBranch}`);
+    if (adminBranch) {
+      orParts.push(`branch.eq.${adminBranch}`);
+      orParts.push(`branch.is.null`); // 교육원 미지정 수강반은 모든 교육원 관리자에게 공개
+    }
     if (ids.length) orParts.push(`id.in.(${ids.join(",")})`);
     const myCohorts: string[] = Array.from(
       new Set([

@@ -43,7 +43,7 @@ async function branchAdminClassIds(context: any, supabaseAdmin: any) {
   const { data } = await supabaseAdmin
     .from("classes")
     .select("id")
-    .eq("branch", b)
+    .or(`branch.eq.${b},branch.is.null`)
     .is("deleted_at", null);
   return ((data ?? []) as any[]).map((c: any) => c.id as string);
 }
