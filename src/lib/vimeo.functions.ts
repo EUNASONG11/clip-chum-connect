@@ -433,6 +433,7 @@ export const listUsers = createServerFn({ method: "GET" })
       table: "user_roles" | "class_students",
       columns: string,
       label: string,
+      orderBy: string[],
     ): Promise<T[]> => {
       const out: T[] = [];
       const size = 1000;
@@ -440,14 +441,11 @@ export const listUsers = createServerFn({ method: "GET" })
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { data, error: e } = await retry(
-          async () =>
-            await supabaseAdmin
-              .from(table)
-              .select(columns)
-              .is("deleted_at", null)
-              .order("user_id", { ascending: true })
-              .order("id", { ascending: true })
-              .range(from, from + size - 1),
+          async () => {
+            let q = supabaseAdmin.from(table).select(columns).is("deleted_at", null);
+            for (const col of orderBy) q = q.order(col, { ascending: true });
+            return await q.range(from, from + size - 1);
+          },
           `${label} range ${from}`,
         );
         if (e) throw new Error(e.message);
@@ -460,8 +458,8 @@ export const listUsers = createServerFn({ method: "GET" })
     };
 
     const [roleRows, classStudentRows] = await Promise.all([
-      fetchAllRows<{ user_id: string; role: string }>("user_roles", "user_id, role", "user_roles"),
-      fetchAllRows<{ user_id: string }>("class_students", "user_id", "class_students"),
+      fetchAllRows<{ user_id: string; role: string }>("user_roles", "user_id, role", "user_roles", ["user_id", "role"]),
+      fetchAllRows<{ user_id: string }>("class_students", "user_id", "class_students", ["class_id", "user_id"]),
     ]);
     const rolesRes = { data: roleRows };
     const csRes = { data: classStudentRows };
