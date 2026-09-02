@@ -446,6 +446,7 @@ export const listUsers = createServerFn({ method: "GET" })
               .select(columns)
               .is("deleted_at", null)
               .order("user_id", { ascending: true })
+              .order("id", { ascending: true })
               .range(from, from + size - 1),
           `${label} range ${from}`,
         );
