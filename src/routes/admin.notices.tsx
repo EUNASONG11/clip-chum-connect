@@ -150,7 +150,6 @@ function AdminNoticesPage() {
           <p className="mt-1 text-sm text-muted-foreground">게시된 공지는 로그인 없이 누구나 볼 수 있습니다.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild><a href="/notice" target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-4 w-4" /> 공개 페이지</a></Button>
           <Button size="sm" onClick={() => { setForm(emptyForm); setOpen(true); }}><Plus className="mr-1 h-4 w-4" /> 공지 작성</Button>
         </div>
       </div>
