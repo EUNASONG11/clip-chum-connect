@@ -154,8 +154,6 @@ function AdminNoticesPage() {
         </div>
       </div>
 
-      <Card className="p-3 text-xs text-muted-foreground">공개 링크: <span className="font-mono">{"{사이트 주소}"}/notice</span></Card>
-
       {isLoading ? <p className="py-10 text-center text-sm text-muted-foreground">불러오는 중…</p> : notices.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">등록된 공지사항이 없습니다.</p> : (
         <div className="space-y-2">
           {notices.map((n: any) => (
