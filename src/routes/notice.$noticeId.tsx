@@ -131,17 +131,10 @@ function NoticeDetailPage() {
                 key={i}
                 type="button"
                 onClick={() => setSelectedCard(card)}
-                className={`group relative flex w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                className={`group relative flex w-full flex-col rounded-2xl border text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                   TONES[i % TONES.length]
                 }`}
               >
-                {card.imageUrl && (
-                  <img
-                    src={card.imageUrl}
-                    alt={`${card.title} 이미지`}
-                    className="block max-h-48 w-full border-b border-border/60 bg-card object-cover object-center"
-                  />
-                )}
                 <div className="flex flex-1 flex-col p-4 sm:p-5">
                   <h3 className="break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
                     {card.title}
