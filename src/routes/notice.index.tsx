@@ -133,17 +133,13 @@ function NoticePage() {
                   TONES[i % TONES.length]
                 }`}
               >
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  {c.notice.branch && (
+                {c.notice.branch && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="rounded-full border border-border bg-card px-2 py-0.5 font-medium">
                       {c.notice.branch}
                     </span>
-                  )}
-                  <span className="inline-flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {relativeTime(c.notice.created_at)}
-                  </span>
-                </div>
+                  </div>
+                )}
                 <h3 className="mt-2 break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
                   {c.title}
                 </h3>
