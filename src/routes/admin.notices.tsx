@@ -209,59 +209,77 @@ function AdminNoticesPage() {
           <DialogHeader>
             <DialogTitle>{form.id ? "공지 수정" : "공지 작성"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>제목</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                placeholder="공지 제목"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>본문</Label>
-              <Textarea
-                value={form.body}
-                onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                rows={8}
-                placeholder="공지 내용을 입력하세요."
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>교육원 (선택하지 않으면 전체 공지)</Label>
-              <Select
-                value={form.branch || "__all__"}
-                onValueChange={(value) =>
-                  setForm((f) => ({ ...f, branch: value === "__all__" ? "" : value }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="전체 공지" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">전체 공지</SelectItem>
-                  {BRANCHES.map((b) => (
-                    <SelectItem key={b} value={b}>
-                      {b}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
-              <Label className="cursor-pointer">상단 고정(중요 공지)</Label>
-              <Switch
-                checked={form.isPinned}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, isPinned: v }))}
-              />
-            </div>
-            <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
-              <Label className="cursor-pointer">게시 상태</Label>
-              <Switch
-                checked={form.isPublished}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v }))}
-              />
-            </div>
+          <div className="space-y-5">
+            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+              <h4 className="text-sm font-semibold text-foreground">기본 정보</h4>
+              <div className="space-y-1.5">
+                <Label>제목</Label>
+                <Input
+                  value={form.title}
+                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                  placeholder="공지 제목"
+                />
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+              <h4 className="text-sm font-semibold text-foreground">공지 내용</h4>
+              <div className="space-y-1.5">
+                <Label>본문</Label>
+                <Textarea
+                  value={form.body}
+                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                  rows={8}
+                  placeholder="공지 내용을 입력하세요."
+                />
+              </div>
+            </section>
+
+            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+              <h4 className="text-sm font-semibold text-foreground">노출 설정</h4>
+              <div className="space-y-1.5">
+                <Label>교육원</Label>
+                <Select
+                  value={form.branch || "__all__"}
+                  onValueChange={(value) =>
+                    setForm((f) => ({ ...f, branch: value === "__all__" ? "" : value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="전체 공지" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체 공지</SelectItem>
+                    {BRANCHES.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">선택하지 않으면 모든 교육원에 노출됩니다.</p>
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
+                <div className="space-y-0.5">
+                  <Label className="cursor-pointer">상단 고정</Label>
+                  <p className="text-xs text-muted-foreground">중요 공지를 목록 최상단에 고정합니다.</p>
+                </div>
+                <Switch
+                  checked={form.isPinned}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, isPinned: v }))}
+                />
+              </div>
+              <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
+                <div className="space-y-0.5">
+                  <Label className="cursor-pointer">게시 상태</Label>
+                  <p className="text-xs text-muted-foreground">OFF로 설정하면 공개 페이지에 표시되지 않습니다.</p>
+                </div>
+                <Switch
+                  checked={form.isPublished}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v }))}
+                />
+              </div>
+            </section>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
