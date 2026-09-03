@@ -67,10 +67,17 @@ function NoticePage() {
     staleTime: 60 * 1000,
   });
 
-  const [selected, setSelected] = useState<PublicNotice | null>(null);
+  const [selected, setSelected] = useState<{ notice: PublicNotice; title: string; body: string } | null>(null);
   const all = data?.notices ?? [];
   const mains = all.filter((n) => n.display_type.includes("main"));
-  const notices = all.filter((n) => n.display_type.includes("card"));
+  const cards = all
+    .filter((n) => n.display_type.includes("card"))
+    .flatMap((n) => {
+      const items = Array.isArray(n.cards) && n.cards.length > 0
+        ? n.cards
+        : [{ title: n.title, body: n.card_body || n.body }];
+      return items.map((c) => ({ notice: n, title: c.title, body: c.body }));
+    });
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -118,7 +125,7 @@ function NoticePage() {
 
         {isLoading ? (
           <p className="py-16 text-center text-sm text-muted-foreground">불러오는 중…</p>
-        ) : notices.length === 0 ? (
+        ) : cards.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             등록된 공지사항이 없습니다.
           </p>
