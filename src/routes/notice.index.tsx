@@ -1,10 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicNotices } from "@/lib/notices.functions";
-import type { NoticeCard, PublicNotice } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Megaphone, Pin, BookOpen, House } from "lucide-react";
 
 export const Route = createFileRoute("/notice/")({
@@ -27,14 +24,6 @@ function summarize(body: string) {
   return first.replace(/\n/g, " ") || "자세한 내용은 카드를 눌러 확인하세요.";
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
-
 const TONES = [
   "bg-primary/5 border-primary/15",
   "bg-accent/40 border-border",
@@ -42,7 +31,6 @@ const TONES = [
 ] as const;
 
 function NoticePage() {
-  const [selected, setSelected] = useState<PublicNotice | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["public-notices"],
     queryFn: () => listPublicNotices(),
@@ -59,14 +47,6 @@ function NoticePage() {
         : [{ title: n.title, body: n.card_body || n.body }];
       return items.map((c) => ({ notice: n, title: c.title, body: c.body }));
     });
-
-  const selectedCards: NoticeCard[] = selected
-    ? Array.isArray(selected.cards) && selected.cards.length > 0
-      ? selected.cards
-      : selected.card_body
-        ? [{ title: selected.title, body: selected.card_body }]
-        : []
-    : [];
 
   return (
     <div className="min-h-screen overflow-x-clip bg-muted/30">
@@ -130,10 +110,10 @@ function NoticePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {cards.map((c, i) => (
-              <button
+              <Link
                 key={`${c.notice.id}-${i}`}
-                type="button"
-                onClick={() => setSelected(c.notice)}
+                to="/notice/$noticeId"
+                params={{ noticeId: c.notice.id }}
                 className={`group relative flex w-full flex-col rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
                   TONES[i % TONES.length]
                 }`}
@@ -153,56 +133,16 @@ function NoticePage() {
                 </p>
                 <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
                   <BookOpen className="h-3.5 w-3.5" />
-                  카드를 누르면 전체 내용을 볼 수 있어요
+                  카드를 누르면 공지 페이지로 이동해요
                 </div>
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
                   자세히 보기
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         )}
       </main>
-
-      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
-        <DialogContent className="max-h-[85vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto sm:max-w-2xl">
-          {selected && (
-            <>
-              <DialogHeader>
-                <div className="flex flex-wrap items-center gap-2">
-                  {selected.is_pinned && (
-                    <Badge className="gap-1">
-                      <Pin className="h-3 w-3" /> 중요
-                    </Badge>
-                  )}
-                  {selected.branch && <Badge variant="secondary">{selected.branch}</Badge>}
-                </div>
-                <DialogTitle className="break-words text-left text-lg font-bold leading-snug [overflow-wrap:anywhere]">
-                  {selected.title}
-                </DialogTitle>
-                <p className="text-left text-xs text-muted-foreground">
-                  {formatDate(selected.created_at)}
-                </p>
-              </DialogHeader>
-              <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
-                {selected.body}
-              </div>
-              {selectedCards.length > 0 && (
-                <div className="mt-2 space-y-3">
-                  {selectedCards.map((card, i) => (
-                    <div key={i} className="rounded-xl border bg-muted/40 p-4">
-                      <h4 className="break-words text-sm font-bold [overflow-wrap:anywhere]">{card.title}</h4>
-                      <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
-                        {card.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

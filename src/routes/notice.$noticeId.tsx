@@ -1,6 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState } from "react";
 import { getPublicNotice } from "@/lib/notices.functions";
+import type { NoticeCard } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Megaphone, Pin, House, List } from "lucide-react";
 
 export const Route = createFileRoute("/notice/$noticeId")({
@@ -31,6 +34,12 @@ function formatDate(value: string) {
   });
 }
 
+/** 카드 본문 요약: 첫 문단 */
+function summarize(body: string) {
+  const first = (body ?? "").split(/\n\s*\n/)[0]?.trim() ?? "";
+  return first.replace(/\n/g, " ") || "자세한 내용은 카드를 눌러 확인하세요.";
+}
+
 const TONES = [
   "bg-primary/5 border-primary/15",
   "bg-accent/40 border-border",
@@ -55,7 +64,9 @@ function NoticeDetailNotFound() {
 
 function NoticeDetailPage() {
   const n = Route.useLoaderData();
-  const cards =
+  const [selectedCard, setSelectedCard] = useState<NoticeCard | null>(null);
+
+  const cards: NoticeCard[] =
     Array.isArray(n.cards) && n.cards.length > 0
       ? n.cards
       : n.card_body
@@ -116,9 +127,11 @@ function NoticeDetailPage() {
         {cards.length > 0 && (
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {cards.map((card, i) => (
-              <article
+              <button
                 key={i}
-                className={`flex w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm ${
+                type="button"
+                onClick={() => setSelectedCard(card)}
+                className={`group relative flex w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                   TONES[i % TONES.length]
                 }`}
               >
@@ -126,22 +139,49 @@ function NoticeDetailPage() {
                   <img
                     src={card.imageUrl}
                     alt={`${card.title} 이미지`}
-                    className="block max-h-[min(60vh,560px)] w-full border-b border-border/60 bg-card object-contain object-center"
+                    className="block max-h-48 w-full border-b border-border/60 bg-card object-cover object-center"
                   />
                 )}
                 <div className="flex flex-1 flex-col p-4 sm:p-5">
                   <h3 className="break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
                     {card.title}
                   </h3>
-                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
-                    {card.body}
+                  <p className="mt-1.5 line-clamp-3 break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                    {summarize(card.body)}
                   </p>
+                  <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
+                    자세히 보기
+                  </span>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         )}
       </main>
+
+      <Dialog open={!!selectedCard} onOpenChange={(open) => !open && setSelectedCard(null)}>
+        <DialogContent className="max-h-[85vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto sm:max-w-2xl">
+          {selectedCard && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="break-words text-left text-lg font-bold leading-snug [overflow-wrap:anywhere]">
+                  {selectedCard.title}
+                </DialogTitle>
+              </DialogHeader>
+              {selectedCard.imageUrl && (
+                <img
+                  src={selectedCard.imageUrl}
+                  alt={`${selectedCard.title} 이미지`}
+                  className="block max-h-[min(60vh,560px)] w-full rounded-xl border border-border/60 bg-card object-contain object-center"
+                />
+              )}
+              <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
+                {selectedCard.body}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
