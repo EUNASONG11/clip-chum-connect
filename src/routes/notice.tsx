@@ -1,15 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listPublicNotices, type PublicNotice } from "@/lib/notices.functions";
+import { listPublicNotices } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Megaphone, Pin, Clock, BookOpen, House } from "lucide-react";
 
 export const Route = createFileRoute("/notice")({
