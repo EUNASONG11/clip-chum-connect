@@ -180,20 +180,20 @@ function NoticePage() {
         <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <div className="flex flex-wrap items-center gap-2">
-              {selected?.is_pinned && (
+              {selected?.notice.is_pinned && (
                 <Badge className="gap-1">
                   <Pin className="h-3 w-3" /> 중요
                 </Badge>
               )}
-              {selected?.branch && <Badge variant="secondary">{selected.branch}</Badge>}
+              {selected?.notice.branch && <Badge variant="secondary">{selected.notice.branch}</Badge>}
             </div>
             <DialogTitle className="text-left text-xl">{selected?.title}</DialogTitle>
             <p className="text-left text-xs text-muted-foreground">
-              {selected ? formatDate(selected.created_at) : ""}
+              {selected ? formatDate(selected.notice.created_at) : ""}
             </p>
           </DialogHeader>
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {selected?.card_body || selected?.body || "내용이 없습니다."}
+            {selected?.body || "내용이 없습니다."}
           </div>
         </DialogContent>
       </Dialog>
