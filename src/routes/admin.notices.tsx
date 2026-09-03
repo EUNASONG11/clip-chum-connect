@@ -59,35 +59,7 @@ function AdminNoticesPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [uploadingCard, setUploadingCard] = useState<number | null>(null);
-  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadPreviewUrls = async () => {
-      const entries = await Promise.all(
-        form.cards.map(async (card, index) => {
-          if (!card.imageUrl) return [index, ""] as const;
-          if (card.imageUrl.startsWith("http")) return [index, card.imageUrl] as const;
-          const { data: signed } = await supabase.storage
-            .from(IMAGE_BUCKET)
-            .createSignedUrl(card.imageUrl, 60 * 60);
-          return [index, signed?.signedUrl ?? ""] as const;
-        }),
-      );
-      if (!cancelled) {
-        setPreviewUrls(
-          Object.fromEntries(entries.filter(([, url]) => url)),
-        );
-      }
-    };
-
-    void loadPreviewUrls();
-    return () => {
-      cancelled = true;
-    };
-  }, [form.cards]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["managed-notices"],
