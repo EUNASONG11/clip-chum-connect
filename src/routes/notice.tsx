@@ -80,7 +80,7 @@ function NoticePage() {
     });
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen overflow-x-clip bg-muted/30">
       <header className="border-b border-border/60 bg-card">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6 sm:py-5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
