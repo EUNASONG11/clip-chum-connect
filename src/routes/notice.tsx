@@ -67,10 +67,17 @@ function NoticePage() {
     staleTime: 60 * 1000,
   });
 
-  const [selected, setSelected] = useState<PublicNotice | null>(null);
+  const [selected, setSelected] = useState<{ notice: PublicNotice; title: string; body: string } | null>(null);
   const all = data?.notices ?? [];
   const mains = all.filter((n) => n.display_type.includes("main"));
-  const notices = all.filter((n) => n.display_type.includes("card"));
+  const cards = all
+    .filter((n) => n.display_type.includes("card"))
+    .flatMap((n) => {
+      const items = Array.isArray(n.cards) && n.cards.length > 0
+        ? n.cards
+        : [{ title: n.title, body: n.card_body || n.body }];
+      return items.map((c) => ({ notice: n, title: c.title, body: c.body }));
+    });
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -118,22 +125,22 @@ function NoticePage() {
 
         {isLoading ? (
           <p className="py-16 text-center text-sm text-muted-foreground">불러오는 중…</p>
-        ) : notices.length === 0 ? (
+        ) : cards.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             등록된 공지사항이 없습니다.
           </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {notices.map((n, i) => (
+            {cards.map((c, i) => (
               <button
-                key={n.id}
+                key={`${c.notice.id}-${i}`}
                 type="button"
-                onClick={() => setSelected(n)}
+                onClick={() => setSelected(c)}
                 className={`group relative flex flex-col rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                   TONES[i % TONES.length]
                 }`}
               >
-                {n.is_pinned && (
+                {c.notice.is_pinned && (
                   <Badge className="absolute -top-2 left-4 gap-1 rounded-full px-2 py-0.5 text-[11px] shadow">
                     <Pin className="h-3 w-3" /> 중요
                   </Badge>
@@ -143,21 +150,21 @@ function NoticePage() {
                     <BookOpen className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-base font-bold">{n.title}</h2>
-                    {n.branch && (
+                    <h2 className="truncate text-base font-bold">{c.title}</h2>
+                    {c.notice.branch && (
                       <Badge variant="secondary" className="mt-1">
-                        {n.branch}
+                        {c.notice.branch}
                       </Badge>
                     )}
                   </div>
                 </div>
 
                 <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-                  {summarize(n.card_body || n.body)}
+                  {summarize(c.body)}
                 </p>
 
                 <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" /> {relativeTime(n.created_at)}
+                  <Clock className="h-3 w-3" /> {relativeTime(c.notice.created_at)}
                 </p>
 
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -173,20 +180,20 @@ function NoticePage() {
         <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
             <div className="flex flex-wrap items-center gap-2">
-              {selected?.is_pinned && (
+              {selected?.notice.is_pinned && (
                 <Badge className="gap-1">
                   <Pin className="h-3 w-3" /> 중요
                 </Badge>
               )}
-              {selected?.branch && <Badge variant="secondary">{selected.branch}</Badge>}
+              {selected?.notice.branch && <Badge variant="secondary">{selected.notice.branch}</Badge>}
             </div>
             <DialogTitle className="text-left text-xl">{selected?.title}</DialogTitle>
             <p className="text-left text-xs text-muted-foreground">
-              {selected ? formatDate(selected.created_at) : ""}
+              {selected ? formatDate(selected.notice.created_at) : ""}
             </p>
           </DialogHeader>
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {selected?.card_body || selected?.body || "내용이 없습니다."}
+            {selected?.body || "내용이 없습니다."}
           </div>
         </DialogContent>
       </Dialog>

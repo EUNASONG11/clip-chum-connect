@@ -50,6 +50,7 @@ type FormState = {
   title: string;
   body: string;
   cardBody: string;
+  cards: { title: string; body: string }[];
   branch: string;
   displayType: ("main" | "card")[];
   isPinned: boolean;
@@ -60,6 +61,7 @@ const emptyForm: FormState = {
   title: "",
   body: "",
   cardBody: "",
+  cards: [],
   branch: "",
   displayType: ["card"],
   isPinned: false,
@@ -89,7 +91,10 @@ function AdminNoticesPage() {
     const payload = {
       title: values.title,
       body: values.body,
-      cardBody: values.cardBody.trim() || null,
+      cardBody: null,
+      cards: values.cards
+        .map((c) => ({ title: c.title.trim(), body: c.body.trim() }))
+        .filter((c) => c.title && c.body),
       branch: values.branch.trim() || null,
       displayType: values.displayType.length ? values.displayType : ["card"],
       isPinned: values.isPinned,
@@ -195,6 +200,12 @@ function AdminNoticesPage() {
                       title: n.title,
                       body: n.body ?? "",
                       cardBody: n.card_body ?? "",
+                      cards:
+                        Array.isArray(n.cards) && n.cards.length > 0
+                          ? (n.cards as { title: string; body: string }[])
+                          : n.card_body
+                            ? [{ title: n.title, body: n.card_body }]
+                            : [],
                       branch: n.branch ?? "",
                       displayType: ((n.display_type ?? ["card"]) as ("main" | "card")[]),
                       isPinned: n.is_pinned,
@@ -284,19 +295,71 @@ function AdminNoticesPage() {
                 </div>
               )}
               {form.displayType.includes("card") && (
-                <div className="space-y-1.5">
-                  <Label>카드 내용</Label>
-                  <Textarea
-                    value={form.cardBody}
-                    onChange={(e) => setForm((f) => ({ ...f, cardBody: e.target.value }))}
-                    rows={5}
-                    placeholder="카드 목록과 카드 상세 팝업에 표시될 내용을 입력하세요."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {form.displayType.includes("main")
-                      ? "비워두면 메인 설명 본문이 카드에도 표시됩니다."
-                      : "카드 목록과 카드 상세 팝업에 표시됩니다."}
-                  </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>공지 카드 ({form.cards.length}개)</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setForm((f) => ({ ...f, cards: [...f.cards, { title: "", body: "" }] }))
+                      }
+                    >
+                      <Plus className="mr-1 h-3.5 w-3.5" /> 카드 추가
+                    </Button>
+                  </div>
+                  {form.cards.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {form.displayType.includes("main")
+                        ? "카드를 추가하지 않으면 메인 설명 본문이 카드로 표시됩니다."
+                        : "카드 추가 버튼을 눌러 카드를 만드세요."}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {form.cards.map((card, i) => (
+                        <div key={i} className="space-y-2 rounded-md border border-border/60 p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <Input
+                              value={card.title}
+                              onChange={(e) =>
+                                setForm((f) => ({
+                                  ...f,
+                                  cards: f.cards.map((c, j) =>
+                                    j === i ? { ...c, title: e.target.value } : c,
+                                  ),
+                                }))
+                              }
+                              placeholder={`카드 ${i + 1} 제목`}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setForm((f) => ({ ...f, cards: f.cards.filter((_, j) => j !== i) }))
+                              }
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Textarea
+                            value={card.body}
+                            onChange={(e) =>
+                              setForm((f) => ({
+                                ...f,
+                                cards: f.cards.map((c, j) =>
+                                  j === i ? { ...c, body: e.target.value } : c,
+                                ),
+                              }))
+                            }
+                            rows={4}
+                            placeholder="카드에 표시될 내용을 입력하세요."
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

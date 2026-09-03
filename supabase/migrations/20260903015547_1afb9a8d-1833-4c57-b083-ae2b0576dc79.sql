@@ -1,0 +1,1 @@
+ALTER TABLE public.notices ADD COLUMN IF NOT EXISTS cards jsonb NOT NULL DEFAULT '[]'::jsonb;
