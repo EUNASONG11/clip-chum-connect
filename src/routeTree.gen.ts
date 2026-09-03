@@ -25,7 +25,6 @@ import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminUploadRouteImport } from './routes/admin.upload'
 import { Route as AdminTrashRouteImport } from './routes/admin.trash'
 import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
-import { Route as AdminNoticesRouteImport } from './routes/admin.notices'
 import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.index'
@@ -113,11 +112,6 @@ const AdminTeamsRoute = AdminTeamsRouteImport.update({
   path: '/teams',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminNoticesRoute = AdminNoticesRouteImport.update({
-  id: '/notices',
-  path: '/notices',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminInstructorsRoute = AdminInstructorsRouteImport.update({
   id: '/instructors',
   path: '/instructors',
@@ -159,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/notice': typeof NoticeRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
-  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -182,7 +175,6 @@ export interface FileRoutesByTo {
   '/mypage': typeof MypageRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
-  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -208,7 +200,6 @@ export interface FileRoutesById {
   '/notice': typeof NoticeRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
-  '/admin/notices': typeof AdminNoticesRoute
   '/admin/teams': typeof AdminTeamsRoute
   '/admin/trash': typeof AdminTrashRoute
   '/admin/upload': typeof AdminUploadRoute
@@ -235,7 +226,6 @@ export interface FileRouteTypes {
     | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
-    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -258,7 +248,6 @@ export interface FileRouteTypes {
     | '/mypage'
     | '/admin/dashboard'
     | '/admin/instructors'
-    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -283,7 +272,6 @@ export interface FileRouteTypes {
     | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
-    | '/admin/notices'
     | '/admin/teams'
     | '/admin/trash'
     | '/admin/upload'
@@ -426,13 +414,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTeamsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/notices': {
-      id: '/admin/notices'
-      path: '/notices'
-      fullPath: '/admin/notices'
-      preLoaderRoute: typeof AdminNoticesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/instructors': {
       id: '/admin/instructors'
       path: '/instructors'
@@ -481,7 +462,6 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   AdminInstructorsRoute: typeof AdminInstructorsRoute
-  AdminNoticesRoute: typeof AdminNoticesRoute
   AdminTeamsRoute: typeof AdminTeamsRoute
   AdminTrashRoute: typeof AdminTrashRoute
   AdminUploadRoute: typeof AdminUploadRoute
@@ -496,7 +476,6 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   AdminInstructorsRoute: AdminInstructorsRoute,
-  AdminNoticesRoute: AdminNoticesRoute,
   AdminTeamsRoute: AdminTeamsRoute,
   AdminTrashRoute: AdminTrashRoute,
   AdminUploadRoute: AdminUploadRoute,

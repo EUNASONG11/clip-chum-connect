@@ -53,7 +53,7 @@ function NoticeDetailPage() {
     Array.isArray(n.cards) && n.cards.length > 0
       ? n.cards
       : n.card_body
-        ? [{ title: n.title, body: n.card_body }]
+        ? [{ title: n.title, body: n.card_body, imageUrl: null }]
         : [];
 
   return (
@@ -109,13 +109,22 @@ function NoticeDetailPage() {
 
         {cards.length > 0 && (
           <section className="mt-6 space-y-4">
-            {cards.map((c, i) => (
-              <div key={i} className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-                <h3 className="break-words text-base font-bold [overflow-wrap:anywhere]">{c.title}</h3>
-                <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
-                  {c.body}
+            {cards.map((card, index) => (
+              <article key={index} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+                {card.imageUrl && (
+                  <img
+                    src={card.imageUrl}
+                    alt={`${card.title} 이미지`}
+                    className="block max-h-[min(70vh,720px)] w-full object-contain object-center"
+                  />
+                )}
+                <div className="p-5 sm:p-6">
+                  <h3 className="break-words text-base font-bold [overflow-wrap:anywhere]">{card.title}</h3>
+                  <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                    {card.body}
+                  </div>
                 </div>
-              </div>
+              </article>
             ))}
           </section>
         )}
