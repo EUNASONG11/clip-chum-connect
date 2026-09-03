@@ -198,6 +198,7 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
 
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
+import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
 import { BranchBadge } from "@/components/BranchBadge";
 
 export const Route = createFileRoute("/admin/classes/$id")({
@@ -588,10 +589,10 @@ function ClassDetailPage() {
   const statsBranchOptions = useMemo(() => {
     const set = new Set<string>();
     (studentStats as any[]).forEach((s) => {
-      const b = (s.branch ?? "").trim();
+      const b = canonicalBranch(s.branch);
       if (b) set.add(b);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+    return CANONICAL_BRANCHES.filter((b) => set.has(b)) as string[];
   }, [studentStats]);
   // 강사로 로그인한 경우 학습 현황 교육원 필터를 본인 교육원으로 최초 1회만 자동 선택 (이후 수동 변경 유지)
   const branchAutoAppliedRef = useRef(false);
@@ -616,7 +617,7 @@ function ClassDetailPage() {
           ? true
           : statsBranchFilter === "none"
             ? !(s.branch ?? "").trim()
-            : (s.branch ?? "").trim() === statsBranchFilter;
+            : matchesBranch(statsBranchFilter, s.branch);
       return okStatus && okBranch;
     });
     const sorted = [...filtered];
@@ -881,7 +882,7 @@ function ClassDetailPage() {
 
           {(() => {
             const listed = (students as any[]).filter(
-              (s) => listBranch === "__all__" || (s.branch ?? "") === listBranch,
+              (s) => listBranch === "__all__" || matchesBranch(listBranch, s.branch),
             );
             return (
           <div className="space-y-2">

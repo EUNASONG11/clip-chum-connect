@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { CANONICAL_BRANCHES, canonicalBranch } from "@/lib/branch";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import {
@@ -469,7 +470,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         .eq("is_deleted", false)
         .order("name")
         .limit(PER_TOKEN_FETCH_LIMIT);
-      if (data.branch) builder = builder.eq("branch", data.branch);
+      if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
       if (token.kind === "phone") {
         builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
       } else {
@@ -541,10 +542,11 @@ export const listStudentBranches = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     const set = new Set<string>();
     (data ?? []).forEach((r: any) => {
-      const b = (r.branch ?? "").toString().trim();
+      const b = canonicalBranch(r.branch);
       if (b) set.add(b);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+    // 표준 교육원(상동·청라·송도)만 노출하고, 그 외 표기는 목록에서 제외
+    return CANONICAL_BRANCHES.filter((b) => set.has(b)) as string[];
   });
 
 // 배정 이력의 처리자(actor) 보정: service_role 쓰기에서는 auth.uid()가 없으므로 직접 기록
