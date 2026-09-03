@@ -32,7 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink, Copy } from "lucide-react";
 
 const BRANCHES = ["상동", "청라", "송도"];
 
@@ -191,6 +191,22 @@ function AdminNoticesPage() {
                 </p>
               </div>
               <div className="flex shrink-0 gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="공지 주소 복사"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/notice/${n.id}`;
+                    try {
+                      await navigator.clipboard.writeText(url);
+                      toast.success("공지 주소를 복사했습니다.");
+                    } catch {
+                      toast.error("주소 복사에 실패했습니다.");
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
