@@ -167,9 +167,12 @@ function AdminNoticesPage() {
                     {n.is_published ? "게시중" : "숨김"}
                   </Badge>
                   {n.branch && <Badge variant="outline">{n.branch}</Badge>}
-                  <Badge variant="outline">
-                    {n.display_type === "main" ? "메인 설명" : "카드"}
-                  </Badge>
+                  {n.display_type.includes("main") && (
+                    <Badge variant="outline">메인 설명</Badge>
+                  )}
+                  {n.display_type.includes("card") && (
+                    <Badge variant="outline">카드</Badge>
+                  )}
                   <span className="truncate font-semibold">{n.title}</span>
                 </div>
                 <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">
