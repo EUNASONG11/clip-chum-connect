@@ -612,6 +612,7 @@ export type Database = {
         Row: {
           body: string
           branch: string | null
+          card_body: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -626,6 +627,7 @@ export type Database = {
         Insert: {
           body?: string
           branch?: string | null
+          card_body?: string | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -640,6 +642,7 @@ export type Database = {
         Update: {
           body?: string
           branch?: string | null
+          card_body?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null

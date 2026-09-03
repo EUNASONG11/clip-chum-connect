@@ -49,6 +49,7 @@ type FormState = {
   id?: string;
   title: string;
   body: string;
+  cardBody: string;
   branch: string;
   displayType: ("main" | "card")[];
   isPinned: boolean;
@@ -58,6 +59,7 @@ type FormState = {
 const emptyForm: FormState = {
   title: "",
   body: "",
+  cardBody: "",
   branch: "",
   displayType: ["card"],
   isPinned: false,
@@ -87,6 +89,7 @@ function AdminNoticesPage() {
     const payload = {
       title: values.title,
       body: values.body,
+      cardBody: values.cardBody.trim() || null,
       branch: values.branch.trim() || null,
       displayType: values.displayType.length ? values.displayType : ["card"],
       isPinned: values.isPinned,
@@ -191,6 +194,7 @@ function AdminNoticesPage() {
                       id: n.id,
                       title: n.title,
                       body: n.body ?? "",
+                      cardBody: n.card_body ?? "",
                       branch: n.branch ?? "",
                       displayType: ((n.display_type ?? ["card"]) as ("main" | "card")[]),
                       isPinned: n.is_pinned,
@@ -268,15 +272,33 @@ function AdminNoticesPage() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>본문</Label>
-                <Textarea
-                  value={form.body}
-                  onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-                  rows={8}
-                  placeholder="공지 내용을 입력하세요."
-                />
-              </div>
+              {form.displayType.includes("main") && (
+                <div className="space-y-1.5">
+                  <Label>메인 설명 본문</Label>
+                  <Textarea
+                    value={form.body}
+                    onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+                    rows={8}
+                    placeholder="공지 페이지 상단 안내 영역에 표시될 내용을 입력하세요."
+                  />
+                </div>
+              )}
+              {form.displayType.includes("card") && (
+                <div className="space-y-1.5">
+                  <Label>카드 내용</Label>
+                  <Textarea
+                    value={form.cardBody}
+                    onChange={(e) => setForm((f) => ({ ...f, cardBody: e.target.value }))}
+                    rows={5}
+                    placeholder="카드 목록과 카드 상세 팝업에 표시될 내용을 입력하세요."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {form.displayType.includes("main")
+                      ? "비워두면 메인 설명 본문이 카드에도 표시됩니다."
+                      : "카드 목록과 카드 상세 팝업에 표시됩니다."}
+                  </p>
+                </div>
+              )}
             </div>
 
             <hr className="border-border" />

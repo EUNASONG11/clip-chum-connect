@@ -1,0 +1,1 @@
+ALTER TABLE public.notices ADD COLUMN IF NOT EXISTS card_body text;

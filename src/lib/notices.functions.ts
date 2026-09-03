@@ -8,6 +8,7 @@ export type PublicNotice = {
   id: string;
   title: string;
   body: string;
+  card_body: string | null;
   branch: string | null;
   is_pinned: boolean;
   display_type: ("main" | "card")[];
@@ -34,7 +35,7 @@ export const listPublicNotices = createServerFn({ method: "GET" }).handler(async
 
   const { data, error } = await client
     .from("notices")
-    .select("id, title, body, branch, is_pinned, display_type, created_at")
+    .select("id, title, body, card_body, branch, is_pinned, display_type, created_at")
     .eq("is_published", true)
     .is("deleted_at", null)
     .order("is_pinned", { ascending: false })
@@ -61,7 +62,7 @@ export const listManagedNotices = createServerFn({ method: "GET" })
     const scope = await assertNoticeManager(context as any);
     const { data, error } = await context.supabase
       .from("notices")
-      .select("id, title, body, branch, is_pinned, is_published, display_type, created_at, updated_at")
+      .select("id, title, body, card_body, branch, is_pinned, is_published, display_type, created_at, updated_at")
       .is("deleted_at", null)
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
@@ -73,6 +74,7 @@ export const listManagedNotices = createServerFn({ method: "GET" })
 const noticeInput = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요."),
   body: z.string().default(""),
+  cardBody: z.string().trim().max(2000, "카드 내용은 2000자 이하여야 합니다.").nullable().optional(),
   branch: z.string().trim().nullable().optional(),
   displayType: z.array(z.enum(["main", "card"])).default(["card"]),
   isPinned: z.boolean().default(false),
@@ -85,9 +87,11 @@ export const createNotice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertNoticeManager(context as any);
     const branch = data.branch || null;
+    const cardBody = data.cardBody?.trim() || null;
     const { error } = await context.supabase.from("notices").insert({
       title: data.title,
       body: data.body,
+      card_body: cardBody,
       branch,
       display_type: data.displayType,
       is_pinned: data.isPinned,
@@ -108,6 +112,7 @@ export const updateNotice = createServerFn({ method: "POST" })
       .update({
         title: data.title,
         body: data.body,
+        card_body: data.cardBody?.trim() || null,
         branch: data.branch || null,
         display_type: data.displayType,
         is_pinned: data.isPinned,
