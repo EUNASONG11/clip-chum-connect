@@ -115,7 +115,7 @@ function NoticePage() {
                   {m.branch && <Badge variant="secondary">{m.branch}</Badge>}
                 </div>
                 <h2 className="mt-2 text-lg font-semibold sm:text-xl">{m.title}</h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
                   {m.body}
                 </p>
               </section>
