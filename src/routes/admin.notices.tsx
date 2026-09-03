@@ -237,25 +237,36 @@ function AdminNoticesPage() {
 
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">공지 내용</h4>
-              <div className="space-y-1.5">
+              <div className="space-y-3">
                 <Label>노출 위치</Label>
-                <Select
-                  value={form.displayType}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, displayType: v as "main" | "card" }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="main">메인 설명 (페이지 상단 안내문)</SelectItem>
-                    <SelectItem value="card">공지 카드 (목록에 카드로 표시)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  "메인 설명"은 공지 페이지 상단 안내 영역에, "공지 카드"는 그 아래 카드 목록에 표시됩니다.
-                </p>
+                <div className="space-y-2">
+                  {(["main", "card"] as const).map((type) => (
+                    <div key={type} className="flex items-start gap-2">
+                      <Checkbox
+                        id={`display-${type}`}
+                        checked={form.displayType.includes(type)}
+                        onCheckedChange={(checked) =>
+                          setForm((f) => {
+                            const next = checked
+                              ? [...new Set([...f.displayType, type])]
+                              : f.displayType.filter((t) => t !== type);
+                            return { ...f, displayType: next.length ? next : ["card"] };
+                          })
+                        }
+                      />
+                      <div className="grid gap-0.5 leading-none">
+                        <Label htmlFor={`display-${type}`} className="cursor-pointer text-sm font-medium">
+                          {type === "main" ? "메인 설명" : "공지 카드"}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {type === "main"
+                            ? "공지 페이지 상단 안내 영역에 표시"
+                            : "공지 페이지 카드 목록에 표시"}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label>본문</Label>
