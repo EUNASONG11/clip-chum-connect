@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicNotices } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
-import { Megaphone, Pin, Clock, BookOpen, House } from "lucide-react";
+import { Megaphone, Pin, BookOpen, House } from "lucide-react";
 
 export const Route = createFileRoute("/notice/")({
   head: () => ({
@@ -18,20 +18,6 @@ export const Route = createFileRoute("/notice/")({
   component: NoticePage,
 });
 
-
-function relativeTime(value: string) {
-  const diff = Date.now() - new Date(value).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "1분 미만 전";
-  if (min < 60) return `${min}분 전`;
-  const hour = Math.floor(min / 60);
-  if (hour < 24) return `약 ${hour}시간 전`;
-  const day = Math.floor(hour / 24);
-  if (day < 30) return `${day}일 전`;
-  const month = Math.floor(day / 30);
-  if (month < 12) return `약 ${month}개월 전`;
-  return `약 ${Math.floor(month / 12)}년 전`;
-}
 
 /** 카드 본문에 보여줄 요약: 본문 첫 문단 */
 function summarize(body: string) {
