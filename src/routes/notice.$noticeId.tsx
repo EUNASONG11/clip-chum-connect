@@ -48,14 +48,7 @@ function NoticeDetailNotFound() {
 }
 
 function NoticeDetailPage() {
-  const notice = Route.useLoaderData();
-  const { data } = useQuery({
-    queryKey: ["public-notice", notice.id],
-    queryFn: async () => (await getPublicNotice({ data: { id: notice.id } })).notice,
-    initialData: notice,
-    staleTime: 60 * 1000,
-  });
-  const n = data ?? notice;
+  const n = Route.useLoaderData();
   const cards =
     Array.isArray(n.cards) && n.cards.length > 0
       ? n.cards
