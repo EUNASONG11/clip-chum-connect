@@ -18,13 +18,6 @@ export const Route = createFileRoute("/notice")({
   component: NoticePage,
 });
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
 
 function relativeTime(value: string) {
   const diff = Date.now() - new Date(value).getTime();
