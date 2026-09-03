@@ -61,6 +61,13 @@ function AuthPage() {
 
   const [loading, setLoading] = useState(false);
 
+  const { data: noticesData } = useQuery({
+    queryKey: ["login-notices"],
+    queryFn: () => listPublicNotices(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const latest = noticesData?.notices?.[0];
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) return;
