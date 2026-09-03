@@ -87,9 +87,11 @@ export const createNotice = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertNoticeManager(context as any);
     const branch = data.branch || null;
+    const cardBody = data.cardBody?.trim() || null;
     const { error } = await context.supabase.from("notices").insert({
       title: data.title,
       body: data.body,
+      card_body: cardBody,
       branch,
       display_type: data.displayType,
       is_pinned: data.isPinned,
@@ -110,6 +112,7 @@ export const updateNotice = createServerFn({ method: "POST" })
       .update({
         title: data.title,
         body: data.body,
+        card_body: data.cardBody?.trim() || null,
         branch: data.branch || null,
         display_type: data.displayType,
         is_pinned: data.isPinned,
