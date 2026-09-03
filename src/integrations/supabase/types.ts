@@ -613,6 +613,7 @@ export type Database = {
           body: string
           branch: string | null
           card_body: string | null
+          cards: Json
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -628,6 +629,7 @@ export type Database = {
           body?: string
           branch?: string | null
           card_body?: string | null
+          cards?: Json
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -643,6 +645,7 @@ export type Database = {
           body?: string
           branch?: string | null
           card_body?: string | null
+          cards?: Json
           created_at?: string
           created_by?: string
           deleted_at?: string | null
