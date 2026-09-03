@@ -49,6 +49,39 @@ export const listPublicNotices = createServerFn({ method: "GET" }).handler(async
   return { notices: (data ?? []) as PublicNotice[] };
 });
 
+/** 로그인 없이 조회하는 공개 공지 단건 */
+export const getPublicNotice = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+    const url = process.env["SUPABASE_URL"]!;
+    const client = createClient<Database>(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) => {
+          const h = new Headers(init?.headers);
+          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
+            h.delete("Authorization");
+          }
+          h.set("apikey", key);
+          return fetch(input, { ...init, headers: h });
+        },
+      },
+    });
+
+    const { data: row, error } = await client
+      .from("notices")
+      .select("id, title, body, card_body, cards, branch, is_pinned, display_type, created_at")
+      .eq("id", data.id)
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (error) throw new Error(error.message);
+    if (!row) throw notFound();
+    return { notice: row as PublicNotice };
+  });
+
 async function assertNoticeManager(context: { supabase: any; userId: string }) {
   const [{ data: admin }, { data: branch }] = await Promise.all([
     context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" }),
