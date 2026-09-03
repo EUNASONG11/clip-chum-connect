@@ -68,7 +68,9 @@ function NoticePage() {
   });
 
   const [selected, setSelected] = useState<PublicNotice | null>(null);
-  const notices = data?.notices ?? [];
+  const all = data?.notices ?? [];
+  const mains = all.filter((n) => n.display_type === "main");
+  const notices = all.filter((n) => n.display_type !== "main");
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -85,13 +87,34 @@ function NoticePage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
-        <section className="mb-10 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
-          <h2 className="text-base font-semibold sm:text-lg">이재식국어 학원 공지사항 안내</h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            학원의 주요 소식, 교육원별 안내, 수업 변경 사항 등을 확인하실 수 있습니다.
-            중요 공지는 상단에 고정되어 있으며, 각 카드를 누르면 전체 내용을 확인할 수 있습니다.
-          </p>
-        </section>
+        {mains.length === 0 ? (
+          <section className="mb-10 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+            <h2 className="text-base font-semibold sm:text-lg">이재식국어 학원 공지사항 안내</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              학원의 주요 소식, 교육원별 안내, 수업 변경 사항 등을 확인하실 수 있습니다.
+              중요 공지는 상단에 고정되어 있으며, 각 카드를 누르면 전체 내용을 확인할 수 있습니다.
+            </p>
+          </section>
+        ) : (
+          <div className="mb-10 space-y-4">
+            {mains.map((m) => (
+              <section key={m.id} className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  {m.is_pinned && (
+                    <Badge className="gap-1">
+                      <Pin className="h-3 w-3" /> 중요
+                    </Badge>
+                  )}
+                  {m.branch && <Badge variant="secondary">{m.branch}</Badge>}
+                </div>
+                <h2 className="mt-2 text-lg font-semibold sm:text-xl">{m.title}</h2>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                  {m.body}
+                </p>
+              </section>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <p className="py-16 text-center text-sm text-muted-foreground">불러오는 중…</p>

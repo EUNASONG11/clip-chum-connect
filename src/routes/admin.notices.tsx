@@ -49,6 +49,7 @@ type FormState = {
   title: string;
   body: string;
   branch: string;
+  displayType: "main" | "card";
   isPinned: boolean;
   isPublished: boolean;
 };
@@ -57,6 +58,7 @@ const emptyForm: FormState = {
   title: "",
   body: "",
   branch: "",
+  displayType: "card",
   isPinned: false,
   isPublished: true,
 };
@@ -85,6 +87,7 @@ function AdminNoticesPage() {
         title: values.title,
         body: values.body,
         branch: values.branch.trim() || null,
+        displayType: values.displayType,
         isPinned: values.isPinned,
         isPublished: values.isPublished,
       };
@@ -163,6 +166,9 @@ function AdminNoticesPage() {
                     {n.is_published ? "게시중" : "숨김"}
                   </Badge>
                   {n.branch && <Badge variant="outline">{n.branch}</Badge>}
+                  <Badge variant="outline">
+                    {n.display_type === "main" ? "메인 설명" : "카드"}
+                  </Badge>
                   <span className="truncate font-semibold">{n.title}</span>
                 </div>
                 <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-sm text-muted-foreground">
@@ -182,6 +188,7 @@ function AdminNoticesPage() {
                       title: n.title,
                       body: n.body ?? "",
                       branch: n.branch ?? "",
+                      displayType: (n.display_type ?? "card") as "main" | "card",
                       isPinned: n.is_pinned,
                       isPublished: n.is_published,
                     });
@@ -224,6 +231,26 @@ function AdminNoticesPage() {
 
             <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
               <h4 className="text-sm font-semibold text-foreground">공지 내용</h4>
+              <div className="space-y-1.5">
+                <Label>노출 위치</Label>
+                <Select
+                  value={form.displayType}
+                  onValueChange={(v) =>
+                    setForm((f) => ({ ...f, displayType: v as "main" | "card" }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="main">메인 설명 (페이지 상단 안내문)</SelectItem>
+                    <SelectItem value="card">공지 카드 (목록에 카드로 표시)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  "메인 설명"은 공지 페이지 상단 안내 영역에, "공지 카드"는 그 아래 카드 목록에 표시됩니다.
+                </p>
+              </div>
               <div className="space-y-1.5">
                 <Label>본문</Label>
                 <Textarea
