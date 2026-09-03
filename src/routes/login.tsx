@@ -149,22 +149,32 @@ function AuthPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 py-8">
-      <Link
-        to="/notice"
-        className="flex w-full max-w-md items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/10"
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <Megaphone className="h-4 w-4 shrink-0" />
-          {latest ? (
+      {latest ? (
+        <Link
+          to="/notice/$noticeId"
+          params={{ noticeId: latest.id }}
+          className="flex w-full max-w-md items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/10"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Megaphone className="h-4 w-4 shrink-0" />
             <span className="truncate">
               <span className="font-semibold">공지</span> · {latest.title}
             </span>
-          ) : (
-            "공지사항 — 로그인 없이 확인할 수 있어요"
-          )}
-        </span>
-        <ChevronRight className="h-4 w-4 shrink-0" />
-      </Link>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </Link>
+      ) : (
+        <Link
+          to="/notice"
+          className="flex w-full max-w-md items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/10"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Megaphone className="h-4 w-4 shrink-0" />
+            공지사항 — 로그인 없이 확인할 수 있어요
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        </Link>
+      )}
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
