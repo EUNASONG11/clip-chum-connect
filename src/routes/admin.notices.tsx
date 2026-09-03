@@ -189,7 +189,7 @@ function AdminNoticesPage() {
                       title: n.title,
                       body: n.body ?? "",
                       branch: n.branch ?? "",
-                      displayType: (n.display_type ?? "card") as "main" | "card",
+                      displayType: ((n.display_type ?? ["card"]) as ("main" | "card")[]),
                       isPinned: n.is_pinned,
                       isPublished: n.is_published,
                     });
