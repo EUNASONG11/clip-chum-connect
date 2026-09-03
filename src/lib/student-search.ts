@@ -1,8 +1,8 @@
 // 학생 검색 공통 규칙
 // - 검색어가 없거나 너무 짧으면(사실상 전체 조회) 조회하지 않는다.
 // - 이름은 2자 이상, 숫자(전화번호)는 4자 이상만 검색을 허용한다.
-export const MAX_STUDENT_SEARCH_RESULTS = 20;
-export const PER_TOKEN_FETCH_LIMIT = 30;
+export const MAX_STUDENT_SEARCH_RESULTS = 500;
+export const PER_TOKEN_FETCH_LIMIT = 500;
 export const MIN_NAME_LENGTH = 2;
 export const MIN_PHONE_DIGITS = 4;
 
