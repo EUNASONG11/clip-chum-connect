@@ -31,6 +31,12 @@ function formatDate(value: string) {
   });
 }
 
+const TONES = [
+  "bg-primary/5 border-primary/15",
+  "bg-accent/40 border-border",
+  "bg-secondary/60 border-border",
+] as const;
+
 function NoticeDetailNotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted/30 px-4">
@@ -59,7 +65,7 @@ function NoticeDetailPage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-muted/30">
       <header className="border-b border-border/60 bg-card">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex min-w-0 items-center gap-2">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
               <Megaphone className="h-4 w-4" />
@@ -88,8 +94,8 @@ function NoticeDetailPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8">
-        <article className="rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        <section className="mb-8 rounded-2xl border bg-card p-5 shadow-sm sm:mb-10 sm:p-8">
           <div className="flex flex-wrap items-center gap-2">
             {n.is_pinned && (
               <Badge className="gap-1">
@@ -98,35 +104,42 @@ function NoticeDetailPage() {
             )}
             {n.branch && <Badge variant="secondary">{n.branch}</Badge>}
           </div>
-          <h2 className="mt-2 break-words text-xl font-bold sm:text-2xl [overflow-wrap:anywhere]">
+          <h2 className="mt-2 break-words text-lg font-semibold sm:text-xl [overflow-wrap:anywhere]">
             {n.title}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{formatDate(n.created_at)}</p>
-          <div className="mt-4 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
+          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
             {n.body}
-          </div>
-        </article>
+          </p>
+        </section>
 
         {cards.length > 0 && (
-          <section className="mt-6 space-y-4">
-            {cards.map((card, index) => (
-              <article key={index} className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {cards.map((card, i) => (
+              <article
+                key={i}
+                className={`flex w-full flex-col overflow-hidden rounded-2xl border text-left shadow-sm ${
+                  TONES[i % TONES.length]
+                }`}
+              >
                 {card.imageUrl && (
                   <img
                     src={card.imageUrl}
                     alt={`${card.title} 이미지`}
-                    className="block max-h-[min(70vh,720px)] w-full object-contain object-center"
+                    className="block max-h-[min(60vh,560px)] w-full border-b border-border/60 bg-card object-contain object-center"
                   />
                 )}
-                <div className="p-5 sm:p-6">
-                  <h3 className="break-words text-base font-bold [overflow-wrap:anywhere]">{card.title}</h3>
-                  <div className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                <div className="flex flex-1 flex-col p-4 sm:p-5">
+                  <h3 className="break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
+                    {card.title}
+                  </h3>
+                  <p className="mt-1.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
                     {card.body}
-                  </div>
+                  </p>
                 </div>
               </article>
             ))}
-          </section>
+          </div>
         )}
       </main>
     </div>
