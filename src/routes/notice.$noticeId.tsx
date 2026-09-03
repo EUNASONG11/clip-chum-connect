@@ -1,24 +1,18 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { getPublicNotice } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
 import { Megaphone, Pin, House, List } from "lucide-react";
 
 export const Route = createFileRoute("/notice/$noticeId")({
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.title} — 공지사항 — 이재식국어` },
-          { name: "description", content: loaderData.body?.slice(0, 120) || loaderData.title },
-          { property: "og:title", content: `${loaderData.title} — 이재식국어` },
-          { property: "og:description", content: loaderData.body?.slice(0, 120) || loaderData.title },
-          { property: "og:type", content: "article" },
-          { name: "twitter:card", content: "summary" },
-        ]
-      : [
-          { title: "공지를 찾을 수 없습니다 — 이재식국어" },
-          { name: "robots", content: "noindex" },
-        ],
+  head: () => ({
+    meta: [
+      { title: "공지사항 상세 — 이재식국어" },
+      { name: "description", content: "이재식국어 학원 공지사항 상세 내용입니다." },
+      { property: "og:title", content: "공지사항 상세 — 이재식국어" },
+      { property: "og:description", content: "이재식국어 학원 공지사항 상세 내용입니다." },
+      { property: "og:type", content: "article" },
+      { name: "twitter:card", content: "summary" },
+    ],
   }),
   loader: async ({ params }) => {
     const { notice } = await getPublicNotice({ data: { id: params.noticeId } });
