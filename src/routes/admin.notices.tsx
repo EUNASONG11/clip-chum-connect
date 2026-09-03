@@ -17,6 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -25,6 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink } from "lucide-react";
+
+const BRANCHES = ["상동", "청라", "송도"];
 
 export const Route = createFileRoute("/admin/notices")({
   head: () => ({ meta: [{ title: "공지사항 관리 — 관리자" }] }),
