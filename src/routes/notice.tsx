@@ -131,16 +131,16 @@ function NoticePage() {
           </p>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {notices.map((n, i) => (
+            {cards.map((c, i) => (
               <button
-                key={n.id}
+                key={`${c.notice.id}-${i}`}
                 type="button"
-                onClick={() => setSelected(n)}
+                onClick={() => setSelected(c)}
                 className={`group relative flex flex-col rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
                   TONES[i % TONES.length]
                 }`}
               >
-                {n.is_pinned && (
+                {c.notice.is_pinned && (
                   <Badge className="absolute -top-2 left-4 gap-1 rounded-full px-2 py-0.5 text-[11px] shadow">
                     <Pin className="h-3 w-3" /> 중요
                   </Badge>
@@ -150,21 +150,21 @@ function NoticePage() {
                     <BookOpen className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-base font-bold">{n.title}</h2>
-                    {n.branch && (
+                    <h2 className="truncate text-base font-bold">{c.title}</h2>
+                    {c.notice.branch && (
                       <Badge variant="secondary" className="mt-1">
-                        {n.branch}
+                        {c.notice.branch}
                       </Badge>
                     )}
                   </div>
                 </div>
 
                 <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-                  {summarize(n.card_body || n.body)}
+                  {summarize(c.body)}
                 </p>
 
                 <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" /> {relativeTime(n.created_at)}
+                  <Clock className="h-3 w-3" /> {relativeTime(c.notice.created_at)}
                 </p>
 
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
