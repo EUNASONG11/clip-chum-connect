@@ -212,7 +212,7 @@ function AdminNoticesPage() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{form.id ? "공지 수정" : "공지 작성"}</DialogTitle>
           </DialogHeader>
