@@ -216,8 +216,8 @@ function AdminNoticesPage() {
           <DialogHeader>
             <DialogTitle>{form.id ? "공지 수정" : "공지 작성"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-5">
-            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+          <div className="space-y-6">
+            <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">기본 정보</h4>
               <div className="space-y-1.5">
                 <Label>제목</Label>
@@ -227,9 +227,11 @@ function AdminNoticesPage() {
                   placeholder="공지 제목"
                 />
               </div>
-            </section>
+            </div>
 
-            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+            <hr className="border-border" />
+
+            <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">공지 내용</h4>
               <div className="space-y-1.5">
                 <Label>노출 위치</Label>
@@ -260,9 +262,11 @@ function AdminNoticesPage() {
                   placeholder="공지 내용을 입력하세요."
                 />
               </div>
-            </section>
+            </div>
 
-            <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+            <hr className="border-border" />
+
+            <div className="space-y-3">
               <h4 className="text-sm font-semibold text-foreground">노출 설정</h4>
               <div className="space-y-1.5">
                 <Label>교육원</Label>
@@ -306,7 +310,7 @@ function AdminNoticesPage() {
                   onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v }))}
                 />
               </div>
-            </section>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
