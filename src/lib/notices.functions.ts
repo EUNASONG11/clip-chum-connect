@@ -10,7 +10,7 @@ export type PublicNotice = {
   body: string;
   branch: string | null;
   is_pinned: boolean;
-  display_type: "main" | "card";
+  display_type: ("main" | "card")[];
   created_at: string;
 };
 
@@ -74,7 +74,7 @@ const noticeInput = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요."),
   body: z.string().default(""),
   branch: z.string().trim().nullable().optional(),
-  displayType: z.enum(["main", "card"]).default("card"),
+  displayType: z.array(z.enum(["main", "card"])).default(["card"]),
   isPinned: z.boolean().default(false),
   isPublished: z.boolean().default(true),
 });

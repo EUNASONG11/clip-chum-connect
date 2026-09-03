@@ -69,8 +69,8 @@ function NoticePage() {
 
   const [selected, setSelected] = useState<PublicNotice | null>(null);
   const all = data?.notices ?? [];
-  const mains = all.filter((n) => n.display_type === "main");
-  const notices = all.filter((n) => n.display_type !== "main");
+  const mains = all.filter((n) => n.display_type.includes("main"));
+  const notices = all.filter((n) => n.display_type.includes("card"));
 
   return (
     <div className="min-h-screen bg-muted/30">
