@@ -32,7 +32,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink } from "lucide-react";
+import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink, Copy } from "lucide-react";
 
 const BRANCHES = ["상동", "청라", "송도"];
 
