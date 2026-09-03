@@ -82,20 +82,20 @@ function NoticePage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b border-border/60 bg-card">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6 sm:py-5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Megaphone className="h-4 w-4" />
           </span>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-bold tracking-tight">공지사항</h1>
-            <p className="text-xs text-muted-foreground">이재식국어 학원 안내</p>
+            <p className="truncate text-xs text-muted-foreground">이재식국어 학원 안내</p>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {mains.length === 0 ? (
-          <section className="mb-10 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+          <section className="mb-8 rounded-2xl border bg-card p-5 shadow-sm sm:mb-10 sm:p-8">
             <h2 className="text-base font-semibold sm:text-lg">이재식국어 학원 공지사항 안내</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               학원의 주요 소식, 교육원별 안내, 수업 변경 사항 등을 확인하실 수 있습니다.
@@ -103,9 +103,9 @@ function NoticePage() {
             </p>
           </section>
         ) : (
-          <div className="mb-10 space-y-4">
+          <div className="mb-8 space-y-4 sm:mb-10">
             {mains.map((m) => (
-              <section key={m.id} className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+              <section key={m.id} className="rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
                 <div className="flex flex-wrap items-center gap-2">
                   {m.is_pinned && (
                     <Badge className="gap-1">
@@ -130,13 +130,13 @@ function NoticePage() {
             등록된 공지사항이 없습니다.
           </p>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {cards.map((c, i) => (
               <button
                 key={`${c.notice.id}-${i}`}
                 type="button"
                 onClick={() => setSelected(c)}
-                className={`group relative flex flex-col rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                className={`group relative flex w-full flex-col rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
                   TONES[i % TONES.length]
                 }`}
               >
@@ -145,7 +145,7 @@ function NoticePage() {
                     <Pin className="h-3 w-3" /> 중요
                   </Badge>
                 )}
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
                     <BookOpen className="h-5 w-5" />
                   </span>
@@ -164,7 +164,7 @@ function NoticePage() {
                 </p>
 
                 <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" /> {relativeTime(c.notice.created_at)}
+                  <Clock className="h-3 w-3 shrink-0" /> {relativeTime(c.notice.created_at)}
                 </p>
 
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -177,7 +177,7 @@ function NoticePage() {
       </main>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[80vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
           <DialogHeader>
             <div className="flex flex-wrap items-center gap-2">
               {selected?.notice.is_pinned && (
