@@ -230,14 +230,16 @@ function AdminNoticesPage() {
             <div className="space-y-1.5">
               <Label>교육원 (선택하지 않으면 전체 공지)</Label>
               <Select
-                value={form.branch}
-                onValueChange={(value) => setForm((f) => ({ ...f, branch: value }))}
+                value={form.branch || "__all__"}
+                onValueChange={(value) =>
+                  setForm((f) => ({ ...f, branch: value === "__all__" ? "" : value }))
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="전체 공지" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">전체 공지</SelectItem>
+                  <SelectItem value="__all__">전체 공지</SelectItem>
                   {BRANCHES.map((b) => (
                     <SelectItem key={b} value={b}>
                       {b}
