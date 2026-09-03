@@ -153,7 +153,7 @@ function NoticePage() {
                 </div>
 
                 <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
-                  {summarize(n.body)}
+                  {summarize(n.card_body || n.body)}
                 </p>
 
                 <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
@@ -186,7 +186,7 @@ function NoticePage() {
             </p>
           </DialogHeader>
           <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {selected?.body || "내용이 없습니다."}
+            {selected?.card_body || selected?.body || "내용이 없습니다."}
           </div>
         </DialogContent>
       </Dialog>
