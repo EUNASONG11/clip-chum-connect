@@ -84,14 +84,14 @@ function AdminNoticesPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (values: FormState) => {
-      const payload = {
-        title: values.title,
-        body: values.body,
-        branch: values.branch.trim() || null,
-        displayType: values.displayType,
-        isPinned: values.isPinned,
-        isPublished: values.isPublished,
-      };
+    const payload = {
+      title: values.title,
+      body: values.body,
+      branch: values.branch.trim() || null,
+      displayType: values.displayType.length ? values.displayType : ["card"],
+      isPinned: values.isPinned,
+      isPublished: values.isPublished,
+    };
       if (values.id) return update({ data: { ...payload, id: values.id } });
       return create({ data: payload });
     },
