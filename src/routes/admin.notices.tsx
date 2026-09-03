@@ -50,6 +50,7 @@ type FormState = {
   title: string;
   body: string;
   cardBody: string;
+  cards: { title: string; body: string }[];
   branch: string;
   displayType: ("main" | "card")[];
   isPinned: boolean;
@@ -60,6 +61,7 @@ const emptyForm: FormState = {
   title: "",
   body: "",
   cardBody: "",
+  cards: [],
   branch: "",
   displayType: ["card"],
   isPinned: false,
@@ -89,7 +91,10 @@ function AdminNoticesPage() {
     const payload = {
       title: values.title,
       body: values.body,
-      cardBody: values.cardBody.trim() || null,
+      cardBody: null,
+      cards: values.cards
+        .map((c) => ({ title: c.title.trim(), body: c.body.trim() }))
+        .filter((c) => c.title && c.body),
       branch: values.branch.trim() || null,
       displayType: values.displayType.length ? values.displayType : ["card"],
       isPinned: values.isPinned,
