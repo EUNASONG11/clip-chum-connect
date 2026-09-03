@@ -228,12 +228,23 @@ function AdminNoticesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>교육원 (비우면 전체 공지)</Label>
-              <Input
+              <Label>교육원 (선택하지 않으면 전체 공지)</Label>
+              <Select
                 value={form.branch}
-                onChange={(e) => setForm((f) => ({ ...f, branch: e.target.value }))}
-                placeholder="예: 청라"
-              />
+                onValueChange={(value) => setForm((f) => ({ ...f, branch: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="전체 공지" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">전체 공지</SelectItem>
+                  {BRANCHES.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
               <Label className="cursor-pointer">상단 고정(중요 공지)</Label>
