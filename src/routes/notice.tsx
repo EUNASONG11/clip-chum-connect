@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listPublicNotices, type PublicNotice } from "@/lib/notices.functions";
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Megaphone, Pin, Clock, BookOpen } from "lucide-react";
+import { Megaphone, Pin, Clock, BookOpen, House } from "lucide-react";
 
 export const Route = createFileRoute("/notice")({
   head: () => ({
@@ -82,14 +82,23 @@ function NoticePage() {
   return (
     <div className="min-h-screen overflow-x-clip bg-muted/30">
       <header className="border-b border-border/60 bg-card">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6 sm:py-5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-            <Megaphone className="h-4 w-4" />
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-lg font-bold tracking-tight">공지사항</h1>
-            <p className="truncate text-xs text-muted-foreground">이재식국어 학원 안내</p>
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-center gap-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Megaphone className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold tracking-tight">공지사항</h1>
+              <p className="truncate text-xs text-muted-foreground">이재식국어 학원 안내</p>
+            </div>
           </div>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+          >
+            <House className="h-4 w-4" />
+            <span className="hidden sm:inline">홈으로</span>
+          </Link>
         </div>
       </header>
 
