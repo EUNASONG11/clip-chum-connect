@@ -50,7 +50,7 @@ type FormState = {
   title: string;
   body: string;
   branch: string;
-  displayType: "main" | "card";
+  displayType: ("main" | "card")[];
   isPinned: boolean;
   isPublished: boolean;
 };
@@ -59,7 +59,7 @@ const emptyForm: FormState = {
   title: "",
   body: "",
   branch: "",
-  displayType: "card",
+  displayType: ["card"],
   isPinned: false,
   isPublished: true,
 };
