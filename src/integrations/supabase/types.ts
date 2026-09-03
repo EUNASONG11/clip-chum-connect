@@ -616,6 +616,7 @@ export type Database = {
           created_by: string
           deleted_at: string | null
           deleted_by: string | null
+          display_type: string
           id: string
           is_pinned: boolean
           is_published: boolean
@@ -629,6 +630,7 @@ export type Database = {
           created_by: string
           deleted_at?: string | null
           deleted_by?: string | null
+          display_type?: string
           id?: string
           is_pinned?: boolean
           is_published?: boolean
@@ -642,6 +644,7 @@ export type Database = {
           created_by?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          display_type?: string
           id?: string
           is_pinned?: boolean
           is_published?: boolean
