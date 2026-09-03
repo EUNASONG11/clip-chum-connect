@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { notFound } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -79,8 +78,7 @@ export const getPublicNotice = createServerFn({ method: "GET" })
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    if (!row) throw notFound();
-    return { notice: row as PublicNotice };
+    return { notice: (row as PublicNotice | null) ?? null };
   });
 
 async function assertNoticeManager(context: { supabase: any; userId: string }) {
