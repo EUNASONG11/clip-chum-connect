@@ -10,7 +10,7 @@ export type PublicNotice = {
   body: string;
   branch: string | null;
   is_pinned: boolean;
-  display_type: "main" | "card";
+  display_type: ("main" | "card")[];
   created_at: string;
 };
 
