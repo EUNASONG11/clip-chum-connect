@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NoticeIndexRouteImport } from './routes/notice.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
 import { Route as NoticeNoticeIdRouteImport } from './routes/notice.$noticeId'
@@ -61,6 +62,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const NoticeIndexRoute = NoticeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => NoticeRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/notice/$noticeId': typeof NoticeNoticeIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/notice/': typeof NoticeIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
@@ -173,7 +180,6 @@ export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/login': typeof LoginRoute
   '/mypage': typeof MypageRoute
-  '/notice': typeof NoticeRouteWithChildren
   '/admin/dashboard': typeof AdminDashboardRoute
   '/admin/instructors': typeof AdminInstructorsRoute
   '/admin/notices': typeof AdminNoticesRoute
@@ -186,6 +192,7 @@ export interface FileRoutesByTo {
   '/notice/$noticeId': typeof NoticeNoticeIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/notice': typeof NoticeIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes': typeof AdminClassesIndexRoute
@@ -211,6 +218,7 @@ export interface FileRoutesById {
   '/notice/$noticeId': typeof NoticeNoticeIdRoute
   '/video/$id': typeof VideoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/notice/': typeof NoticeIndexRoute
   '/admin/classes/$id': typeof AdminClassesIdRoute
   '/admin/video/$id': typeof AdminVideoIdRoute
   '/admin/classes/': typeof AdminClassesIndexRoute
@@ -237,6 +245,7 @@ export interface FileRouteTypes {
     | '/notice/$noticeId'
     | '/video/$id'
     | '/admin/'
+    | '/notice/'
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes/'
@@ -247,7 +256,6 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/login'
     | '/mypage'
-    | '/notice'
     | '/admin/dashboard'
     | '/admin/instructors'
     | '/admin/notices'
@@ -260,6 +268,7 @@ export interface FileRouteTypes {
     | '/notice/$noticeId'
     | '/video/$id'
     | '/admin'
+    | '/notice'
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes'
@@ -284,6 +293,7 @@ export interface FileRouteTypes {
     | '/notice/$noticeId'
     | '/video/$id'
     | '/admin/'
+    | '/notice/'
     | '/admin/classes/$id'
     | '/admin/video/$id'
     | '/admin/classes/'
@@ -345,6 +355,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/notice/': {
+      id: '/notice/'
+      path: '/'
+      fullPath: '/notice/'
+      preLoaderRoute: typeof NoticeIndexRouteImport
+      parentRoute: typeof NoticeRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -495,10 +512,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface NoticeRouteChildren {
   NoticeNoticeIdRoute: typeof NoticeNoticeIdRoute
+  NoticeIndexRoute: typeof NoticeIndexRoute
 }
 
 const NoticeRouteChildren: NoticeRouteChildren = {
   NoticeNoticeIdRoute: NoticeNoticeIdRoute,
+  NoticeIndexRoute: NoticeIndexRoute,
 }
 
 const NoticeRouteWithChildren =

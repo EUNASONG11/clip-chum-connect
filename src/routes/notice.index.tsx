@@ -1,0 +1,167 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { listPublicNotices } from "@/lib/notices.functions";
+import { Badge } from "@/components/ui/badge";
+import { Megaphone, Pin, Clock, BookOpen, House } from "lucide-react";
+
+export const Route = createFileRoute("/notice/")({
+  head: () => ({
+    meta: [
+      { title: "공지사항 — 이재식국어" },
+      { name: "description", content: "이재식국어 학원 공지사항 안내 페이지입니다." },
+      { property: "og:title", content: "공지사항 — 이재식국어" },
+      { property: "og:description", content: "이재식국어 학원 공지사항 안내 페이지입니다." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: NoticePage,
+});
+
+
+function relativeTime(value: string) {
+  const diff = Date.now() - new Date(value).getTime();
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "1분 미만 전";
+  if (min < 60) return `${min}분 전`;
+  const hour = Math.floor(min / 60);
+  if (hour < 24) return `약 ${hour}시간 전`;
+  const day = Math.floor(hour / 24);
+  if (day < 30) return `${day}일 전`;
+  const month = Math.floor(day / 30);
+  if (month < 12) return `약 ${month}개월 전`;
+  return `약 ${Math.floor(month / 12)}년 전`;
+}
+
+/** 카드 본문에 보여줄 요약: 본문 첫 문단 */
+function summarize(body: string) {
+  const first = (body ?? "").split(/\n\s*\n/)[0]?.trim() ?? "";
+  return first.replace(/\n/g, " ") || "자세한 내용은 카드를 눌러 확인하세요.";
+}
+
+const TONES = [
+  "bg-primary/5 border-primary/15",
+  "bg-accent/40 border-border",
+  "bg-secondary/60 border-border",
+] as const;
+
+function NoticePage() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["public-notices"],
+    queryFn: () => listPublicNotices(),
+    staleTime: 60 * 1000,
+  });
+
+  const all = data?.notices ?? [];
+  const mains = all.filter((n) => n.display_type.includes("main"));
+  const cards = all
+    .filter((n) => n.display_type.includes("card"))
+    .flatMap((n) => {
+      const items = Array.isArray(n.cards) && n.cards.length > 0
+        ? n.cards
+        : [{ title: n.title, body: n.card_body || n.body }];
+      return items.map((c) => ({ notice: n, title: c.title, body: c.body }));
+    });
+
+  return (
+    <div className="min-h-screen overflow-x-clip bg-muted/30">
+      <header className="border-b border-border/60 bg-card">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex items-center gap-2">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+              <Megaphone className="h-4 w-4" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold tracking-tight">공지사항</h1>
+              <p className="truncate text-xs text-muted-foreground">이재식국어 학원 안내</p>
+            </div>
+          </div>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent"
+          >
+            <House className="h-4 w-4" />
+            <span className="hidden sm:inline">홈으로</span>
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+        {mains.length === 0 ? (
+          <section className="mb-8 rounded-2xl border bg-card p-5 shadow-sm sm:mb-10 sm:p-8">
+            <h2 className="text-base font-semibold sm:text-lg">이재식국어 학원 공지사항 안내</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              학원의 주요 소식, 교육원별 안내, 수업 변경 사항 등을 확인하실 수 있습니다.
+              중요 공지는 상단에 고정되어 있으며, 각 카드를 누르면 전체 내용을 확인할 수 있습니다.
+            </p>
+          </section>
+        ) : (
+          <div className="mb-8 space-y-4 sm:mb-10">
+            {mains.map((m) => (
+              <section key={m.id} className="rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
+                <div className="flex flex-wrap items-center gap-2">
+                  {m.is_pinned && (
+                    <Badge className="gap-1">
+                      <Pin className="h-3 w-3" /> 중요
+                    </Badge>
+                  )}
+                  {m.branch && <Badge variant="secondary">{m.branch}</Badge>}
+                </div>
+                <h2 className="mt-2 text-lg font-semibold sm:text-xl">{m.title}</h2>
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                  {m.body}
+                </p>
+              </section>
+            ))}
+          </div>
+        )}
+
+        {isLoading ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">불러오는 중…</p>
+        ) : cards.length === 0 ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">
+            등록된 공지사항이 없습니다.
+          </p>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {cards.map((c, i) => (
+              <Link
+                key={`${c.notice.id}-${i}`}
+                to="/notice/$noticeId"
+                params={{ noticeId: c.notice.id }}
+                className={`group relative flex w-full flex-col rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
+                  TONES[i % TONES.length]
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  {c.notice.branch && (
+                    <span className="rounded-full border border-border bg-card px-2 py-0.5 font-medium">
+                      {c.notice.branch}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {relativeTime(c.notice.created_at)}
+                  </span>
+                </div>
+                <h3 className="mt-2 break-words text-base font-bold leading-snug [overflow-wrap:anywhere]">
+                  {c.title}
+                </h3>
+                <p className="mt-1.5 line-clamp-3 break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+                  {summarize(c.body)}
+                </p>
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  카드를 누르면 전체 내용을 볼 수 있어요
+                </div>
+                <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
+                  자세히 보기
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
