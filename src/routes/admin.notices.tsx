@@ -59,7 +59,35 @@ function AdminNoticesPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [uploadingCard, setUploadingCard] = useState<number | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<Record<number, string>>({});
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPreviewUrls = async () => {
+      const entries = await Promise.all(
+        form.cards.map(async (card, index) => {
+          if (!card.imageUrl) return [index, ""] as const;
+          if (card.imageUrl.startsWith("http")) return [index, card.imageUrl] as const;
+          const { data: signed } = await supabase.storage
+            .from(IMAGE_BUCKET)
+            .createSignedUrl(card.imageUrl, 60 * 60);
+          return [index, signed?.signedUrl ?? ""] as const;
+        }),
+      );
+      if (!cancelled) {
+        setPreviewUrls(
+          Object.fromEntries(entries.filter(([, url]) => url)),
+        );
+      }
+    };
+
+    void loadPreviewUrls();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.cards]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["managed-notices"],
@@ -205,7 +233,7 @@ function AdminNoticesPage() {
                   <div className="flex items-center justify-between gap-2"><Input value={card.title} onChange={(e) => updateCard(i, { title: e.target.value })} placeholder={`카드 ${i + 1} 제목`} /><Button type="button" variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, cards: f.cards.filter((_, index) => index !== i) }))}><Trash2 className="h-4 w-4" /></Button></div>
                   <Textarea value={card.body} onChange={(e) => updateCard(i, { body: e.target.value })} rows={4} placeholder="카드에 표시될 내용을 입력하세요." />
                   <input ref={(element) => { fileRefs.current[i] = element; }} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadCardImage(i, file); }} />
-                  {card.imageUrl && <img src={card.imageUrl.startsWith("http") ? card.imageUrl : supabase.storage.from(IMAGE_BUCKET).getPublicUrl(card.imageUrl).data.publicUrl} alt="첨부된 카드 이미지 미리보기" className="max-h-40 w-full rounded-md border object-cover" />}
+                  {previewUrls[i] && <img src={previewUrls[i]} alt="첨부된 카드 이미지 미리보기" className="max-h-40 w-full rounded-md border object-cover" />}
                   <div className="flex items-center gap-2"><Button type="button" variant="outline" size="sm" onClick={() => fileRefs.current[i]?.click()} disabled={uploadingCard === i}>{uploadingCard === i ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <ImagePlus className="mr-1 h-4 w-4" />} {card.imageUrl ? "이미지 교체" : "이미지 첨부"}</Button>{card.imageUrl && <Button type="button" variant="ghost" size="sm" onClick={() => updateCard(i, { imageUrl: null })}>이미지 제거</Button>}</div>
                 </div>)}</div>}
               </div>}
