@@ -17,7 +17,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Video, Eye, EyeOff } from "lucide-react";
+import { Video, Eye, EyeOff, Megaphone, ChevronRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "로그인 — e-Learning" }] }),
