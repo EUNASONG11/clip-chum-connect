@@ -159,7 +159,7 @@ function NoticePage() {
                   </div>
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+                <p className="mt-3 line-clamp-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                   {summarize(c.body)}
                 </p>
 
