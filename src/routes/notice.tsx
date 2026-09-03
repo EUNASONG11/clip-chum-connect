@@ -82,20 +82,20 @@ function NoticePage() {
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="border-b border-border/60 bg-card">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-6 py-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary/10 text-primary">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6 sm:py-5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
             <Megaphone className="h-4 w-4" />
           </span>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-bold tracking-tight">공지사항</h1>
-            <p className="text-xs text-muted-foreground">이재식국어 학원 안내</p>
+            <p className="truncate text-xs text-muted-foreground">이재식국어 학원 안내</p>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {mains.length === 0 ? (
-          <section className="mb-10 rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+          <section className="mb-8 rounded-2xl border bg-card p-5 shadow-sm sm:mb-10 sm:p-8">
             <h2 className="text-base font-semibold sm:text-lg">이재식국어 학원 공지사항 안내</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               학원의 주요 소식, 교육원별 안내, 수업 변경 사항 등을 확인하실 수 있습니다.
@@ -103,9 +103,9 @@ function NoticePage() {
             </p>
           </section>
         ) : (
-          <div className="mb-10 space-y-4">
+          <div className="mb-8 space-y-4 sm:mb-10">
             {mains.map((m) => (
-              <section key={m.id} className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
+              <section key={m.id} className="rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
                 <div className="flex flex-wrap items-center gap-2">
                   {m.is_pinned && (
                     <Badge className="gap-1">
