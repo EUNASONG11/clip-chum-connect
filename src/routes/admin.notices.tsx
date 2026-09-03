@@ -200,6 +200,12 @@ function AdminNoticesPage() {
                       title: n.title,
                       body: n.body ?? "",
                       cardBody: n.card_body ?? "",
+                      cards:
+                        Array.isArray(n.cards) && n.cards.length > 0
+                          ? (n.cards as { title: string; body: string }[])
+                          : n.card_body
+                            ? [{ title: n.title, body: n.card_body }]
+                            : [],
                       branch: n.branch ?? "",
                       displayType: ((n.display_type ?? ["card"]) as ("main" | "card")[]),
                       isPinned: n.is_pinned,
