@@ -9,6 +9,8 @@ import {
   syncStudentPassword,
   getMyMustChangePassword,
 } from "@/lib/vimeo.functions";
+import { listPublicNotices } from "@/lib/notices.functions";
+import { useQuery } from "@tanstack/react-query";
 
 
 import { Button } from "@/components/ui/button";
