@@ -482,20 +482,21 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       }
     }
 
-    // 승인 완료(student 역할)된 계정만 노출
+    // 관리자/강사 계정만 제외하고, 나머지 학생 계정은 모두 노출
     const candidateIds = Array.from(byId.keys());
     if (candidateIds.length === 0) return [];
     const { data: roleRows, error: roleErr } = await supabaseAdmin
       .from("user_roles")
-      .select("user_id")
-      .eq("role", "student")
+      .select("user_id, role")
+      .in("role", ["admin", "instructor", "branch_admin"])
       .is("deleted_at", null)
       .in("user_id", candidateIds);
     if (roleErr) throw new Error(roleErr.message);
-    const approved = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
+    const staff = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
 
     return candidateIds
-      .filter((id) => approved.has(id))
+      .filter((id) => !staff.has(id))
+
       .slice(0, MAX_STUDENT_SEARCH_RESULTS)
       .map((id) => {
         const r = byId.get(id);
