@@ -10,6 +10,7 @@ export type PublicNotice = {
   body: string;
   branch: string | null;
   is_pinned: boolean;
+  display_type: "main" | "card";
   created_at: string;
 };
 
@@ -33,7 +34,7 @@ export const listPublicNotices = createServerFn({ method: "GET" }).handler(async
 
   const { data, error } = await client
     .from("notices")
-    .select("id, title, body, branch, is_pinned, created_at")
+    .select("id, title, body, branch, is_pinned, display_type, created_at")
     .eq("is_published", true)
     .is("deleted_at", null)
     .order("is_pinned", { ascending: false })
@@ -60,7 +61,7 @@ export const listManagedNotices = createServerFn({ method: "GET" })
     const scope = await assertNoticeManager(context as any);
     const { data, error } = await context.supabase
       .from("notices")
-      .select("id, title, body, branch, is_pinned, is_published, created_at, updated_at")
+      .select("id, title, body, branch, is_pinned, is_published, display_type, created_at, updated_at")
       .is("deleted_at", null)
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
@@ -73,6 +74,7 @@ const noticeInput = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요."),
   body: z.string().default(""),
   branch: z.string().trim().nullable().optional(),
+  displayType: z.enum(["main", "card"]).default("card"),
   isPinned: z.boolean().default(false),
   isPublished: z.boolean().default(true),
 });
@@ -87,6 +89,7 @@ export const createNotice = createServerFn({ method: "POST" })
       title: data.title,
       body: data.body,
       branch,
+      display_type: data.displayType,
       is_pinned: data.isPinned,
       is_published: data.isPublished,
       created_by: context.userId,
@@ -106,6 +109,7 @@ export const updateNotice = createServerFn({ method: "POST" })
         title: data.title,
         body: data.body,
         branch: data.branch || null,
+        display_type: data.displayType,
         is_pinned: data.isPinned,
         is_published: data.isPublished,
       })
