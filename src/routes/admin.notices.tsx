@@ -247,3 +247,12 @@ function AdminNoticesPage() {
     </div>
   );
 }
+
+export const Route = createFileRoute("/admin/notices")({
+  component: () => (
+    <AdminOnly>
+      <AdminNoticesPage />
+    </AdminOnly>
+  ),
+});
+
