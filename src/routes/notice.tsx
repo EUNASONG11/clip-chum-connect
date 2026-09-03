@@ -80,7 +80,7 @@ function NoticePage() {
     });
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen overflow-x-clip bg-muted/30">
       <header className="border-b border-border/60 bg-card">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-4 sm:px-6 sm:py-5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
@@ -115,7 +115,7 @@ function NoticePage() {
                   {m.branch && <Badge variant="secondary">{m.branch}</Badge>}
                 </div>
                 <h2 className="mt-2 text-lg font-semibold sm:text-xl">{m.title}</h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
                   {m.body}
                 </p>
               </section>
@@ -159,7 +159,7 @@ function NoticePage() {
                   </div>
                 </div>
 
-                <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">
+                <p className="mt-3 line-clamp-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                   {summarize(c.body)}
                 </p>
 
@@ -192,7 +192,7 @@ function NoticePage() {
               {selected ? formatDate(selected.notice.created_at) : ""}
             </p>
           </DialogHeader>
-          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed [overflow-wrap:anywhere]">
             {selected?.body || "내용이 없습니다."}
           </div>
         </DialogContent>
