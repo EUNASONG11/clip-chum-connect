@@ -1,15 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listPublicNotices, type PublicNotice } from "@/lib/notices.functions";
+import { listPublicNotices } from "@/lib/notices.functions";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Megaphone, Pin, Clock, BookOpen, House } from "lucide-react";
 
 export const Route = createFileRoute("/notice")({
@@ -26,13 +18,6 @@ export const Route = createFileRoute("/notice")({
   component: NoticePage,
 });
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-}
 
 function relativeTime(value: string) {
   const diff = Date.now() - new Date(value).getTime();
@@ -67,7 +52,6 @@ function NoticePage() {
     staleTime: 60 * 1000,
   });
 
-  const [selected, setSelected] = useState<{ notice: PublicNotice; title: string; body: string } | null>(null);
   const all = data?.notices ?? [];
   const mains = all.filter((n) => n.display_type.includes("main"));
   const cards = all
@@ -141,66 +125,23 @@ function NoticePage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {cards.map((c, i) => (
-              <button
+              <Link
                 key={`${c.notice.id}-${i}`}
-                type="button"
-                onClick={() => setSelected(c)}
+                to="/notice/$noticeId"
+                params={{ noticeId: c.notice.id }}
                 className={`group relative flex w-full flex-col rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
                   TONES[i % TONES.length]
                 }`}
               >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
-                    <BookOpen className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="truncate text-base font-bold">{c.title}</h2>
-                    {c.notice.branch && (
-                      <Badge variant="secondary" className="mt-1">
-                        {c.notice.branch}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                <p className="mt-3 line-clamp-2 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
-                  {summarize(c.body)}
-                </p>
-
-                <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3 shrink-0" /> {relativeTime(c.notice.created_at)}
-                </p>
-
+...
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
                   자세히 보기
                 </span>
-              </button>
+              </Link>
             ))}
           </div>
         )}
       </main>
-
-      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-h-[80vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
-          <DialogHeader>
-            <div className="flex flex-wrap items-center gap-2">
-              {selected?.notice.is_pinned && (
-                <Badge className="gap-1">
-                  <Pin className="h-3 w-3" /> 중요
-                </Badge>
-              )}
-              {selected?.notice.branch && <Badge variant="secondary">{selected.notice.branch}</Badge>}
-            </div>
-            <DialogTitle className="text-left text-xl">{selected?.title}</DialogTitle>
-            <p className="text-left text-xs text-muted-foreground">
-              {selected ? formatDate(selected.notice.created_at) : ""}
-            </p>
-          </DialogHeader>
-          <div className="whitespace-pre-wrap break-words text-sm leading-relaxed [overflow-wrap:anywhere]">
-            {selected?.body || "내용이 없습니다."}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
