@@ -130,13 +130,13 @@ function NoticePage() {
             등록된 공지사항이 없습니다.
           </p>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             {cards.map((c, i) => (
               <button
                 key={`${c.notice.id}-${i}`}
                 type="button"
                 onClick={() => setSelected(c)}
-                className={`group relative flex flex-col rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                className={`group relative flex w-full flex-col rounded-2xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:p-5 ${
                   TONES[i % TONES.length]
                 }`}
               >
@@ -145,7 +145,7 @@ function NoticePage() {
                     <Pin className="h-3 w-3" /> 중요
                   </Badge>
                 )}
-                <div className="flex items-start gap-3">
+                <div className="flex min-w-0 items-start gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
                     <BookOpen className="h-5 w-5" />
                   </span>
@@ -164,7 +164,7 @@ function NoticePage() {
                 </p>
 
                 <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" /> {relativeTime(c.notice.created_at)}
+                  <Clock className="h-3 w-3 shrink-0" /> {relativeTime(c.notice.created_at)}
                 </p>
 
                 <span className="mt-4 block rounded-lg border border-border bg-card px-3 py-2 text-center text-sm font-medium transition group-hover:bg-primary group-hover:text-primary-foreground">
@@ -177,7 +177,7 @@ function NoticePage() {
       </main>
 
       <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-        <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+        <DialogContent className="max-h-[80vh] w-[calc(100vw-1.5rem)] max-w-[calc(100vw-1.5rem)] overflow-y-auto p-5 sm:max-w-2xl sm:p-6">
           <DialogHeader>
             <div className="flex flex-wrap items-center gap-2">
               {selected?.notice.is_pinned && (
