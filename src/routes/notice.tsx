@@ -59,7 +59,6 @@ function NoticePage() {
     staleTime: 60 * 1000,
   });
 
-  const [selected, setSelected] = useState<{ notice: PublicNotice; title: string; body: string } | null>(null);
   const all = data?.notices ?? [];
   const mains = all.filter((n) => n.display_type.includes("main"));
   const cards = all
