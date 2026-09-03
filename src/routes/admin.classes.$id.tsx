@@ -847,7 +847,7 @@ function ClassDetailPage() {
                   </div>
                 );
               })()}
-              <ul className="divide-y">
+              <ul className="max-h-[420px] divide-y overflow-y-auto overscroll-contain">
                 {results.map((r) => {
                   const already = students.some((s: any) => s.user_id === r.user_id);
                   return (

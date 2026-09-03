@@ -494,9 +494,23 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     if (roleErr) throw new Error(roleErr.message);
     const staff = new Set((roleRows ?? []).map((r: any) => r.user_id as string));
 
+    // 정확히 일치하는 이름(예: '지민')을 최상단에, 그 다음 부분 일치 결과를 가나다순으로 정렬
+    const nameTokens = tokens.filter((t) => t.kind === "name").map((t) => t.value.toLowerCase());
+    const rank = (name: string) => {
+      const n = (name ?? "").trim().toLowerCase();
+      if (nameTokens.includes(n)) return 0;
+      if (nameTokens.some((t) => n.startsWith(t))) return 1;
+      return 2;
+    };
+
     return candidateIds
       .filter((id) => !staff.has(id))
-
+      .sort((a, b) => {
+        const ra = byId.get(a), rb = byId.get(b);
+        const d = rank(ra?.name) - rank(rb?.name);
+        if (d !== 0) return d;
+        return String(ra?.name ?? "").localeCompare(String(rb?.name ?? ""), "ko");
+      })
       .slice(0, MAX_STUDENT_SEARCH_RESULTS)
       .map((id) => {
         const r = byId.get(id);
