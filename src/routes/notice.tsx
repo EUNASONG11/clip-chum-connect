@@ -149,11 +149,6 @@ function NoticePage() {
                   TONES[i % TONES.length]
                 }`}
               >
-                {c.notice.is_pinned && (
-                  <Badge className="absolute -top-2 left-4 gap-1 rounded-full px-2 py-0.5 text-[11px] shadow">
-                    <Pin className="h-3 w-3" /> 중요
-                  </Badge>
-                )}
                 <div className="flex min-w-0 items-start gap-3">
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
                     <BookOpen className="h-5 w-5" />
