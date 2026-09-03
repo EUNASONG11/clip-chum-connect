@@ -4,7 +4,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
-export type NoticeCard = { title: string; body: string };
+export type NoticeCard = { title: string; body: string; imageUrl?: string | null };
 
 export type PublicNotice = {
   id: string;
@@ -18,11 +18,10 @@ export type PublicNotice = {
   created_at: string;
 };
 
-/** 로그인 없이 조회하는 공개 공지 목록 */
-export const listPublicNotices = createServerFn({ method: "GET" }).handler(async () => {
+function createPublicClient() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   const url = process.env["SUPABASE_URL"]!;
-  const client = createClient<Database>(url, key, {
+  return createClient<Database>(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: (input, init) => {
@@ -35,7 +34,11 @@ export const listPublicNotices = createServerFn({ method: "GET" }).handler(async
       },
     },
   });
+}
 
+/** 로그인 없이 조회하는 공개 공지 목록 */
+export const listPublicNotices = createServerFn({ method: "GET" }).handler(async () => {
+  const client = createPublicClient();
   const { data, error } = await client
     .from("notices")
     .select("id, title, body, card_body, cards, branch, is_pinned, display_type, created_at")
@@ -53,22 +56,7 @@ export const listPublicNotices = createServerFn({ method: "GET" }).handler(async
 export const getPublicNotice = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
-    const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-    const url = process.env["SUPABASE_URL"]!;
-    const client = createClient<Database>(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: {
-        fetch: (input, init) => {
-          const h = new Headers(init?.headers);
-          if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) {
-            h.delete("Authorization");
-          }
-          h.set("apikey", key);
-          return fetch(input, { ...init, headers: h });
-        },
-      },
-    });
-
+    const client = createPublicClient();
     const { data: row, error } = await client
       .from("notices")
       .select("id, title, body, card_body, cards, branch, is_pinned, display_type, created_at")
@@ -78,7 +66,25 @@ export const getPublicNotice = createServerFn({ method: "GET" })
       .maybeSingle();
 
     if (error) throw new Error(error.message);
-    return { notice: (row as PublicNotice | null) ?? null };
+    if (!row) return { notice: null };
+
+    const cards = (Array.isArray(row.cards) ? row.cards : []) as NoticeCard[];
+    const cardsWithImages = await Promise.all(
+      cards.map(async (card) => {
+        if (!card.imageUrl) return card;
+        const { data: signed } = await client.storage
+          .from("notice-images")
+          .createSignedUrl(card.imageUrl, 60 * 60);
+        return { ...card, imageUrl: signed?.signedUrl ?? null };
+      }),
+    );
+
+    return {
+      notice: {
+        ...(row as PublicNotice),
+        cards: cardsWithImages,
+      },
+    };
   });
 
 async function assertNoticeManager(context: { supabase: any; userId: string }) {
@@ -115,6 +121,7 @@ const noticeInput = z.object({
       z.object({
         title: z.string().trim().min(1, "카드 제목을 입력하세요.").max(100),
         body: z.string().trim().min(1, "카드 내용을 입력하세요.").max(5000),
+        imageUrl: z.string().trim().max(500).nullable().optional(),
       }),
     )
     .max(20)
