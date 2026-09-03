@@ -9,6 +9,8 @@ import {
   syncStudentPassword,
   getMyMustChangePassword,
 } from "@/lib/vimeo.functions";
+import { listPublicNotices } from "@/lib/notices.functions";
+import { useQuery } from "@tanstack/react-query";
 
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +19,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Video, Eye, EyeOff } from "lucide-react";
+import { Video, Eye, EyeOff, Megaphone, ChevronRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "로그인 — e-Learning" }] }),
@@ -57,6 +60,13 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+
+  const { data: noticesData } = useQuery({
+    queryKey: ["login-notices"],
+    queryFn: () => listPublicNotices(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const latest = noticesData?.notices?.[0];
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -138,7 +148,23 @@ function AuthPage() {
 
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 py-8">
+      <Link
+        to="/notice"
+        className="flex w-full max-w-md items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/10"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Megaphone className="h-4 w-4 shrink-0" />
+          {latest ? (
+            <span className="truncate">
+              <span className="font-semibold">공지</span> · {latest.title}
+            </span>
+          ) : (
+            "공지사항 — 로그인 없이 확인할 수 있어요"
+          )}
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0" />
+      </Link>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
