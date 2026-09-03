@@ -17,6 +17,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -25,6 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Megaphone, Pencil, Pin, Plus, Trash2, ExternalLink } from "lucide-react";
+
+const BRANCHES = ["상동", "청라", "송도"];
 
 export const Route = createFileRoute("/admin/notices")({
   head: () => ({ meta: [{ title: "공지사항 관리 — 관리자" }] }),
@@ -219,12 +228,23 @@ function AdminNoticesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label>교육원 (비우면 전체 공지)</Label>
-              <Input
+              <Label>교육원 (선택하지 않으면 전체 공지)</Label>
+              <Select
                 value={form.branch}
-                onChange={(e) => setForm((f) => ({ ...f, branch: e.target.value }))}
-                placeholder="예: 청라"
-              />
+                onValueChange={(value) => setForm((f) => ({ ...f, branch: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="전체 공지" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">전체 공지</SelectItem>
+                  {BRANCHES.map((b) => (
+                    <SelectItem key={b} value={b}>
+                      {b}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-between rounded-md border border-border/60 px-3 py-2">
               <Label className="cursor-pointer">상단 고정(중요 공지)</Label>
