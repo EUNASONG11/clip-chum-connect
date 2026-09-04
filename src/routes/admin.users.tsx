@@ -479,7 +479,7 @@ function UsersPage() {
                   <th className="hidden min-w-[110px] whitespace-nowrap px-4 py-3 sm:table-cell">기수</th>
                 )}
                 {!isStaffTab && (
-                  <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                  <th className="hidden min-w-[90px] whitespace-nowrap px-4 py-3 sm:table-cell">수강 중인 반</th>
                 )}
                 <th className="hidden min-w-[100px] whitespace-nowrap px-4 py-3 md:table-cell">가입일</th>
                 <th className="whitespace-nowrap px-3 py-3 text-right sm:px-4 md:min-w-[220px]">작업</th>
@@ -566,7 +566,7 @@ function UsersPage() {
                         </td>
                       )}
                       {!isStaffTab && (
-                        <td className="whitespace-nowrap px-3 py-3 sm:px-4">{u.class_count}개</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">{u.class_count}개</td>
                       )}
                       <td className="hidden whitespace-nowrap px-4 py-3 text-xs text-muted-foreground md:table-cell">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
