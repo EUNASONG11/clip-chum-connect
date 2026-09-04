@@ -228,7 +228,7 @@ function InstructorsPage() {
                     const value = draft !== undefined ? draft : r.email ?? "";
                     const dirty = draft !== undefined && draft !== (r.email ?? "");
                     return (
-                      <div key={`mobile-${r.id}`} className="rounded-lg border p-3 space-y-2">
+                    <div key={`mobile-${r.id}`} className="rounded-lg border p-3 space-y-2">
                         {/* Row 1: name, branch, phone */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
@@ -240,8 +240,8 @@ function InstructorsPage() {
                           </div>
                         </div>
 
-                        {/* Row 2: cohorts, account status */}
-                        <div className="flex items-start justify-between gap-2">
+                        {/* Row 2: cohorts + account status + reset */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             {!canManage ? (
                               <span className="text-xs text-muted-foreground">
@@ -269,11 +269,26 @@ function InstructorsPage() {
                               />
                             )}
                           </div>
-                          <div className="shrink-0 text-xs">
+                          <div className="flex shrink-0 items-center gap-1 text-xs">
                             {r.auth_user_id ? (
-                              <span className="text-green-600">
-                                계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
-                              </span>
+                              <>
+                                <span className="text-green-600">
+                                  계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
+                                </span>
+                                {canManage && !r.must_change_password && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                                    disabled={resettingId === r.id}
+                                    onClick={() => setResetTarget(r)}
+                                    title="임시 비밀번호(12345678)로 초기화"
+                                  >
+                                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                    비번 리셋
+                                  </Button>
+                                )}
+                              </>
                             ) : (
                               <span className="text-muted-foreground">미생성</span>
                             )}
@@ -334,23 +349,6 @@ function InstructorsPage() {
                             </>
                           )}
                         </div>
-
-                        {/* Reset button on its own row when needed */}
-                        {canManage && r.auth_user_id && !r.must_change_password && (
-                          <div className="flex justify-end pt-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
-                              disabled={resettingId === r.id}
-                              onClick={() => setResetTarget(r)}
-                              title="임시 비밀번호(12345678)로 초기화"
-                            >
-                              <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                              비번 리셋
-                            </Button>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
