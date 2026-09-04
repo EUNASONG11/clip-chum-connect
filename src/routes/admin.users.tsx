@@ -572,7 +572,7 @@ function UsersPage() {
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
                       </td>
                       <td className="px-3 py-3 sm:px-4">
-                        <div className="flex flex-wrap justify-end gap-1.5">
+                        <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:flex-wrap sm:justify-end">
                           {isStudentTab && (canManage || isBranchAdmin) && (
                             <StudentPhoneDialog
                               authUserId={u.id}
