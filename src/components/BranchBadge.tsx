@@ -1,3 +1,4 @@
+import { canonicalBranch } from "@/lib/branch";
 import { cn } from "@/lib/utils";
 
 /** 교육원별 고유 색상 뱃지 (상동 · 청라 · 송도) */
@@ -14,7 +15,7 @@ export function BranchBadge({
   branch?: string | null;
   className?: string;
 }) {
-  const name = (branch ?? "").trim();
+  const name = canonicalBranch(branch);
   if (!name) return null;
   const key = Object.keys(BRANCH_CLASS).find((k) => name.includes(k));
   return (
