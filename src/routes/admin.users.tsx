@@ -33,6 +33,7 @@ import {
 
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
+import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly, useAdminRole } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
@@ -205,7 +206,9 @@ function UsersPage() {
     return CANONICAL_BRANCHES.filter((b) => set.has(b));
   }, [users]);
 
-  const branchOptions = isStudentTab ? (studentBranchQuery.data ?? []) : derivedBranchOptions;
+  const branchOptions: string[] = isStudentTab
+    ? (studentBranchQuery.data ?? [])
+    : [...derivedBranchOptions];
 
   const cohortOptions = useMemo(() => {
     const set = new Set<string>();
