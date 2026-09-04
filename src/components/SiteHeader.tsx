@@ -58,14 +58,14 @@ export function SiteHeader() {
 
   return (
     <header className="border-b border-border/60 bg-card">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center gap-2 text-lg font-bold tracking-tight">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6 sm:py-4">
+        <Link to="/" className="flex shrink-0 items-center gap-2 text-base font-bold tracking-tight sm:text-lg">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary/10 text-primary">
             <Video className="h-4 w-4" />
           </span>
           <span>e-Learning</span>
         </Link>
-        <nav className="flex items-center gap-3">
+        <nav className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           {email ? (
             <>
               {displayName && (
@@ -78,7 +78,7 @@ export function SiteHeader() {
                 <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="outline" className="rounded-full">
-                      <UserRound className="mr-1 h-4 w-4" /> 마이페이지
+                      <UserRound className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">마이페이지</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-md">
@@ -167,7 +167,7 @@ export function SiteHeader() {
                   navigate({ to: "/login", replace: true });
                 }}
               >
-                <LogOut className="mr-1 h-4 w-4" /> 로그아웃
+                <LogOut className="h-4 w-4 sm:mr-1" /> <span className="hidden sm:inline">로그아웃</span>
               </Button>
             </>
           ) : (

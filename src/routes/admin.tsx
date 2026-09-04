@@ -196,7 +196,7 @@ function AdminLayout() {
           <div className="flex flex-1 flex-col min-w-0">
             <MobileHeader />
             <SiteHeader />
-            <main className="flex-1 p-4 md:p-6">
+            <main className="flex-1 p-3 md:p-6">
               <div className="mx-auto max-w-5xl">
                 <Outlet />
               </div>

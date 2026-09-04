@@ -225,9 +225,9 @@ function InstructorsPage() {
                   <thead className="text-left text-xs text-muted-foreground">
                     <tr>
                       <th className="py-2 pr-2">이름</th>
-                      <th className="py-2 pr-2">전화번호</th>
+                      <th className="hidden py-2 pr-2 sm:table-cell">전화번호</th>
                       <th className="py-2 pr-2">지점</th>
-                      <th className="py-2 pr-2">기수</th>
+                      <th className="hidden py-2 pr-2 md:table-cell">기수</th>
                       <th className="py-2 pr-2">이메일 (로그인 ID)</th>
                       <th className="py-2 pr-2">계정 상태</th>
                     </tr>
@@ -240,7 +240,7 @@ function InstructorsPage() {
                       return (
                         <tr key={r.id} className="border-t">
                           <td className="py-2 pr-2 font-medium">{r.name}</td>
-                          <td className="py-2 pr-2 text-muted-foreground">{r.phone || "-"}</td>
+                          <td className="hidden py-2 pr-2 text-muted-foreground sm:table-cell">{r.phone || "-"}</td>
                           <td className="py-2 pr-2 text-muted-foreground">
                             {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
                           </td>
