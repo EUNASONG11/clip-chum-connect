@@ -220,150 +220,293 @@ function InstructorsPage() {
             {isLoading ? (
               <p className="text-sm text-muted-foreground">불러오는 중...</p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-muted-foreground">
-                    <tr>
-                      <th className="py-2 pr-2">이름</th>
-                      <th className="hidden py-2 pr-2 sm:table-cell">전화번호</th>
-                      <th className="py-2 pr-2">지점</th>
-                      <th className="hidden py-2 pr-2 md:table-cell">기수</th>
-                      <th className="py-2 pr-2">이메일 (로그인 ID)</th>
-                      <th className="py-2 pr-2">계정 상태</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((r) => {
-                      const draft = drafts[r.id];
-                      const value = draft !== undefined ? draft : r.email ?? "";
-                      const dirty = draft !== undefined && draft !== (r.email ?? "");
-                      return (
-                        <tr key={r.id} className="border-t">
-                          <td className="py-2 pr-2 font-medium">{r.name}</td>
-                          <td className="hidden py-2 pr-2 text-muted-foreground sm:table-cell">{r.phone || "-"}</td>
-                          <td className="py-2 pr-2 text-muted-foreground">
+              <>
+                {/* Mobile cards */}
+                <div className="space-y-3 md:hidden">
+                  {filtered.map((r) => {
+                    const draft = drafts[r.id];
+                    const value = draft !== undefined ? draft : r.email ?? "";
+                    const dirty = draft !== undefined && draft !== (r.email ?? "");
+                    return (
+                      <div key={`mobile-${r.id}`} className="rounded-lg border p-3 space-y-2">
+                        {/* Row 1: name, branch, phone */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{r.name}</div>
+                            <div className="text-xs text-muted-foreground">{r.phone || "-"}</div>
+                          </div>
+                          <div className="shrink-0">
                             {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
-                          </td>
-                          <td className="py-2 pr-2">
+                          </div>
+                        </div>
+
+                        {/* Row 2: cohorts, account status */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
                             {!canManage ? (
                               <span className="text-xs text-muted-foreground">
                                 {(r.cohorts ?? []).join(", ") || "미지정"}
                               </span>
                             ) : (
-                            <CohortMultiSelect
-                              options={COHORT_OPTIONS}
-                              selected={r.cohorts ?? []}
-                              assignMode
-                              placeholder="미지정"
-                              allLabel="전체 기수"
-                              width="w-[150px]"
-                              onChange={async (next) => {
-                                try {
-                                  await updateInstructorCohort({
-                                    data: { instructorId: r.id, cohorts: next },
-                                  });
-                                  qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
-                                  qc.invalidateQueries({ queryKey: ["admin", "users"] });
-                                } catch (e: any) {
-                                  toast.error(e.message ?? "기수 저장 실패");
-                                }
-                              }}
-                            />
+                              <CohortMultiSelect
+                                options={COHORT_OPTIONS}
+                                selected={r.cohorts ?? []}
+                                assignMode
+                                placeholder="미지정"
+                                allLabel="전체 기수"
+                                width="w-full"
+                                onChange={async (next) => {
+                                  try {
+                                    await updateInstructorCohort({
+                                      data: { instructorId: r.id, cohorts: next },
+                                    });
+                                    qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
+                                    qc.invalidateQueries({ queryKey: ["admin", "users"] });
+                                  } catch (e: any) {
+                                    toast.error(e.message ?? "기수 저장 실패");
+                                  }
+                                }}
+                              />
                             )}
-                          </td>
-                          <td className="py-2 pr-2">
-                            <div className="flex items-center gap-1">
-                              {editingId === r.id ? (
-                                <>
-                                  <Input
-                                    type="email"
-                                    value={value}
-                                    onChange={(e) =>
-                                      setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
-                                    }
-                                    placeholder="teacher@example.com"
-                                    className="h-8 flex-1"
-                                    autoFocus
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={!dirty || savingId === r.id}
-                                    onClick={() => save(r)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <Save className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    disabled={savingId === r.id}
-                                    onClick={() => cancelEdit(r.id)}
-                                    className="h-8 w-8 p-0"
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-sm text-foreground">
-                                    {r.email || "-"}
-                                  </span>
-                                  {canManage && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        setEditingId(r.id);
-                                        setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
-                                      }}
-                                      className="h-8 w-8 p-0"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-2 pr-2 text-xs">
+                          </div>
+                          <div className="shrink-0 text-xs">
                             {r.auth_user_id ? (
-                              <div className="flex items-center gap-1">
-                                <span className="text-green-600">
-                                  계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
-                                </span>
-                                {canManage && !r.must_change_password && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
-                                    disabled={resettingId === r.id}
-                                    onClick={() => setResetTarget(r)}
-                                    title="임시 비밀번호(12345678)로 초기화"
-                                  >
-                                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                                    비번 리셋
-                                  </Button>
-                                )}
-                              </div>
+                              <span className="text-green-600">
+                                계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
+                              </span>
                             ) : (
                               <span className="text-muted-foreground">미생성</span>
                             )}
-                          </td>
+                          </div>
+                        </div>
 
-                        </tr>
-                      );
-                    })}
-                    {filtered.length === 0 && (
+                        {/* Row 3: email + actions */}
+                        <div className="flex items-center gap-1 pt-1">
+                          {editingId === r.id ? (
+                            <>
+                              <Input
+                                type="email"
+                                value={value}
+                                onChange={(e) =>
+                                  setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                                }
+                                placeholder="teacher@example.com"
+                                className="h-8 flex-1"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={!dirty || savingId === r.id}
+                                onClick={() => save(r)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Save className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                disabled={savingId === r.id}
+                                onClick={() => cancelEdit(r.id)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                                {r.email || "-"}
+                              </span>
+                              {canManage && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingId(r.id);
+                                    setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                  }}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+
+                        {/* Reset button on its own row when needed */}
+                        {canManage && r.auth_user_id && !r.must_change_password && (
+                          <div className="flex justify-end pt-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                              disabled={resettingId === r.id}
+                              onClick={() => setResetTarget(r)}
+                              title="임시 비밀번호(12345678)로 초기화"
+                            >
+                              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                              비번 리셋
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {filtered.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">
+                      표시할 강사가 없습니다.
+                    </p>
+                  )}
+                </div>
+
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-sm">
+                    <thead className="text-left text-xs text-muted-foreground">
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                          표시할 강사가 없습니다.
-                        </td>
+                        <th className="py-2 pr-2">이름</th>
+                        <th className="hidden py-2 pr-2 sm:table-cell">전화번호</th>
+                        <th className="py-2 pr-2">지점</th>
+                        <th className="hidden py-2 pr-2 md:table-cell">기수</th>
+                        <th className="py-2 pr-2">이메일 (로그인 ID)</th>
+                        <th className="py-2 pr-2">계정 상태</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filtered.map((r) => {
+                        const draft = drafts[r.id];
+                        const value = draft !== undefined ? draft : r.email ?? "";
+                        const dirty = draft !== undefined && draft !== (r.email ?? "");
+                        return (
+                          <tr key={r.id} className="border-t">
+                            <td className="py-2 pr-2 font-medium">{r.name}</td>
+                            <td className="hidden py-2 pr-2 text-muted-foreground sm:table-cell">{r.phone || "-"}</td>
+                            <td className="py-2 pr-2 text-muted-foreground">
+                              {r.branch ? <BranchBadge branch={r.branch} /> : "-"}
+                            </td>
+                            <td className="py-2 pr-2">
+                              {!canManage ? (
+                                <span className="text-xs text-muted-foreground">
+                                  {(r.cohorts ?? []).join(", ") || "미지정"}
+                                </span>
+                              ) : (
+                                <CohortMultiSelect
+                                  options={COHORT_OPTIONS}
+                                  selected={r.cohorts ?? []}
+                                  assignMode
+                                  placeholder="미지정"
+                                  allLabel="전체 기수"
+                                  width="w-[150px]"
+                                  onChange={async (next) => {
+                                    try {
+                                      await updateInstructorCohort({
+                                        data: { instructorId: r.id, cohorts: next },
+                                      });
+                                      qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
+                                      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+                                    } catch (e: any) {
+                                      toast.error(e.message ?? "기수 저장 실패");
+                                    }
+                                  }}
+                                />
+                              )}
+                            </td>
+                            <td className="py-2 pr-2">
+                              <div className="flex items-center gap-1">
+                                {editingId === r.id ? (
+                                  <>
+                                    <Input
+                                      type="email"
+                                      value={value}
+                                      onChange={(e) =>
+                                        setDrafts((d) => ({ ...d, [r.id]: e.target.value }))
+                                      }
+                                      placeholder="teacher@example.com"
+                                      className="h-8 flex-1"
+                                      autoFocus
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={!dirty || savingId === r.id}
+                                      onClick={() => save(r)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <Save className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      disabled={savingId === r.id}
+                                      onClick={() => cancelEdit(r.id)}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-sm text-foreground">
+                                      {r.email || "-"}
+                                    </span>
+                                    {canManage && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingId(r.id);
+                                          setDrafts((d) => ({ ...d, [r.id]: r.email ?? "" }));
+                                        }}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 pr-2 text-xs">
+                              {r.auth_user_id ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-green-600">
+                                    계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
+                                  </span>
+                                  {canManage && !r.must_change_password && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
+                                      disabled={resettingId === r.id}
+                                      onClick={() => setResetTarget(r)}
+                                      title="임시 비밀번호(12345678)로 초기화"
+                                    >
+                                      <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                                      비번 리셋
+                                    </Button>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">미생성</span>
+                              )}
+                            </td>
+
+                          </tr>
+                        );
+                      })}
+                      {filtered.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                            표시할 강사가 없습니다.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
