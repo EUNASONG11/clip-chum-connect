@@ -466,23 +466,23 @@ function UsersPage() {
 
 
         <div className="overflow-x-auto rounded-xl border border-border/60">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full text-sm md:min-w-[720px]">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
 
 
 
-                <th className="min-w-[120px] whitespace-nowrap px-4 py-3">이름</th>
-                <th className="min-w-[110px] whitespace-nowrap px-4 py-3">전화번호</th>
+                <th className="min-w-[100px] px-3 py-3 sm:px-4">이름</th>
+                <th className="hidden min-w-[110px] whitespace-nowrap px-4 py-3 sm:table-cell">전화번호</th>
                 <th className="min-w-[80px] whitespace-nowrap px-4 py-3">역할</th>
                 {isStaffTab && (
-                  <th className="min-w-[110px] whitespace-nowrap px-4 py-3">기수</th>
+                  <th className="hidden min-w-[110px] whitespace-nowrap px-4 py-3 sm:table-cell">기수</th>
                 )}
                 {!isStaffTab && (
-                  <th className="min-w-[90px] whitespace-nowrap px-4 py-3">수강 중인 반</th>
+                  <th className="hidden min-w-[90px] whitespace-nowrap px-4 py-3 sm:table-cell">수강 중인 반</th>
                 )}
-                <th className="min-w-[100px] whitespace-nowrap px-4 py-3">가입일</th>
-                <th className="min-w-[220px] whitespace-nowrap px-4 py-3 text-right">작업</th>
+                <th className="hidden min-w-[100px] whitespace-nowrap px-4 py-3 md:table-cell">가입일</th>
+                <th className="whitespace-nowrap px-3 py-3 text-right sm:px-4 md:min-w-[220px]">작업</th>
               </tr>
             </thead>
             <tbody>
@@ -503,8 +503,8 @@ function UsersPage() {
                     <tr className="border-t transition hover:bg-muted/30">
 
 
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <div className="flex items-center gap-2.5">
+                      <td className="px-3 py-3 sm:px-4">
+                        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
                           {isStudentTab && (
                             <button
                               type="button"
@@ -520,16 +520,24 @@ function UsersPage() {
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
-                          <span className="truncate font-medium">{u.nickname || "-"}</span>
-                          <BranchBadge branch={u.branch} />
+                          <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2.5">
+                            <div className="flex min-w-0 items-center gap-1.5">
+                              <span className="truncate font-medium">{u.nickname || "-"}</span>
+                              <BranchBadge branch={u.branch} />
+                            </div>
+                            <span className="truncate text-xs text-muted-foreground sm:hidden">
+                              {u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}
+                            </span>
+                          </div>
                         </div>
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
-                      <td className="whitespace-nowrap px-4 py-3">
+
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-muted-foreground sm:table-cell">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
+                      <td className="px-3 py-3 sm:px-4">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
                       {isStaffTab && (
-                        <td className="whitespace-nowrap px-4 py-3">
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">
                           {!canManage ? (
                             <span className="text-xs text-muted-foreground">
                               {(((u as any).cohorts ?? []) as string[]).join(", ") || "미지정"}
@@ -558,13 +566,13 @@ function UsersPage() {
                         </td>
                       )}
                       {!isStaffTab && (
-                        <td className="whitespace-nowrap px-4 py-3">{u.class_count}개</td>
+                        <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">{u.class_count}개</td>
                       )}
-                      <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
+                      <td className="hidden whitespace-nowrap px-4 py-3 text-xs text-muted-foreground md:table-cell">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-3">
-                        <div className="flex flex-wrap justify-end gap-1.5">
+                      <td className="px-3 py-3 sm:px-4">
+                        <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:flex-wrap sm:justify-end">
                           {isStudentTab && (canManage || isBranchAdmin) && (
                             <StudentPhoneDialog
                               authUserId={u.id}
