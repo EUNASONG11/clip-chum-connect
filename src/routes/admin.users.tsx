@@ -472,7 +472,7 @@ function UsersPage() {
                   const busy = busyId === u.id;
                   const expanded = expandedId === u.id;
                   return (
-                    <Fragment key={u.id}>
+                    <Fragment key={`${tab}-${u.id}`}>
                     <tr className="border-t transition hover:bg-muted/30">
 
 
