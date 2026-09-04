@@ -252,7 +252,12 @@ function UsersPage() {
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const pageStart = (safePage - 1) * PAGE_SIZE;
-  const paged = isStudentTab ? filtered : filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const pagedRaw = isStudentTab ? filtered : filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  // 동일 id가 중복으로 내려오면 React key 충돌로 이전 탭 행이 남는 문제가 생겨 중복 제거
+  const paged = useMemo(() => {
+    const seen = new Set<string>();
+    return pagedRaw.filter((u) => (seen.has(u.id) ? false : (seen.add(u.id), true)));
+  }, [pagedRaw]);
 
 
   const refetch = () => {
