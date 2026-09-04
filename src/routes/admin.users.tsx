@@ -26,6 +26,7 @@ import {
   listStudentUsers,
   listStudentBranches,
   revokeAdmin,
+  setBranchAdminRole,
   bulkCreateInstructorAccounts,
   updateInstructorCohort,
 } from "@/lib/vimeo.functions";
@@ -275,6 +276,28 @@ function UsersPage() {
       refetch();
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const doToggleBranchAdmin = async (u: UserRow, enabled: boolean) => {
+    const name = u.nickname || u.email || "해당 사용자";
+    if (
+      !confirm(
+        enabled
+          ? `${name} 님을 중간 관리자로 승격하시겠습니까?`
+          : `${name} 님의 중간 관리자 권한을 해제하시겠습니까?`,
+      )
+    )
+      return;
+    setBusyId(u.id);
+    try {
+      await setBranchAdminRole({ data: { userId: u.id, enabled } });
+      toast.success(enabled ? "중간 관리자로 승격했습니다." : "중간 관리자 권한을 해제했습니다.");
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message ?? "권한 변경 실패");
     } finally {
       setBusyId(null);
     }
@@ -546,6 +569,22 @@ function UsersPage() {
                               parentPhone={((u as any).rawParentPhone ?? "") as string}
                               onSaved={() => studentQuery.refetch()}
                             />
+                          )}
+                          {canManage && isStaffTab && !u.isAdmin && (
+                            <Button
+                              size="sm"
+                              variant={u.isBranchAdmin ? "outline" : "default"}
+                              disabled={busy}
+                              onClick={() => doToggleBranchAdmin(u, !u.isBranchAdmin)}
+                              className="h-8 gap-1 px-2 text-xs"
+                            >
+                              {busy ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                              )}
+                              {u.isBranchAdmin ? "중간 관리자 해제" : "중간 관리자 승격"}
+                            </Button>
                           )}
                           {canManage && u.isAdmin && (
                             <Button

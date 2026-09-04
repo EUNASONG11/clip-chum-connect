@@ -804,6 +804,36 @@ export const revokeAdmin = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// 6-4b) 강사 ↔ 중간 관리자(교육원 관리자) 승격/해제
+export const setBranchAdminRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userId: z.string().uuid(), enabled: z.boolean() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) {
+      throw new Error("자기 자신의 권한은 변경할 수 없습니다.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 중복(soft delete 포함) 방지를 위해 기존 행 제거 후 필요 시 재삽입
+    const { error: delErr } = await supabaseAdmin
+      .from("user_roles")
+      .delete()
+      .eq("user_id", data.userId)
+      .eq("role", "branch_admin");
+    if (delErr) throw new Error(delErr.message);
+    if (data.enabled) {
+      const { error: insErr } = await supabaseAdmin
+        .from("user_roles")
+        .insert({ user_id: data.userId, role: "branch_admin" });
+      if (insErr) throw new Error(insErr.message);
+    }
+    return { ok: true, enabled: data.enabled };
+  });
+
+
+
 // 6-5) 승인 대기 사용자를 학생/관리자로 승인
 export const approveUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
