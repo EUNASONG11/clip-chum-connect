@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
 
 const VIMEO_API = "https://api.vimeo.com";
 
@@ -558,7 +559,7 @@ export const listUsers = createServerFn({ method: "GET" })
       })
       .filter((u: any) => {
         // 교육원 관리자는 자기 교육원 소속만 조회
-        if (scope.branch && (u.branch ?? null) !== scope.branch) return false;
+        if (scope.branch && !matchesBranch(scope.branch, u.branch)) return false;
         // 관리자·강사는 external_students 상태와 무관하게 항상 표시
         if (u.isAdmin || u.isInstructor) return true;
         const status = extMap.get(u.id)?.enrollment_status ?? null;
@@ -574,7 +575,7 @@ export const listStudentBranches = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const scope = await getStaffScope(context);
-    if (scope.branch) return [scope.branch];
+    if (scope.branch) return [canonicalBranch(scope.branch)];
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin
       .from("external_students")
@@ -584,10 +585,11 @@ export const listStudentBranches = createServerFn({ method: "GET" })
       .limit(10000);
     const set = new Set<string>();
     (data ?? []).forEach((r: any) => {
-      const b = (r.branch ?? "").trim();
+      const b = canonicalBranch(r.branch);
       if (b) set.add(b);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+    // 표준 교육원(상동·청라·송도) 우선 노출, 그 외 표기는 숨김
+    return CANONICAL_BRANCHES.filter((b) => set.has(b));
   });
 
 // 6-2b) 학생 목록 (서버 사이드 검색·페이지네이션) — external_students 기반이라 매우 빠름
@@ -618,7 +620,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
       .not("enrollment_status", "is", null)
       .neq("enrollment_status", "휴원");
 
-    if (branch) q = q.eq("branch", branch);
+    if (branch) q = q.ilike("branch", `%${canonicalBranch(branch)}%`);
     for (const t of terms) {
       const digits = t.replace(/[^0-9]/g, "");
       const like = `%${t}%`;
@@ -1246,7 +1248,7 @@ export const listInstructorRoster = createServerFn({ method: "GET" })
       .from("instructors")
       .select("id, name, email, phone, branch, cohort, cohorts, auth_user_id, must_change_password")
       .order("name", { ascending: true });
-    if (scope.branch) q = q.eq("branch", scope.branch);
+    if (scope.branch) q = q.ilike("branch", `%${canonicalBranch(scope.branch)}%`);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
     return data ?? [];

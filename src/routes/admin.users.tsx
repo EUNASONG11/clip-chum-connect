@@ -198,10 +198,11 @@ function UsersPage() {
   const derivedBranchOptions = useMemo(() => {
     const set = new Set<string>();
     users.forEach((u) => {
-      const b = (u.branch ?? "").trim();
+      const b = canonicalBranch(u.branch);
       if (b) set.add(b);
     });
-    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+    // 표준 교육원(상동·청라·송도)만 노출
+    return CANONICAL_BRANCHES.filter((b) => set.has(b));
   }, [users]);
 
   const branchOptions = isStudentTab ? (studentBranchQuery.data ?? []) : derivedBranchOptions;
@@ -231,7 +232,7 @@ function UsersPage() {
     const byBranch =
       branchFilter === "__all__"
         ? rows
-        : rows.filter((u) => (u.branch ?? "") === branchFilter);
+        : rows.filter((u) => matchesBranch(branchFilter, u.branch));
     const byCohort =
       !(tab === "instructor" || tab === "branch_admin") || cohortFilter.length === 0
         ? byBranch
