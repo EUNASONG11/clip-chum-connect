@@ -43,7 +43,7 @@ function DashboardPage() {
         <Stat label="완료 수" value={overview?.completedCount ?? "-"} icon={CheckCircle2} />
         <Stat
           label="평균 시청률"
-          value={overview ? `${Math.round(overview.avgWatchedRatio * 100)}%` : "-"}
+          value={overview ? `${Math.min(100, Math.ceil(overview.avgWatchedRatio * 100))}%` : "-"}
           icon={TrendingUp}
         />
       </div>
@@ -76,7 +76,7 @@ function DashboardPage() {
                   <td className="max-sm:whitespace-nowrap px-3 py-2">{c.student_count}명</td>
                   <td className="max-sm:whitespace-nowrap px-3 py-2">{c.video_count}개</td>
                   <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.completion_rate * 100)}%</td>
-                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.round(c.avg_watched_ratio * 100)}%</td>
+                  <td className="max-sm:whitespace-nowrap px-3 py-2">{Math.min(100, Math.ceil(c.avg_watched_ratio * 100))}%</td>
                   <td className="max-sm:whitespace-nowrap px-3 py-2 text-right">
                     <Link
                       to="/admin/classes/$id"

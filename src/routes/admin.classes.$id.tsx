@@ -124,11 +124,11 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
             <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
               <div
                 className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
-                style={{ width: `${Math.round(v.watched_ratio * 100)}%` }}
+                style={{ width: `${Math.min(100, Math.ceil(v.watched_ratio * 100))}%` }}
               />
             </div>
             <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-              {v.is_completed ? 100 : Math.min(99, Math.floor(v.watched_ratio * 100))}%
+              {v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))}%
             </span>
             <button
               type="button"
@@ -1563,7 +1563,7 @@ function ClassDetailPage() {
                           <BranchBadge branch={s.branch} />
                         </span>
                         <span className="whitespace-nowrap">{s.completed} / {s.video_total}</span>
-                        <span className="whitespace-nowrap">{s.completed === s.video_total && s.video_total > 0 ? 100 : Math.min(99, Math.floor(s.avg_watched_ratio * 100))}%</span>
+                        <span className="whitespace-nowrap">{s.completed === s.video_total && s.video_total > 0 ? 100 : Math.min(99, Math.ceil(s.avg_watched_ratio * 100))}%</span>
                         <span className="whitespace-nowrap text-xs text-muted-foreground">
                           {s.last_activity ? new Date(s.last_activity).toLocaleString("ko-KR") : "-"}
                         </span>

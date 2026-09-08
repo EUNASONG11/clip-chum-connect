@@ -50,7 +50,7 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
             )}
             <span className="ml-auto text-xs text-muted-foreground">
               완료 {c.completed}/{c.videoTotal} · 평균 시청률{" "}
-              {Math.round(c.avgRatio * 1000) / 10}%
+              {Math.min(100, Math.ceil(c.avgRatio * 1000) / 10)}%
             </span>
           </div>
           {c.videos.length === 0 ? (
@@ -85,11 +85,11 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
                           <span className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                             <span
                               className="block h-full rounded-full bg-primary"
-                              style={{ width: `${Math.min(100, Math.round(v.watchedRatio * 100))}%` }}
+                              style={{ width: `${Math.min(100, Math.ceil(v.watchedRatio * 100))}%` }}
                             />
                           </span>
                           <span className="tabular-nums">
-                            {Math.round(v.watchedRatio * 1000) / 10}%
+                            {Math.min(100, Math.ceil(v.watchedRatio * 1000) / 10)}%
                           </span>
                         </div>
                       </td>

@@ -142,7 +142,7 @@ function MyPage() {
                 {progress.map((p: any) => {
                   const v = p.videos;
                   if (!v) return null;
-                  const pct = Math.round((p.watched_ratio ?? 0) * 100);
+                  const pct = Math.min(100, Math.ceil((p.watched_ratio ?? 0) * 100));
                   return (
                     <li key={p.video_id}>
                       <Link
