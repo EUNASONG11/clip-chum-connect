@@ -173,7 +173,7 @@ function UsersPage() {
 
   // 학생 탭: 서버 사이드 검색·페이지네이션 (전체 사용자 로딩 없이 빠르게 조회)
   const studentQuery = useQuery({
-    queryKey: ["admin", "students", debouncedSearch, branchFilter, page],
+    queryKey: ["admin", "students", debouncedSearch, branchFilter, classFilter, page],
     queryFn: async () =>
       (await listStudentUsers({
         data: {
@@ -181,6 +181,7 @@ function UsersPage() {
           branch: branchFilter === "__all__" ? "" : branchFilter,
           page,
           pageSize: PAGE_SIZE,
+          classFilter,
         },
       })) as { total: number; rows: UserRow[] },
     enabled: isStudentTab,
