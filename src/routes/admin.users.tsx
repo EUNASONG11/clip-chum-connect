@@ -116,6 +116,7 @@ function UsersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>("__all__");
   const [cohortFilter, setCohortFilter] = useState<string[]>([]);
+  const [classFilter, setClassFilter] = useState<"all" | "has_class" | "no_class">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [backfillBusy, setBackfillBusy] = useState(false);
@@ -172,7 +173,7 @@ function UsersPage() {
 
   // 학생 탭: 서버 사이드 검색·페이지네이션 (전체 사용자 로딩 없이 빠르게 조회)
   const studentQuery = useQuery({
-    queryKey: ["admin", "students", debouncedSearch, branchFilter, page],
+    queryKey: ["admin", "students", debouncedSearch, branchFilter, classFilter, page],
     queryFn: async () =>
       (await listStudentUsers({
         data: {
@@ -180,6 +181,7 @@ function UsersPage() {
           branch: branchFilter === "__all__" ? "" : branchFilter,
           page,
           pageSize: PAGE_SIZE,
+          classFilter,
         },
       })) as { total: number; rows: UserRow[] },
     enabled: isStudentTab,
@@ -434,6 +436,24 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            {isStudentTab && (
+              <Select
+                value={classFilter}
+                onValueChange={(v) => {
+                  setClassFilter(v as "all" | "has_class" | "no_class");
+                  setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
+                }}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-44">
+                  <SelectValue placeholder="수강반 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">수강반 전체</SelectItem>
+                  <SelectItem value="has_class">수강반 있음</SelectItem>
+                  <SelectItem value="no_class">수강반 없음</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             {isStaffTab && (
               <CohortMultiSelect
                 options={cohortOptions.length > 0 ? cohortOptions : COHORT_OPTIONS}
