@@ -436,6 +436,24 @@ function UsersPage() {
                 ))}
               </SelectContent>
             </Select>
+            {isStudentTab && (
+              <Select
+                value={classFilter}
+                onValueChange={(v) => {
+                  setClassFilter(v as "all" | "has_class" | "no_class");
+                  setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
+                }}
+              >
+                <SelectTrigger className="h-9 w-full sm:w-44">
+                  <SelectValue placeholder="수강반 전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">수강반 전체</SelectItem>
+                  <SelectItem value="has_class">수강반 있음</SelectItem>
+                  <SelectItem value="no_class">수강반 없음</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             {isStaffTab && (
               <CohortMultiSelect
                 options={cohortOptions.length > 0 ? cohortOptions : COHORT_OPTIONS}
