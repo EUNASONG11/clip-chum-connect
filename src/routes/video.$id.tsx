@@ -1193,14 +1193,14 @@ function VideoPage() {
 
             <div className="mt-4 space-y-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>학습 진도 {Math.round(ratio * 100)}%</span>
+                <span>학습 진도 {Math.min(100, Math.ceil(ratio * 100))}%</span>
                 {completed && (
                   <span className="inline-flex items-center gap-1 text-green-600">
                     <CheckCircle2 className="h-4 w-4" /> 수강 완료
                   </span>
                 )}
               </div>
-              <Progress value={Math.round(ratio * 100)} />
+              <Progress value={Math.min(100, Math.ceil(ratio * 100))} />
             </div>
 
             <h1 className="mt-6 text-3xl font-bold">{video.title}</h1>
@@ -1243,7 +1243,7 @@ function VideoPage() {
                           {r.title}
                         </p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {Math.round(r.watched_ratio * 100)}%
+                          {Math.min(100, Math.ceil(r.watched_ratio * 100))}%
                           {r.duration ? ` · ${formatDuration(r.duration)}` : ""}
                           {r.is_completed ? " · 완료" : ""}
                         </p>
