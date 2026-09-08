@@ -612,6 +612,22 @@ export const listStudentUsers = createServerFn({ method: "GET" })
 
     const branch = scope.branch ?? (data.branch || "");
     const terms = data.search.trim().split(/\s+/).filter(Boolean);
+    const classFilter = data.classFilter ?? "all";
+
+    // 수강반 유무 필터용: 현재 조회 권한 내 수강반에 등록된 학생 id 집합
+    let classUserIds: string[] | null = null;
+    if (classFilter !== "all") {
+      let csq = supabaseAdmin
+        .from("class_students")
+        .select("user_id, classes!inner(branch, deleted_at)")
+        .is("deleted_at", null)
+        .is("classes.deleted_at", null);
+      if (scope.branch) {
+        csq = csq.or(`classes.branch.eq.${scope.branch},classes.branch.is.null`);
+      }
+      const { data: cs } = await csq;
+      classUserIds = Array.from(new Set((cs ?? []).map((r: any) => r.user_id as string)));
+    }
 
     let q = supabaseAdmin
       .from("external_students")
@@ -622,6 +638,15 @@ export const listStudentUsers = createServerFn({ method: "GET" })
       .neq("enrollment_status", "휴원");
 
     if (branch) q = q.ilike("branch", `%${canonicalBranch(branch)}%`);
+
+    if (classFilter === "has_class" && classUserIds) {
+      const ids = classUserIds.length > 0 ? classUserIds : ["00000000-0000-0000-0000-000000000000"];
+      q = q.in("auth_user_id", ids);
+    } else if (classFilter === "no_class" && classUserIds) {
+      const ids = classUserIds.length > 0 ? classUserIds : ["00000000-0000-0000-0000-000000000000"];
+      q = q.not("auth_user_id", "in", ids);
+    }
+
     for (const t of terms) {
       const digits = t.replace(/[^0-9]/g, "");
       const like = `%${t}%`;
