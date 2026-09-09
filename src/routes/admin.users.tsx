@@ -427,7 +427,7 @@ function UsersPage() {
                 setSearch(v);
                 setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
-              placeholder="이름, 전화번호, 이메일 검색"
+              placeholder="이름, 전화번호, 이메일 (띄어쓰기로 여러 명 검색)"
               className="w-full max-w-sm"
             />
             <Select
