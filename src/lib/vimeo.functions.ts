@@ -601,7 +601,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
         search: z.string().optional().default(""),
         branch: z.string().optional().default(""),
         page: z.number().int().min(1).optional().default(1),
-        pageSize: z.number().int().min(1).max(100).optional().default(20),
+        pageSize: z.number().int().min(1).max(500).optional().default(20),
         classFilter: z.enum(["all", "has_class", "no_class"]).optional().default("all"),
       })
       .parse(input ?? {}),
