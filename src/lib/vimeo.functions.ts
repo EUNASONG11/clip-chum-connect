@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
+import { COHORT_OPTIONS } from "@/lib/cohort";
 
 const VIMEO_API = "https://api.vimeo.com";
 
@@ -874,6 +875,12 @@ export const setBranchAdminRole = createServerFn({ method: "POST" })
         .from("user_roles")
         .insert({ user_id: data.userId, role: "branch_admin" });
       if (insErr) throw new Error(insErr.message);
+      // 중간 관리자 승격 시 전 기수 접근 권한 자동 부여
+      const { error: cohErr } = await supabaseAdmin
+        .from("instructors")
+        .update({ cohorts: COHORT_OPTIONS, cohort: COHORT_OPTIONS[0] } as any)
+        .eq("auth_user_id", data.userId);
+      if (cohErr) throw new Error(cohErr.message);
     }
     return { ok: true, enabled: data.enabled };
   });
