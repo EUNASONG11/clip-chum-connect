@@ -949,15 +949,28 @@ export const searchInstructors = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const q = data.query.trim();
+    const terms = data.query.trim().split(/\s+/).filter(Boolean).slice(0, 10);
+    const escaped = terms.map((t) => t.replace(/[%_(),."]/g, " "));
+    const orExpr = escaped
+      .flatMap((t) => [`name.ilike.%${t}%`, `email.ilike.%${t}%`])
+      .join(",");
     const { data: rows, error } = await supabaseAdmin
       .from("instructors")
       .select("auth_user_id, name, email")
       .not("auth_user_id", "is", null)
-      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
-      .limit(20);
+      .or(orExpr)
+      .limit(100);
     if (error) throw new Error(error.message);
-    return (rows ?? []).map((r: any) => ({
+    const lowered = terms.map((t) => t.toLowerCase());
+    const sorted = (rows ?? []).sort((a: any, b: any) => {
+      const an = (a.name ?? "").toLowerCase();
+      const bn = (b.name ?? "").toLowerCase();
+      const aExact = lowered.includes(an) ? 0 : 1;
+      const bExact = lowered.includes(bn) ? 0 : 1;
+      if (aExact !== bExact) return aExact - bExact;
+      return an.localeCompare(bn, "ko");
+    });
+    return sorted.map((r: any) => ({
       user_id: r.auth_user_id as string,
       name: (r.name as string) ?? "",
       email: (r.email as string) ?? "",
