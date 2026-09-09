@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
+import { COHORT_OPTIONS } from "@/lib/cohort";
 
 const VIMEO_API = "https://api.vimeo.com";
 
