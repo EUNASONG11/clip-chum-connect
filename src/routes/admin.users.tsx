@@ -233,7 +233,8 @@ function UsersPage() {
       .trim()
       .toLowerCase()
       .split(/\s+/)
-      .filter((t) => t.length > 0);
+      .filter((t) => t.length > 0)
+      .slice(0, 10);
     const byBranch =
       branchFilter === "__all__"
         ? rows
@@ -248,10 +249,20 @@ function UsersPage() {
             return matchesNone || matchesCohort;
           });
     if (terms.length === 0) return byCohort;
-    return byCohort.filter((u) => {
-      const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
-      return terms.some((term) => haystack.includes(term));
-    });
+    return byCohort
+      .filter((u) => {
+        const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
+        return terms.some((term) => haystack.includes(term));
+      })
+      .sort((a, b) => {
+        const aName = a.nickname.toLowerCase();
+        const bName = b.nickname.toLowerCase();
+        const aExact = terms.some((t) => aName === t);
+        const bExact = terms.some((t) => bName === t);
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+        return a.nickname.localeCompare(b.nickname, "ko");
+      });
   }, [buckets, tab, search, branchFilter, cohortFilter, isStudentTab, studentQuery.data]);
 
   const studentTotal = studentQuery.data?.total ?? 0;
