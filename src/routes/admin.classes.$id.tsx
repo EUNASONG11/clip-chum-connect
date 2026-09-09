@@ -585,6 +585,30 @@ function ClassDetailPage() {
       toast.error(err.message);
     }
   };
+  const [bulkAssigningI, setBulkAssigningI] = useState(false);
+  const assignAllI = async (targets: { user_id: string; name: string }[]) => {
+    if (targets.length === 0) return;
+    setBulkAssigningI(true);
+    let ok = 0;
+    const failed: string[] = [];
+    for (const t of targets) {
+      try {
+        await assignInstructor({ data: { classId: id, userId: t.user_id } });
+        ok += 1;
+      } catch {
+        failed.push(t.name);
+      }
+    }
+    qc.invalidateQueries({ queryKey: ["admin", "class", id, "instructors"] });
+    const assignedIds = new Set(targets.map((t) => t.user_id));
+    setIResults((r) => r.filter((s) => !assignedIds.has(s.user_id) || failed.length > 0));
+    setBulkAssigningI(false);
+    if (ok > 0) {
+      setIq("");
+      toast.success(`강사 ${ok}명을 배정했습니다.`);
+    }
+    if (failed.length > 0) toast.error(`배정 실패: ${failed.join(", ")}`);
+  };
   const [statsBranchFilter, setStatsBranchFilter] = useState<string>("all");
   const statsBranchOptions = useMemo(() => {
     const set = new Set<string>();
@@ -982,7 +1006,27 @@ function ClassDetailPage() {
 
             {canWrite && iResults.length > 0 && (
               <div className="rounded-md border">
-                <ul className="divide-y">
+                {(() => {
+                  const pending = iResults.filter(
+                    (r) => !assignedInstructors.some((s: any) => s.user_id === r.user_id),
+                  );
+                  return (
+                    <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        검색 결과 {iResults.length}명 · 미배정 {pending.length}명
+                      </span>
+                      <Button
+                        size="sm"
+                        onClick={() => assignAllI(pending)}
+                        disabled={bulkAssigningI || pending.length === 0}
+                        className="shrink-0 whitespace-nowrap"
+                      >
+                        {bulkAssigningI ? "배정 중..." : `전체 배정 (${pending.length})`}
+                      </Button>
+                    </div>
+                  );
+                })()}
+                <ul className="max-h-[420px] divide-y overflow-y-auto overscroll-contain">
                   {iResults.map((r) => {
                     const already = assignedInstructors.some((s: any) => s.user_id === r.user_id);
                     return (
