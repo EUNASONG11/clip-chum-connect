@@ -102,7 +102,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         // Check if we already have this student mirrored.
         const { data: existing } = await supabaseAdmin
           .from("external_students")
-          .select("id, auth_user_id")
+          .select("id, auth_user_id, phone, parent_phone")
           .eq("external_id", externalId)
           .maybeSingle();
 
@@ -140,7 +140,37 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
               );
             if (roleErr) console.error("grant student role failed", roleErr);
           }
+        } else if (authUserId && loginPhone) {
+          // 번호가 변경된 경우: 로그인 계정(이메일 + 비밀번호)을 새 번호로 즉시 동기화
+          const prevLoginPhone = existing?.phone ?? existing?.parent_phone ?? null;
+          if (prevLoginPhone !== loginPhone) {
+            const newEmail = fakeEmail(externalId, loginPhone, emailRaw);
+            const newPassword = derivePassword(loginPhone);
+
+            const { error: updErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+              email: newEmail,
+              email_confirm: true,
+              password: newPassword,
+              user_metadata: {
+                name,
+                phone,
+                parent_phone: parentPhone,
+                external_id: externalId,
+                source: "master-mirror",
+              },
+            });
+
+            if (updErr) {
+              // 이메일 중복 등으로 실패하면 비밀번호만이라도 새 번호로 맞춘다.
+              console.error("sync login email failed", updErr);
+              const { error: pwErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+                password: newPassword,
+              });
+              if (pwErr) console.error("sync login password failed", pwErr);
+            }
+          }
         }
+
 
 
         // Upsert mirror row.
