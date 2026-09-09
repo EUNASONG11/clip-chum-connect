@@ -601,7 +601,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
         search: z.string().optional().default(""),
         branch: z.string().optional().default(""),
         page: z.number().int().min(1).optional().default(1),
-        pageSize: z.number().int().min(1).max(100).optional().default(20),
+        pageSize: z.number().int().min(1).max(500).optional().default(20),
         classFilter: z.enum(["all", "has_class", "no_class"]).optional().default("all"),
       })
       .parse(input ?? {}),
@@ -611,7 +611,7 @@ export const listStudentUsers = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const branch = scope.branch ?? (data.branch || "");
-    const terms = data.search.trim().split(/\s+/).filter(Boolean);
+    const terms = data.search.trim().split(/\s+/).filter(Boolean).slice(0, 10);
     const classFilter = data.classFilter ?? "all";
 
     // 수강반 유무 필터용: 현재 조회 권한 내 수강반에 등록된 학생 id 집합
@@ -647,19 +647,37 @@ export const listStudentUsers = createServerFn({ method: "GET" })
       q = q.not("auth_user_id", "in", ids);
     }
 
-    for (const t of terms) {
-      const digits = t.replace(/[^0-9]/g, "");
-      const like = `%${t}%`;
-      q = digits.length >= 2 && digits.length === t.replace(/[-\s]/g, "").length
-        ? q.or(`phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`)
-        : q.or(`name.ilike.${like}`);
+    if (terms.length > 0) {
+      const orConditions = terms
+        .map((t) => {
+          const digits = t.replace(/[^0-9]/g, "");
+          const isPhoneLike = digits.length >= 2 && digits.length === t.replace(/[-\s]/g, "").length;
+          if (isPhoneLike) {
+            return `phone.ilike.%${digits}%,parent_phone.ilike.%${digits}%`;
+          }
+          return `name.ilike.%${t}%`;
+        })
+        .join(",");
+      q = q.or(orConditions);
     }
 
-    const from = (data.page - 1) * data.pageSize;
-    const { data: rows, count, error } = await q
-      .order("name", { ascending: true })
-      .range(from, from + data.pageSize - 1);
+    const { data: rows, count, error } = await q.order("name", { ascending: true });
     if (error) throw new Error(error.message);
+
+    // 정확히 일치하는 이름을 최상단에 배치한 뒤 나머지는 가나다순
+    const lowerTerms = terms.map((t) => t.toLowerCase());
+    const sortedRows = (rows ?? []).sort((a: any, b: any) => {
+      const aName = (a.name ?? "").toLowerCase();
+      const bName = (b.name ?? "").toLowerCase();
+      const aExact = lowerTerms.some((t) => aName === t);
+      const bExact = lowerTerms.some((t) => bName === t);
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      return aName.localeCompare(bName, "ko");
+    });
+
+    const from = (data.page - 1) * data.pageSize;
+    const pagedRows = sortedRows.slice(from, from + data.pageSize);
 
     const ids = (rows ?? []).map((r: any) => r.auth_user_id as string);
     const [{ data: csRows }, { data: roleRows }] = await Promise.all([

@@ -100,7 +100,7 @@ function Badge({
   );
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 500;
 
 function UsersPage() {
   const qc = useQueryClient();
@@ -233,7 +233,8 @@ function UsersPage() {
       .trim()
       .toLowerCase()
       .split(/\s+/)
-      .filter((t) => t.length > 0);
+      .filter((t) => t.length > 0)
+      .slice(0, 10);
     const byBranch =
       branchFilter === "__all__"
         ? rows
@@ -248,10 +249,20 @@ function UsersPage() {
             return matchesNone || matchesCohort;
           });
     if (terms.length === 0) return byCohort;
-    return byCohort.filter((u) => {
-      const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
-      return terms.some((term) => haystack.includes(term));
-    });
+    return byCohort
+      .filter((u) => {
+        const haystack = `${u.email.toLowerCase()} ${u.nickname.toLowerCase()} ${(u.phone ?? "").toLowerCase()}`;
+        return terms.some((term) => haystack.includes(term));
+      })
+      .sort((a, b) => {
+        const aName = a.nickname.toLowerCase();
+        const bName = b.nickname.toLowerCase();
+        const aExact = terms.some((t) => aName === t);
+        const bExact = terms.some((t) => bName === t);
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+        return a.nickname.localeCompare(b.nickname, "ko");
+      });
   }, [buckets, tab, search, branchFilter, cohortFilter, isStudentTab, studentQuery.data]);
 
   const studentTotal = studentQuery.data?.total ?? 0;
@@ -416,7 +427,7 @@ function UsersPage() {
                 setSearch(v);
                 setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
               }}
-              placeholder="이름, 전화번호, 이메일 검색"
+              placeholder="이름, 전화번호, 이메일 (띄어쓰기로 여러 명 검색)"
               className="w-full max-w-sm"
             />
             <Select
