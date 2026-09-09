@@ -100,7 +100,7 @@ function Badge({
   );
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 500;
 
 function UsersPage() {
   const qc = useQueryClient();
