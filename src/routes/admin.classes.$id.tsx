@@ -968,7 +968,7 @@ function ClassDetailPage() {
                   id="iquery"
                   value={iq}
                   onChange={setIq}
-                  placeholder="강사 이름 또는 이메일로 검색"
+                  placeholder="강사 이름 또는 이메일 (띄어쓰기로 여러 명 검색)"
                   className="w-full"
                   showIcon={false}
                 />
