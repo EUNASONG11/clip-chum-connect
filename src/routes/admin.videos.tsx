@@ -108,6 +108,7 @@ function VideosPage() {
   const [classFilter, setClassFilter] = useState<string>("__all__");
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
+  const [unassignedCount, setUnassignedCount] = useState(0);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
 
@@ -128,6 +129,31 @@ function VideosPage() {
     }
     return q;
   };
+
+  // 실제 "미지정" 영상 개수를 확인해 필터 옵션 노출 결정
+  useEffect(() => {
+    let cancelled = false;
+    const countUnassigned = async () => {
+      if (!isAdmin) {
+        setUnassignedCount(0);
+        return;
+      }
+      const { count } = await supabase
+        .from("videos")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .is("class_id", null);
+      if (!cancelled) setUnassignedCount(count ?? 0);
+    };
+    countUnassigned();
+    return () => { cancelled = true; };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (classFilter === NO_CLASS && unassignedCount === 0) {
+      setClassFilter("__all__");
+    }
+  }, [classFilter, unassignedCount]);
 
   const load = async () => {
     if (!isAdmin && allowedIds.length === 0) {
@@ -369,9 +395,9 @@ function VideosPage() {
                 </form>
                 <Select value={classFilter} onValueChange={setClassFilter}>
                   <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     <SelectItem value="__all__">전체 수강반</SelectItem>
-                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                    {unassignedCount > 0 && <SelectItem value={NO_CLASS}>미지정</SelectItem>}
                     {(classes as any[]).map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
