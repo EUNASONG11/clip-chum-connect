@@ -1037,15 +1037,29 @@ export const checkEmailExists = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ email: z.string().email() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: res, error } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 200,
-    });
-    if (error) throw new Error(error.message);
-    const exists = res.users.some(
-      (u) => (u.email ?? "").toLowerCase() === data.email.toLowerCase(),
-    );
-    return { exists };
+    const target = data.email.trim().toLowerCase();
+
+    // 1) 강사/관리자 명부에서 먼저 확인 (빠른 경로)
+    const { data: rows } = await supabaseAdmin
+      .from("instructors")
+      .select("id")
+      .ilike("email", target)
+      .limit(1);
+    if (rows && rows.length > 0) return { exists: true, certain: true };
+
+    // 2) 인증 사용자 전체를 페이지 단위로 확인 (계정 수가 많아 1페이지만으로는 부족)
+    for (let page = 1; page <= 20; page++) {
+      const { data: res, error } = await supabaseAdmin.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (error) throw new Error(error.message);
+      const hit = res.users.some((u) => (u.email ?? "").toLowerCase() === target);
+      if (hit) return { exists: true, certain: true };
+      if (res.users.length < 1000) return { exists: false, certain: true };
+    }
+    // 확인 범위를 넘어선 경우: 단정하지 않음
+    return { exists: false, certain: false };
   });
 
 // 학생 로그인: 이름+전화번호로 미러링된 계정의 이메일/초기 비밀번호를 조회
