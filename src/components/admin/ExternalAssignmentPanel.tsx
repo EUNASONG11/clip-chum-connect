@@ -308,7 +308,19 @@ export function ExternalAssignmentPanel({
               </p>
             </div>
             <div className="flex min-w-0 items-end">
-              <Button onClick={onSubmit} disabled={submitting || !configured} className="w-full gap-2">
+              <Button
+                onClick={() => {
+                  if (selected.length === 0) {
+                    toast.error("내보낼 주차를 선택해 주세요.");
+                    return;
+                  }
+                  setPushUsers([]);
+                  setPushOpen(true);
+                }}
+                disabled={submitting || !configured}
+                className="w-full gap-2"
+              >
+
                 <Send className="h-4 w-4" />
                 {submitting ? "전송 중..." : `선택 주차 내보내기 (${selected.length})`}
               </Button>
