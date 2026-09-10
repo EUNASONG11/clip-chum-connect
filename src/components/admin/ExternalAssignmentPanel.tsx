@@ -134,6 +134,10 @@ export function ExternalAssignmentPanel({
   const toggleUser = (id: string) =>
     setResyncUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
 
+  const togglePushUser = (id: string) =>
+    setPushUsers((prev) => (prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]));
+
+
   const assignmentName = (label: string) =>
     `${titlePrefix.trim() || className}${branch !== "__all__" ? `(${branch})` : ""} ${formatWeekLabel(label)} 영상 과제`;
 
