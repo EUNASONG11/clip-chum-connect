@@ -380,7 +380,17 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     z
       .object({
         classId: z.string().uuid(),
-        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
+        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).optional(),
+        weekLabels: z
+          .array(z.string().regex(/^\d{4}-\d{2}-[1-5]$/))
+          .min(1)
+          .max(20)
+          .optional(),
+        /** 특정 교육원 학생만 볼 때 사용 (없으면 전체) */
+        branch: z.string().trim().min(1).nullish(),
+      })
+      .refine((v) => !!v.weekLabel || (v.weekLabels && v.weekLabels.length > 0), {
+        message: "주차를 1개 이상 선택해 주세요.",
       })
       .parse(i),
   )
@@ -389,11 +399,15 @@ export const listResyncTargets = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const weekLabels = Array.from(
+      new Set([...(data.weekLabels ?? []), ...(data.weekLabel ? [data.weekLabel] : [])]),
+    );
+
     const { data: videos } = await supabaseAdmin
       .from("videos")
       .select("id")
       .eq("class_id", data.classId)
-      .eq("week_label", data.weekLabel)
+      .in("week_label", weekLabels)
       .is("deleted_at", null);
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
@@ -403,6 +417,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       .select("user_id, video_id, completed_at, updated_at")
       .in("video_id", videoIds)
       .eq("is_completed", true);
+
 
     const byUser = new Map<string, { completed: number; last: string | null }>();
     for (const r of rows ?? []) {
@@ -425,22 +440,31 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       { name: string; identified: boolean; branch: string | null }
     >();
     for (const s of students ?? []) {
-      if (s.auth_user_id)
-        nameById.set(s.auth_user_id, {
-          name: s.name,
-          identified: !!s.external_id,
-          branch: (s.branch as string | null) ?? null,
-        });
+      if (!s.auth_user_id) continue;
+      const sBranch = (s.branch as string | null) ?? null;
+      if (data.branch) {
+        const match = data.branch === "미지정" ? !sBranch : sBranch === data.branch;
+        if (!match) continue;
+      }
+      nameById.set(s.auth_user_id, {
+        name: s.name,
+        identified: !!s.external_id,
+        branch: sBranch,
+      });
     }
 
+    // 교육원 필터가 있으면 해당 교육원 학생만 남긴다
+    const filteredUserIds = data.branch ? userIds.filter((u) => nameById.has(u)) : userIds;
+    if (filteredUserIds.length === 0) return [] as any[];
 
     // 최근 전송 상태 (해당 수강반 링크 기준)
     const { data: links } = await supabaseAdmin
       .from("external_assignment_links")
       .select("id")
       .eq("class_id", data.classId)
-      .eq("week_label", data.weekLabel)
+      .in("week_label", weekLabels)
       .is("deleted_at", null);
+
     const linkIds = (links ?? []).map((l) => l.id as string);
     const statusByUser = new Map<string, { status: string; error: string | null }>();
     if (linkIds.length > 0) {
@@ -459,7 +483,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       }
     }
 
-    return userIds
+    return filteredUserIds
       .map((u) => {
         const info = nameById.get(u);
         const st = statusByUser.get(u);
