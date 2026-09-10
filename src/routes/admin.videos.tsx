@@ -134,16 +134,20 @@ function VideosPage() {
   useEffect(() => {
     let cancelled = false;
     const countUnassigned = async () => {
-      let q = supabase.from("videos").select("id", { count: "exact", head: true }).is("deleted_at", null).is("class_id", null);
       if (!isAdmin) {
-        q = q.in("class_id", allowedIds.length > 0 ? allowedIds : ["00000000-0000-0000-0000-000000000000"]);
+        setUnassignedCount(0);
+        return;
       }
-      const { count } = await q;
+      const { count } = await supabase
+        .from("videos")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null)
+        .is("class_id", null);
       if (!cancelled) setUnassignedCount(count ?? 0);
     };
     countUnassigned();
     return () => { cancelled = true; };
-  }, [isAdmin, classes]);
+  }, [isAdmin]);
 
   useEffect(() => {
     if (classFilter === NO_CLASS && unassignedCount === 0) {
