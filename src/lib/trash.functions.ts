@@ -56,14 +56,19 @@ function uniqueIds(rows: any[], key: string): string[] {
 }
 
 async function fetchNameMaps(supabaseAdmin: any, rows: any[]) {
-  const profileIds = uniqueIds(rows, "user_id").concat(uniqueIds(rows, "instructor_user_id"));
+  const userIds = uniqueIds(rows, "user_id");
+  const instructorIds = uniqueIds(rows, "instructor_user_id");
+  const allPeopleIds = Array.from(new Set(userIds.concat(instructorIds)));
   const classIds = uniqueIds(rows, "class_id");
   const teamIds = uniqueIds(rows, "team_id");
   const videoIds = uniqueIds(rows, "video_id");
 
-  const [profiles, classes, teams, videos] = await Promise.all([
-    profileIds.length > 0
-      ? supabaseAdmin.from("profiles").select("id, name").in("id", profileIds)
+  const [students, instructors, classes, teams, videos] = await Promise.all([
+    userIds.length > 0
+      ? supabaseAdmin.from("external_students").select("auth_user_id, name").in("auth_user_id", userIds)
+      : Promise.resolve({ data: [] }),
+    allPeopleIds.length > 0
+      ? supabaseAdmin.from("instructors").select("auth_user_id, name").in("auth_user_id", allPeopleIds)
       : Promise.resolve({ data: [] }),
     classIds.length > 0
       ? supabaseAdmin.from("classes").select("id, name").in("id", classIds)
@@ -76,14 +81,24 @@ async function fetchNameMaps(supabaseAdmin: any, rows: any[]) {
       : Promise.resolve({ data: [] }),
   ]);
 
-  const toMap = (data: any[] | null, key: string) =>
-    new Map((data ?? []).map((r: any) => [r[key], r.name ?? r.title ?? ""]));
+  const peopleNames = new Map<string, string>();
+  for (const r of (instructors.data ?? []) as any[]) {
+    if (r.auth_user_id && r.name) peopleNames.set(r.auth_user_id, r.name);
+  }
+  // 학생 이름은 강사 이름보다 우선할 필요는 없지만, 같은 auth_user_id가 두 테이블에
+  // 없으므로 순서 무관합니다.
+  for (const r of (students.data ?? []) as any[]) {
+    if (r.auth_user_id && r.name) peopleNames.set(r.auth_user_id, r.name);
+  }
+
+  const toMap = (data: any[] | null, key: string, valueKey?: string) =>
+    new Map((data ?? []).map((r: any) => [r[key], r[valueKey ?? "name"] ?? ""]));
 
   return {
-    profileNames: toMap(profiles.data, "id"),
+    peopleNames,
     classNames: toMap(classes.data, "id"),
     teamNames: toMap(teams.data, "id"),
-    videoTitles: toMap(videos.data, "id"),
+    videoTitles: toMap(videos.data, "id", "title"),
   };
 }
 
