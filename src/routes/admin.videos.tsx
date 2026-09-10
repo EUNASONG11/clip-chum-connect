@@ -391,9 +391,9 @@ function VideosPage() {
                 </form>
                 <Select value={classFilter} onValueChange={setClassFilter}>
                   <SelectTrigger className="w-full sm:w-56"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                <SelectContent>
                     <SelectItem value="__all__">전체 수강반</SelectItem>
-                    <SelectItem value={NO_CLASS}>미지정</SelectItem>
+                    {unassignedCount > 0 && <SelectItem value={NO_CLASS}>미지정</SelectItem>}
                     {(classes as any[]).map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
