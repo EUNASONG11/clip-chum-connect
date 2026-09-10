@@ -67,6 +67,8 @@ export function ExternalAssignmentPanel({
   const [resyncing, setResyncing] = useState(false);
   const [resyncOpen, setResyncOpen] = useState(false);
   const [resyncUsers, setResyncUsers] = useState<string[]>([]);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [pushUsers, setPushUsers] = useState<string[]>([]);
 
   const statusQuery = useQuery({
     queryKey: ["external-assignment-status", classId],
@@ -89,17 +91,36 @@ export function ExternalAssignmentPanel({
   });
 
   const targetsQuery = useQuery({
-    queryKey: ["external-assignment-resync-targets", classId, selected[0]],
+    queryKey: ["external-assignment-resync-targets", classId, selected[0], branch],
     queryFn: () => {
       const weekLabel = selected[0];
       if (!weekLabel) throw new Error("재통보할 주차를 선택해 주세요.");
-      return fetchTargets({ data: { classId, weekLabel } });
+      return fetchTargets({
+        data: { classId, weekLabel, ...(branch !== "__all__" ? { branch } : {}) },
+      });
     },
     enabled: resyncOpen && selected.length === 1,
     staleTime: 10_000,
   });
 
   const targets = (targetsQuery.data ?? []) as any[];
+
+  const pushTargetsQuery = useQuery({
+    queryKey: ["external-assignment-push-targets", classId, selected.join(","), branch],
+    queryFn: () =>
+      fetchTargets({
+        data: {
+          classId,
+          weekLabels: selected,
+          ...(branch !== "__all__" ? { branch } : {}),
+        },
+      }),
+    enabled: pushOpen && selected.length > 0,
+    staleTime: 10_000,
+  });
+
+  const pushTargets = (pushTargetsQuery.data ?? []) as any[];
+
 
   const configured = statusQuery.data?.configured ?? false;
   const links = statusQuery.data?.links ?? [];
