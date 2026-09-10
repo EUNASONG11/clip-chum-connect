@@ -1039,7 +1039,9 @@ export const checkEmailExists = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const target = data.email.trim().toLowerCase();
 
-    // 1) 강사/관리자 명부에서 먼저 확인 (빠른 경로)
+    // 관리자·강사 탭 전용 확인: 학생 계정(수천 개)은 전화번호 로그인을 쓰므로
+    // 강사 명부 + 관리자 권한 보유자만 조회해 빠르게 판별한다.
+    // 1) 강사 명부에서 확인
     const { data: rows } = await supabaseAdmin
       .from("instructors")
       .select("id")
@@ -1047,19 +1049,20 @@ export const checkEmailExists = createServerFn({ method: "POST" })
       .limit(1);
     if (rows && rows.length > 0) return { exists: true, certain: true };
 
-    // 2) 인증 사용자 전체를 페이지 단위로 확인 (계정 수가 많아 1페이지만으로는 부족)
-    for (let page = 1; page <= 20; page++) {
-      const { data: res, error } = await supabaseAdmin.auth.admin.listUsers({
-        page,
-        perPage: 1000,
-      });
-      if (error) throw new Error(error.message);
-      const hit = res.users.some((u) => (u.email ?? "").toLowerCase() === target);
-      if (hit) return { exists: true, certain: true };
-      if (res.users.length < 1000) return { exists: false, certain: true };
+    // 2) 관리자/강사 권한 보유 계정만 확인 (소수)
+    const { data: roleRows, error: roleErr } = await supabaseAdmin
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["admin", "branch_admin", "instructor"])
+      .is("deleted_at", null);
+    if (roleErr) throw new Error(roleErr.message);
+    for (const r of roleRows ?? []) {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(r.user_id);
+      if ((u.user?.email ?? "").toLowerCase() === target) {
+        return { exists: true, certain: true };
+      }
     }
-    // 확인 범위를 넘어선 경우: 단정하지 않음
-    return { exists: false, certain: false };
+    return { exists: false, certain: true };
   });
 
 // 학생 로그인: 이름+전화번호로 미러링된 계정의 이메일/초기 비밀번호를 조회
