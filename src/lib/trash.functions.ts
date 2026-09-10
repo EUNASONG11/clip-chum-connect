@@ -137,10 +137,10 @@ export const listTrash = createServerFn({ method: "GET" })
     const enriched = (rows ?? []).map((row: any) => ({
       ...row,
       class_name: maps.classNames.get(row.class_id) || "",
-      student_name: maps.profileNames.get(row.user_id) || "",
-      instructor_name: maps.profileNames.get(row.instructor_user_id) || "",
+      student_name: maps.peopleNames.get(row.user_id) || "",
+      instructor_name: maps.peopleNames.get(row.instructor_user_id) || "",
       team_name: maps.teamNames.get(row.team_id) || "",
-      member_name: maps.profileNames.get(row.user_id) || "",
+      member_name: maps.peopleNames.get(row.user_id) || "",
       video_title: maps.videoTitles.get(row.video_id) || "",
     }));
 
