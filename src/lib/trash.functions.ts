@@ -51,6 +51,42 @@ const SELECT_COLS: Record<Entity, string> = {
   bookmarks: "id, video_id, user_id, note, seconds, deleted_at, deleted_by",
 };
 
+function uniqueIds(rows: any[], key: string): string[] {
+  return Array.from(new Set(rows.map((r) => r?.[key]).filter((v): v is string => typeof v === "string" && v.length > 0)));
+}
+
+async function fetchNameMaps(supabaseAdmin: any, rows: any[]) {
+  const profileIds = uniqueIds(rows, "user_id").concat(uniqueIds(rows, "instructor_user_id"));
+  const classIds = uniqueIds(rows, "class_id");
+  const teamIds = uniqueIds(rows, "team_id");
+  const videoIds = uniqueIds(rows, "video_id");
+
+  const [profiles, classes, teams, videos] = await Promise.all([
+    profileIds.length > 0
+      ? supabaseAdmin.from("profiles").select("id, name").in("id", profileIds)
+      : Promise.resolve({ data: [] }),
+    classIds.length > 0
+      ? supabaseAdmin.from("classes").select("id, name").in("id", classIds)
+      : Promise.resolve({ data: [] }),
+    teamIds.length > 0
+      ? supabaseAdmin.from("teams").select("id, name").in("id", teamIds)
+      : Promise.resolve({ data: [] }),
+    videoIds.length > 0
+      ? supabaseAdmin.from("videos").select("id, title").in("id", videoIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const toMap = (data: any[] | null, key: string) =>
+    new Map((data ?? []).map((r: any) => [r[key], r.name ?? r.title ?? ""]));
+
+  return {
+    profileNames: toMap(profiles.data, "id"),
+    classNames: toMap(classes.data, "id"),
+    teamNames: toMap(teams.data, "id"),
+    videoTitles: toMap(videos.data, "id"),
+  };
+}
+
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
