@@ -117,7 +117,19 @@ export const listTrash = createServerFn({ method: "GET" })
       .order("deleted_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [], count: count ?? 0 };
+
+    const maps = await fetchNameMaps(supabaseAdmin, rows ?? []);
+    const enriched = (rows ?? []).map((row: any) => ({
+      ...row,
+      class_name: maps.classNames.get(row.class_id) || "",
+      student_name: maps.profileNames.get(row.user_id) || "",
+      instructor_name: maps.profileNames.get(row.instructor_user_id) || "",
+      team_name: maps.teamNames.get(row.team_id) || "",
+      member_name: maps.profileNames.get(row.user_id) || "",
+      video_title: maps.videoTitles.get(row.video_id) || "",
+    }));
+
+    return { rows: enriched, count: count ?? 0 };
   });
 
 export const listTrashCounts = createServerFn({ method: "GET" })
