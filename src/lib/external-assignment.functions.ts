@@ -440,22 +440,31 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       { name: string; identified: boolean; branch: string | null }
     >();
     for (const s of students ?? []) {
-      if (s.auth_user_id)
-        nameById.set(s.auth_user_id, {
-          name: s.name,
-          identified: !!s.external_id,
-          branch: (s.branch as string | null) ?? null,
-        });
+      if (!s.auth_user_id) continue;
+      const sBranch = (s.branch as string | null) ?? null;
+      if (data.branch) {
+        const match = data.branch === "미지정" ? !sBranch : sBranch === data.branch;
+        if (!match) continue;
+      }
+      nameById.set(s.auth_user_id, {
+        name: s.name,
+        identified: !!s.external_id,
+        branch: sBranch,
+      });
     }
 
+    // 교육원 필터가 있으면 해당 교육원 학생만 남긴다
+    const filteredUserIds = data.branch ? userIds.filter((u) => nameById.has(u)) : userIds;
+    if (filteredUserIds.length === 0) return [] as any[];
 
     // 최근 전송 상태 (해당 수강반 링크 기준)
     const { data: links } = await supabaseAdmin
       .from("external_assignment_links")
       .select("id")
       .eq("class_id", data.classId)
-      .eq("week_label", data.weekLabel)
+      .in("week_label", weekLabels)
       .is("deleted_at", null);
+
     const linkIds = (links ?? []).map((l) => l.id as string);
     const statusByUser = new Map<string, { status: string; error: string | null }>();
     if (linkIds.length > 0) {
