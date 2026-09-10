@@ -483,7 +483,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       }
     }
 
-    return userIds
+    return filteredUserIds
       .map((u) => {
         const info = nameById.get(u);
         const st = statusByUser.get(u);
