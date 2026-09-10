@@ -82,17 +82,17 @@ function TrashPage() {
       case "class_categories":
         return row.name || row.id;
       case "class_folders":
-        return `${row.name} (반 ${row.class_id?.slice(0, 8)})`;
+        return `${row.name || "폴더"} (${row.class_name || "반"})`;
       case "class_students":
-        return `반 ${row.class_id?.slice(0, 8)} / 학생 ${row.user_id?.slice(0, 8)}`;
+        return `${row.class_name || "반"} / 학생 ${row.student_name || row.user_id}`;
       case "class_instructors":
-        return `반 ${row.class_id?.slice(0, 8)} / 강사 ${row.instructor_user_id?.slice(0, 8)}`;
+        return `${row.class_name || "반"} / 강사 ${row.instructor_name || row.instructor_user_id}`;
       case "team_members":
-        return `팀 ${row.team_id?.slice(0, 8)} / 사용자 ${row.user_id?.slice(0, 8)}`;
+        return `${row.team_name || "팀"} / ${row.member_name || row.user_id}`;
       case "comments":
-        return (row.body ?? "").slice(0, 60) || row.id;
+        return `${(row.body ?? "").slice(0, 60) || "댓글"} (${row.video_title || "영상"})`;
       case "bookmarks":
-        return `${row.note ?? "북마크"} @ ${row.seconds}s`;
+        return `${row.note ?? "북마크"} @ ${row.seconds}s (${row.video_title || "영상"})`;
       default:
         return row.id;
     }

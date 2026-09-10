@@ -51,6 +51,57 @@ const SELECT_COLS: Record<Entity, string> = {
   bookmarks: "id, video_id, user_id, note, seconds, deleted_at, deleted_by",
 };
 
+function uniqueIds(rows: any[], key: string): string[] {
+  return Array.from(new Set(rows.map((r) => r?.[key]).filter((v): v is string => typeof v === "string" && v.length > 0)));
+}
+
+async function fetchNameMaps(supabaseAdmin: any, rows: any[]) {
+  const userIds = uniqueIds(rows, "user_id");
+  const instructorIds = uniqueIds(rows, "instructor_user_id");
+  const allPeopleIds = Array.from(new Set(userIds.concat(instructorIds)));
+  const classIds = uniqueIds(rows, "class_id");
+  const teamIds = uniqueIds(rows, "team_id");
+  const videoIds = uniqueIds(rows, "video_id");
+
+  const [students, instructors, classes, teams, videos] = await Promise.all([
+    userIds.length > 0
+      ? supabaseAdmin.from("external_students").select("auth_user_id, name").in("auth_user_id", userIds)
+      : Promise.resolve({ data: [] }),
+    allPeopleIds.length > 0
+      ? supabaseAdmin.from("instructors").select("auth_user_id, name").in("auth_user_id", allPeopleIds)
+      : Promise.resolve({ data: [] }),
+    classIds.length > 0
+      ? supabaseAdmin.from("classes").select("id, name").in("id", classIds)
+      : Promise.resolve({ data: [] }),
+    teamIds.length > 0
+      ? supabaseAdmin.from("teams").select("id, name").in("id", teamIds)
+      : Promise.resolve({ data: [] }),
+    videoIds.length > 0
+      ? supabaseAdmin.from("videos").select("id, title").in("id", videoIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const peopleNames = new Map<string, string>();
+  for (const r of (instructors.data ?? []) as any[]) {
+    if (r.auth_user_id && r.name) peopleNames.set(r.auth_user_id, r.name);
+  }
+  // 학생 이름은 강사 이름보다 우선할 필요는 없지만, 같은 auth_user_id가 두 테이블에
+  // 없으므로 순서 무관합니다.
+  for (const r of (students.data ?? []) as any[]) {
+    if (r.auth_user_id && r.name) peopleNames.set(r.auth_user_id, r.name);
+  }
+
+  const toMap = (data: any[] | null, key: string, valueKey?: string) =>
+    new Map((data ?? []).map((r: any) => [r[key], r[valueKey ?? "name"] ?? ""]));
+
+  return {
+    peopleNames,
+    classNames: toMap(classes.data, "id"),
+    teamNames: toMap(teams.data, "id"),
+    videoTitles: toMap(videos.data, "id", "title"),
+  };
+}
+
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
@@ -81,7 +132,19 @@ export const listTrash = createServerFn({ method: "GET" })
       .order("deleted_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [], count: count ?? 0 };
+
+    const maps = await fetchNameMaps(supabaseAdmin, rows ?? []);
+    const enriched = (rows ?? []).map((row: any) => ({
+      ...row,
+      class_name: maps.classNames.get(row.class_id) || "",
+      student_name: maps.peopleNames.get(row.user_id) || "",
+      instructor_name: maps.peopleNames.get(row.instructor_user_id) || "",
+      team_name: maps.teamNames.get(row.team_id) || "",
+      member_name: maps.peopleNames.get(row.user_id) || "",
+      video_title: maps.videoTitles.get(row.video_id) || "",
+    }));
+
+    return { rows: enriched, count: count ?? 0 };
   });
 
 export const listTrashCounts = createServerFn({ method: "GET" })
