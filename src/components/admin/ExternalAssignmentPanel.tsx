@@ -638,6 +638,114 @@ export function ExternalAssignmentPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={pushOpen} onOpenChange={setPushOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>선택 주차 내보내기</DialogTitle>
+            <DialogDescription>
+              주차 {selected.length}건{branch !== "__all__" ? ` · ${branch} 교육원` : " · 전체 교육원"} 과제를
+              내보냅니다. 아래에서 학생을 고르면 이미 완료한 내역도 함께 통보됩니다. (선택하지 않으면 과제만
+              내보냅니다.)
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{pushUsers.length}명 선택</span>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPushUsers(pushTargets.map((t) => t.user_id as string))}
+                disabled={pushTargets.length === 0}
+              >
+                전체 선택
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPushUsers(
+                    pushTargets
+                      .filter(
+                        (t) => t.status === "failed" || t.status === "not_sent" || t.status === "pending",
+                      )
+                      .map((t) => t.user_id as string),
+                  )
+                }
+                disabled={pushTargets.length === 0}
+              >
+                실패·미전송만
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPushUsers([])}
+                disabled={pushUsers.length === 0}
+              >
+                해제
+              </Button>
+            </div>
+          </div>
+
+          {pushTargetsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">학생 목록을 불러오는 중...</p>
+          ) : pushTargets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              선택한 주차·교육원에 완료 기록이 있는 학생이 없습니다. 과제만 내보냅니다.
+            </p>
+          ) : (
+            <ul className="max-h-80 space-y-1 overflow-y-auto rounded-md border p-2">
+              {pushTargets.map((t) => (
+                <li key={t.user_id}>
+                  <label className="flex cursor-pointer items-start gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60">
+                    <Checkbox
+                      className="mt-0.5"
+                      checked={pushUsers.includes(t.user_id)}
+                      onCheckedChange={() => togglePushUser(t.user_id)}
+                    />
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium">{t.name}</span>
+                        <BranchBadge branch={t.branch} />
+                        <Badge
+                          variant={
+                            t.status === "failed"
+                              ? "destructive"
+                              : t.status === "review_completed" || t.status === "sent"
+                                ? "secondary"
+                                : "outline"
+                          }
+                        >
+                          {STATUS_LABEL[t.status] ?? t.status}
+                        </Badge>
+                        <Badge variant="outline">완료 영상 {t.completed_videos}개</Badge>
+                        {!t.identified && <Badge variant="destructive">식별 불가</Badge>}
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setPushOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={onSubmit} disabled={submitting} className="gap-2">
+              <Send className="h-4 w-4" />
+              {submitting
+                ? "전송 중..."
+                : `내보내기 (주차 ${selected.length}건${pushUsers.length > 0 ? ` · 학생 ${pushUsers.length}명` : ""})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
