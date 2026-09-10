@@ -176,13 +176,15 @@ export function ExternalAssignmentPanel({
       toast.error("내보낼 주차를 선택해 주세요.");
       return;
     }
+    const weeksToPush = [...selected];
+    const usersToNotify = [...pushUsers];
     setSubmitting(true);
     try {
       const res = await pushWeeks({
         data: {
           classId,
           ...(branch !== "__all__" ? { branch } : {}),
-          weeks: selected.map((label) => {
+          weeks: weeksToPush.map((label) => {
             const range = weekRangeForExternal(label);
             return {
               weekLabel: label,
@@ -197,12 +199,34 @@ export function ExternalAssignmentPanel({
       if (failed.length > 0) {
         toast.error(`${failed.length}개 주차 전송 실패: ${failed[0]?.error ?? ""}`);
       } else {
+        let notified = 0;
+        let notifyFailed = 0;
+        if (usersToNotify.length > 0) {
+          for (const label of weeksToPush) {
+            try {
+              const r = await resyncCompletions({
+                data: { classId, weekLabel: label, userIds: usersToNotify },
+              });
+              notified += r.sent ?? 0;
+            } catch {
+              notifyFailed += 1;
+            }
+          }
+        }
         toast.success(
-          `주차 ${selected.length}건 과제를 내보냈습니다. 대상 학생 ${res?.studentCount ?? 0}명${
+          `주차 ${weeksToPush.length}건 과제를 내보냈습니다. 대상 학생 ${res?.studentCount ?? 0}명${
             (res?.skipped ?? 0) > 0 ? ` (식별 불가 ${res?.skipped}명 제외)` : ""
+          }${
+            usersToNotify.length > 0
+              ? ` · 완료 내역 학생 ${usersToNotify.length}명 · ${notified}건 통보${
+                  notifyFailed > 0 ? ` (${notifyFailed}개 주차 통보 실패)` : ""
+                }`
+              : ""
           }`,
         );
       }
+      setPushOpen(false);
+      setPushUsers([]);
       setSelected([]);
       await Promise.all([statusQuery.refetch(), weeksQuery.refetch()]);
     } catch (e) {
@@ -211,6 +235,7 @@ export function ExternalAssignmentPanel({
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="space-y-4">
