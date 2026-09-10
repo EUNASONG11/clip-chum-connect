@@ -108,6 +108,7 @@ function VideosPage() {
   const [classFilter, setClassFilter] = useState<string>("__all__");
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
+  const [unassignedCount, setUnassignedCount] = useState(0);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
 
@@ -128,6 +129,27 @@ function VideosPage() {
     }
     return q;
   };
+
+  // 실제 "미지정" 영상 개수를 확인해 필터 옵션 노출 결정
+  useEffect(() => {
+    let cancelled = false;
+    const countUnassigned = async () => {
+      let q = supabase.from("videos").select("id", { count: "exact", head: true }).is("deleted_at", null).is("class_id", null);
+      if (!isAdmin) {
+        q = q.in("class_id", allowedIds.length > 0 ? allowedIds : ["00000000-0000-0000-0000-000000000000"]);
+      }
+      const { count } = await q;
+      if (!cancelled) setUnassignedCount(count ?? 0);
+    };
+    countUnassigned();
+    return () => { cancelled = true; };
+  }, [isAdmin, classes]);
+
+  useEffect(() => {
+    if (classFilter === NO_CLASS && unassignedCount === 0) {
+      setClassFilter("__all__");
+    }
+  }, [classFilter, unassignedCount]);
 
   const load = async () => {
     if (!isAdmin && allowedIds.length === 0) {
