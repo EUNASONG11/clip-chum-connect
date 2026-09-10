@@ -122,11 +122,13 @@ function AuthPage() {
         const msg = (error.message ?? "").toLowerCase();
         if (msg.includes("invalid") || msg.includes("credentials")) {
           try {
-            const { exists } = await checkEmailExists({ data: { email } });
-            if (!exists) {
+            const { exists, certain } = await checkEmailExists({ data: { email } });
+            if (exists) {
+              toast.error("비밀번호가 올바르지 않습니다.");
+            } else if (certain) {
               toast.error("등록되지 않은 이메일입니다.");
             } else {
-              toast.error("비밀번호가 올바르지 않습니다.");
+              toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
             }
           } catch {
             toast.error("이메일 또는 비밀번호가 올바르지 않습니다.");
