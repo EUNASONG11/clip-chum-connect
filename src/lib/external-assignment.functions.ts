@@ -380,7 +380,17 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     z
       .object({
         classId: z.string().uuid(),
-        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
+        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).optional(),
+        weekLabels: z
+          .array(z.string().regex(/^\d{4}-\d{2}-[1-5]$/))
+          .min(1)
+          .max(20)
+          .optional(),
+        /** 특정 교육원 학생만 볼 때 사용 (없으면 전체) */
+        branch: z.string().trim().min(1).nullish(),
+      })
+      .refine((v) => !!v.weekLabel || (v.weekLabels && v.weekLabels.length > 0), {
+        message: "주차를 1개 이상 선택해 주세요.",
       })
       .parse(i),
   )
@@ -389,11 +399,15 @@ export const listResyncTargets = createServerFn({ method: "GET" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const weekLabels = Array.from(
+      new Set([...(data.weekLabels ?? []), ...(data.weekLabel ? [data.weekLabel] : [])]),
+    );
+
     const { data: videos } = await supabaseAdmin
       .from("videos")
       .select("id")
       .eq("class_id", data.classId)
-      .eq("week_label", data.weekLabel)
+      .in("week_label", weekLabels)
       .is("deleted_at", null);
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
@@ -403,6 +417,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       .select("user_id, video_id, completed_at, updated_at")
       .in("video_id", videoIds)
       .eq("is_completed", true);
+
 
     const byUser = new Map<string, { completed: number; last: string | null }>();
     for (const r of rows ?? []) {
