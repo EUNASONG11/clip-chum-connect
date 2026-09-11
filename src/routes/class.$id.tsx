@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { ArrowLeft, Play, Film, CheckCircle2, Folder } from "lucide-react";
+import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
 
 export const Route = createFileRoute("/class/$id")({
