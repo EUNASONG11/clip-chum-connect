@@ -838,6 +838,7 @@ function ClassDetailPage() {
                   id="query"
                   value={query}
                   onChange={setQuery}
+                  onClear={() => setResults([])}
                   placeholder="이름 또는 전화번호 (띄어쓰기로 여러 명)"
                   className="w-full"
                   showIcon={false}
