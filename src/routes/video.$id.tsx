@@ -8,6 +8,7 @@ import { ArrowLeft, CheckCircle2, Info, Maximize2, Menu, Minimize2, Pause, Play,
 
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
+import { getVideoAvailability } from "@/lib/videos.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -365,6 +366,16 @@ function VideoPage() {
       .maybeSingle()
       .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);
+
+  // 조회되지 않는 경우: 진짜 없는 영상인지, 비공개라 숨겨진 영상인지 구분
+  const [unavailableReason, setUnavailableReason] = useState<"private" | "missing" | null>(null);
+  useEffect(() => {
+    setUnavailableReason(null);
+    if (video !== null) return;
+    getVideoAvailability({ data: { videoId: id } })
+      .then((r) => setUnavailableReason(r.exists && !r.published ? "private" : "missing"))
+      .catch(() => setUnavailableReason("missing"));
+  }, [video, id]);
 
   // 저장된 진도 상태 초기화
   const progressRef = useRef<{ current_seconds: number; max_seconds: number; watched_ratio: number; is_completed: boolean } | null>(null);
@@ -883,7 +894,29 @@ function VideoPage() {
       </div>
     );
   }
-  if (video === null) throw notFound();
+  if (video === null) {
+    if (unavailableReason === "missing") throw notFound();
+    if (unavailableReason === "private") {
+      return (
+        <div className="min-h-screen bg-background">
+          <SiteHeader />
+          <main className="mx-auto max-w-5xl px-4 py-10 text-center">
+            <p className="text-foreground">비공개 설정된 영상입니다.</p>
+            <p className="mt-2 text-sm text-muted-foreground">아직 게시되지 않았거나 관리자가 비공개로 전환한 영상이에요.</p>
+            <Link to="/" className="mt-4 inline-block text-primary underline">홈으로</Link>
+          </main>
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteHeader />
+        <main className="mx-auto max-w-5xl px-4 py-10">
+          <p className="text-muted-foreground">불러오는 중...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
