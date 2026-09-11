@@ -315,31 +315,21 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
           <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">수신 대상</Label>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap items-center gap-2">
                 {branchOptions.length > 0 && (
-                  <div className="mr-2 flex flex-wrap gap-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={branchFilter === "all" ? "default" : "outline"}
-                      onClick={() => setBranchFilter("all")}
-                      disabled={isFetching}
-                    >
-                      교육원 전체
-                    </Button>
-                    {branchOptions.map((b) => (
-                      <Button
-                        key={b}
-                        type="button"
-                        size="sm"
-                        variant={branchFilter === b ? "default" : "outline"}
-                        onClick={() => setBranchFilter(b)}
-                        disabled={isFetching}
-                      >
-                        {b}
-                      </Button>
-                    ))}
-                  </div>
+                  <Select value={branchFilter} onValueChange={setBranchFilter} disabled={isFetching}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="교육원 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">교육원 전체</SelectItem>
+                      {branchOptions.map((b) => (
+                        <SelectItem key={b} value={b}>
+                          {b}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
 
                 {(["all", "incomplete", "completed"] as StudentStatus[]).map((s) => (
