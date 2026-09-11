@@ -15,6 +15,7 @@ interface ClearableSearchInputProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   id?: string;
   type?: string;
+  onClear?: () => void;
 }
 
 export function ClearableSearchInput({
