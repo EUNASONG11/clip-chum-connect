@@ -316,6 +316,32 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">수신 대상</Label>
               <div className="flex flex-wrap gap-1">
+                {branchOptions.length > 0 && (
+                  <div className="mr-2 flex flex-wrap gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={branchFilter === "all" ? "default" : "outline"}
+                      onClick={() => setBranchFilter("all")}
+                      disabled={isFetching}
+                    >
+                      교육원 전체
+                    </Button>
+                    {branchOptions.map((b) => (
+                      <Button
+                        key={b}
+                        type="button"
+                        size="sm"
+                        variant={branchFilter === b ? "default" : "outline"}
+                        onClick={() => setBranchFilter(b)}
+                        disabled={isFetching}
+                      >
+                        {b}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
                 {(["all", "incomplete", "completed"] as StudentStatus[]).map((s) => (
                   <Button
                     key={s}
