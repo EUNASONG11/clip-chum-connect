@@ -26,9 +26,12 @@ import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos, getClass } from "@/lib/classes.functions";
+import { getMyStatus } from "@/lib/vimeo.functions";
+import { canonicalBranch } from "@/lib/branch";
 
 import { BranchBadge } from "@/components/BranchBadge";
 import { cn } from "@/lib/utils";
+
 
 type Props = {
   open: boolean;
