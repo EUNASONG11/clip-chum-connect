@@ -93,7 +93,6 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
       }),
     enabled: open && (mode === "class" || !!videoId),
   });
-  const students = studentsData ?? [];
 
   const allStudents = studentsData ?? [];
 
