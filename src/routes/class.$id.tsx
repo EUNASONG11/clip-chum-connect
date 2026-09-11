@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { ArrowLeft, Play, Film, CheckCircle2, Folder } from "lucide-react";
+import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
 
 export const Route = createFileRoute("/class/$id")({
@@ -102,45 +102,62 @@ function ClassPage() {
           )}
 
           {(() => {
-            const renderVideoItem = (v: any) => (
-              <Link
-                key={v.id}
-                to="/video/$id"
-                params={{ id: v.id }}
-                className="group flex items-center gap-4 rounded-xl border bg-card p-3 transition hover:bg-accent/50"
-              >
-                <div className="relative w-28 shrink-0 overflow-hidden rounded-lg aspect-video bg-muted">
-                  {v.thumbnail_url ? (
-                    <VideoThumb
-                      src={v.thumbnail_url}
-                      alt={v.title}
-                      className="h-full w-full object-cover transition group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <Film className="h-8 w-8 text-muted-foreground" />
+            const renderVideoItem = (v: any) => {
+              const isUnpublished = v.is_published === false;
+              return (
+                <Link
+                  key={v.id}
+                  to="/video/$id"
+                  params={{ id: v.id }}
+                  className={`group flex items-center gap-4 rounded-xl border bg-card p-3 transition hover:bg-accent/50 ${isUnpublished ? "bg-muted/60 opacity-80" : ""}`}
+                >
+                  <div className="relative w-28 shrink-0 overflow-hidden rounded-lg aspect-video bg-muted">
+                    {v.thumbnail_url ? (
+                      <VideoThumb
+                        src={v.thumbnail_url}
+                        alt={v.title}
+                        className="h-full w-full object-cover transition group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <Film className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    {isUnpublished && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                        <span className="flex items-center gap-1 rounded-md bg-black/70 px-2 py-1 text-xs font-medium text-white">
+                          <EyeOff className="h-3 w-3" /> 비공개
+                        </span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/30">
+                      <Play className="h-8 w-8 text-white opacity-0 transition group-hover:opacity-100" />
                     </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/30">
-                    <Play className="h-8 w-8 text-white opacity-0 transition group-hover:opacity-100" />
                   </div>
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col justify-center">
-                  <h3 className="line-clamp-1 font-semibold">{v.title}</h3>
-                  <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-                    <Play className="h-3 w-3" />
-                    <span>{formatDuration(v.duration)}</span>
+                  <div className="flex min-w-0 flex-1 flex-col justify-center">
+                    <h3 className="line-clamp-1 font-semibold flex items-center gap-2">
+                      <span className="truncate">{v.title}</span>
+                      {isUnpublished && (
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          비공개
+                        </span>
+                      )}
+                    </h3>
+                    <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Play className="h-3 w-3" />
+                      <span>{formatDuration(v.duration)}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="shrink-0 pr-1">
-                  {v.progress?.is_completed ? (
-                    <CheckCircle2 className="h-6 w-6 text-green-500" />
-                  ) : (
-                    <CheckCircle2 className="h-6 w-6 text-muted-foreground/30" />
-                  )}
-                </div>
-              </Link>
-            );
+                  <div className="shrink-0 pr-1">
+                    {v.progress?.is_completed ? (
+                      <CheckCircle2 className="h-6 w-6 text-green-500" />
+                    ) : (
+                      <CheckCircle2 className="h-6 w-6 text-muted-foreground/30" />
+                    )}
+                  </div>
+                </Link>
+              );
+            };
 
             if (folders.length === 0) {
               return <div className="flex flex-col gap-3">{videos.map(renderVideoItem)}</div>;
