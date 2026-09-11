@@ -26,9 +26,12 @@ import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
 import { listClassVideos, getClass } from "@/lib/classes.functions";
+import { getMyStatus } from "@/lib/vimeo.functions";
+import { canonicalBranch } from "@/lib/branch";
 
 import { BranchBadge } from "@/components/BranchBadge";
 import { cn } from "@/lib/utils";
+
 
 type Props = {
   open: boolean;
@@ -48,6 +51,9 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("incomplete");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const branchInitRef = useRef(false);
+
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
@@ -87,7 +93,41 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
       }),
     enabled: open && (mode === "class" || !!videoId),
   });
-  const students = studentsData ?? [];
+
+  const allStudents = studentsData ?? [];
+
+  const { data: myStatus } = useQuery({
+    queryKey: ["my-status-messaging"],
+    queryFn: () => getMyStatus(),
+    enabled: open,
+    retry: false,
+  });
+  const myBranch = canonicalBranch((myStatus as any)?.branch ?? "");
+
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    allStudents.forEach((s: any) => {
+      const b = canonicalBranch(s.branch);
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [allStudents]);
+
+  // 로그인한 강사의 교육원을 기본 선택
+  useEffect(() => {
+    if (!open) {
+      branchInitRef.current = false;
+      return;
+    }
+    if (branchInitRef.current || branchOptions.length === 0) return;
+    if (myBranch && branchOptions.includes(myBranch)) setBranchFilter(myBranch);
+    branchInitRef.current = true;
+  }, [open, myBranch, branchOptions]);
+
+  const students = useMemo(() => {
+    if (branchFilter === "all") return allStudents;
+    return allStudents.filter((s: any) => canonicalBranch(s.branch) === branchFilter);
+  }, [allStudents, branchFilter]);
 
   const filteredStudents = useMemo(() => {
     if (statusFilter === "all") return students;
@@ -95,6 +135,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   }, [students, statusFilter]);
 
   useEffect(() => {
+    setSelected({});
+  }, [branchFilter]);
+
+  useEffect(() => {
+
     if (!open || !studentsData) return;
     // 기본값: 전체 체크 해제
     setSelected({});
@@ -271,6 +316,32 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">수신 대상</Label>
               <div className="flex flex-wrap gap-1">
+                {branchOptions.length > 0 && (
+                  <div className="mr-2 flex flex-wrap gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={branchFilter === "all" ? "default" : "outline"}
+                      onClick={() => setBranchFilter("all")}
+                      disabled={isFetching}
+                    >
+                      교육원 전체
+                    </Button>
+                    {branchOptions.map((b) => (
+                      <Button
+                        key={b}
+                        type="button"
+                        size="sm"
+                        variant={branchFilter === b ? "default" : "outline"}
+                        onClick={() => setBranchFilter(b)}
+                        disabled={isFetching}
+                      >
+                        {b}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
                 {(["all", "incomplete", "completed"] as StudentStatus[]).map((s) => (
                   <Button
                     key={s}
