@@ -431,6 +431,11 @@ function VideosPage() {
                                 {formatWeekLabel(r.week_label)}
                               </span>
                             )}
+                            {!r.is_published && (
+                              <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-normal text-destructive">
+                                비공개
+                              </span>
+                            )}
                           </p>
                           <p className="truncate text-xs text-muted-foreground">
                             <span className="uppercase">{r.source}</span>
