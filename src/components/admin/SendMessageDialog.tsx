@@ -51,6 +51,9 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("incomplete");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const branchInitRef = useRef(false);
+
 
   const [selected, setSelected] = useState<Record<SelectionKey, boolean>>({});
   const [sending, setSending] = useState(false);
