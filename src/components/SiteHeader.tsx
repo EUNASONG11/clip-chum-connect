@@ -38,10 +38,17 @@ export function SiteHeader() {
   const { data: me } = useQuery({
     queryKey: ["me", userId],
     queryFn: async () => {
-      const [r, n, s] = await Promise.all([getMyRole(), getMyDisplayName(), getMyStatus()]);
-      return { isAdmin: r.isAdmin, name: n.name, isInstructor: s.isInstructor };
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) return null;
+      try {
+        const [r, n, s] = await Promise.all([getMyRole(), getMyDisplayName(), getMyStatus()]);
+        return { isAdmin: r.isAdmin, name: n.name, isInstructor: s.isInstructor };
+      } catch {
+        return null;
+      }
     },
     enabled: !!userId,
+    retry: false,
     staleTime: 10 * 60 * 1000,
   });
 
