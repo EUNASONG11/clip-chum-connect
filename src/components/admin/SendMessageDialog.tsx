@@ -95,12 +95,52 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   });
   const students = studentsData ?? [];
 
+  const allStudents = studentsData ?? [];
+
+  const { data: myStatus } = useQuery({
+    queryKey: ["my-status-messaging"],
+    queryFn: () => getMyStatus(),
+    enabled: open,
+    retry: false,
+  });
+  const myBranch = canonicalBranch((myStatus as any)?.branch ?? "");
+
+  const branchOptions = useMemo(() => {
+    const set = new Set<string>();
+    allStudents.forEach((s: any) => {
+      const b = canonicalBranch(s.branch);
+      if (b) set.add(b);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "ko"));
+  }, [allStudents]);
+
+  // 로그인한 강사의 교육원을 기본 선택
+  useEffect(() => {
+    if (!open) {
+      branchInitRef.current = false;
+      return;
+    }
+    if (branchInitRef.current || branchOptions.length === 0) return;
+    if (myBranch && branchOptions.includes(myBranch)) setBranchFilter(myBranch);
+    branchInitRef.current = true;
+  }, [open, myBranch, branchOptions]);
+
+  const students = useMemo(() => {
+    if (branchFilter === "all") return allStudents;
+    return allStudents.filter((s: any) => canonicalBranch(s.branch) === branchFilter);
+  }, [allStudents, branchFilter]);
+
   const filteredStudents = useMemo(() => {
     if (statusFilter === "all") return students;
     return students.filter((s: any) => s.status === statusFilter);
   }, [students, statusFilter]);
 
   useEffect(() => {
+    setSelected({});
+  }, [branchFilter]);
+
+  useEffect(() => {
+
     if (!open || !studentsData) return;
     // 기본값: 전체 체크 해제
     setSelected({});
