@@ -356,7 +356,7 @@ export const getMyStatus = createServerFn({ method: "GET" })
       .eq("user_id", context.userId);
     const roles = (data ?? []).map((r: any) => r.role as string);
     let branch: string | null = null;
-    if (roles.includes("branch_admin")) {
+    {
       const { data: inst } = await supabaseAdmin
         .from("instructors")
         .select("branch")
@@ -364,6 +364,7 @@ export const getMyStatus = createServerFn({ method: "GET" })
         .maybeSingle();
       branch = (inst as any)?.branch ?? null;
     }
+
     return {
       isAdmin: roles.includes("admin"),
       isStudent: roles.includes("student"),
