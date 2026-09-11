@@ -15,6 +15,7 @@ interface ClearableSearchInputProps {
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   id?: string;
   type?: string;
+  onClear?: () => void;
 }
 
 export function ClearableSearchInput({
@@ -29,7 +30,13 @@ export function ClearableSearchInput({
   onKeyDown,
   id,
   type = "text",
+  onClear,
 }: ClearableSearchInputProps) {
+  const handleClear = () => {
+    onChange("");
+    onClear?.();
+  };
+
   return (
     <div className={cn("relative", className)}>
       {showIcon && (
@@ -61,7 +68,7 @@ export function ClearableSearchInput({
           variant="ghost"
           size="sm"
           className="absolute right-0 top-1/2 h-full -translate-y-1/2 px-2 hover:bg-transparent"
-          onClick={() => onChange("")}
+          onClick={handleClear}
           aria-label="검색어 지우기"
         >
           <X className="h-4 w-4 text-muted-foreground" />
