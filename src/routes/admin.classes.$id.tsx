@@ -482,11 +482,15 @@ function ClassDetailPage() {
     queryFn: () => listStudentBranches(),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: filterOptions = { grades: [], schools: [], cohorts: [], hasNoCohort: false } } = useQuery({
+  const { data: filterOptions = { schools: [], schoolsByBranch: {}, cohorts: [], hasNoCohort: false } } = useQuery({
     queryKey: ["student-filter-options"],
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60 * 1000,
   });
+  const schoolOptions =
+    searchBranch !== "__all__"
+      ? (filterOptions.schoolsByBranch[searchBranch] ?? [])
+      : filterOptions.schools;
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -501,7 +505,6 @@ function ClassDetailPage() {
         data: {
           query: query.trim(),
           ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
-          ...(searchGrade !== "__all__" ? { grade: searchGrade } : {}),
           ...(searchSchool !== "__all__" ? { school: searchSchool } : {}),
           ...(searchCohorts.length > 0 ? { cohorts: searchCohorts } : {}),
         },
@@ -853,18 +856,6 @@ function ClassDetailPage() {
                   allLabel="전체"
                   assignMode={!filterOptions.hasNoCohort}
                 />
-                <Label className="shrink-0 text-xs text-muted-foreground">학년</Label>
-                <Select value={searchGrade} onValueChange={setSearchGrade}>
-                  <SelectTrigger className="h-9 w-24 sm:w-28">
-                    <SelectValue placeholder="전체" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">전체</SelectItem>
-                    {filterOptions.grades.map((g) => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Label className="shrink-0 text-xs text-muted-foreground">학교</Label>
                 <Select value={searchSchool} onValueChange={setSearchSchool}>
                   <SelectTrigger className="h-9 w-28 sm:w-36">
