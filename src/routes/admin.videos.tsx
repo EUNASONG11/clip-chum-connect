@@ -111,6 +111,8 @@ function VideosPage() {
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
+  const [createdByNames, setCreatedByNames] = useState<Record<string, string>>({});
+  const resolveCreatorNames = useServerFn(getVideoCreatorNames);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
 
