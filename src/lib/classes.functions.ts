@@ -452,6 +452,8 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       .object({
         query: z.string().min(1).max(100),
         branch: z.string().trim().min(1).max(100).optional(),
+        grade: z.string().trim().min(1).max(100).optional(),
+        school: z.string().trim().min(1).max(100).optional(),
       })
       .parse(i),
   )
@@ -472,6 +474,8 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         .order("name")
         .limit(PER_TOKEN_FETCH_LIMIT);
       if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
+      if (data.grade) builder = builder.eq("grade", data.grade);
+      if (data.school) builder = builder.eq("school", data.school);
       if (token.kind === "phone") {
         builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
       } else {
