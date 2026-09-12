@@ -47,6 +47,7 @@ type Row = {
   completion_ratio: number;
   week_label: string | null;
   created_at: string;
+  created_by?: string;
 };
 
 const NO_CLASS = "__none__";
