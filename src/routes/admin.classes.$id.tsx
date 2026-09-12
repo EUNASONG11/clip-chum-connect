@@ -46,6 +46,7 @@ import {
   listClassEnrollmentHistory,
   updateClass,
   listStudentBranches,
+  listStudentFilterOptions,
   listClassCategories,
 } from "@/lib/classes.functions";
 import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
@@ -467,6 +468,8 @@ function ClassDetailPage() {
 
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
+  const [searchGrade, setSearchGrade] = useState<string>("__all__");
+  const [searchSchool, setSearchSchool] = useState<string>("__all__");
   const [listBranch, setListBranch] = useState<string>("__all__");
 
   const [results, setResults] = useState<
@@ -476,6 +479,11 @@ function ClassDetailPage() {
   const { data: branchList = [] } = useQuery({
     queryKey: ["student-branches"],
     queryFn: () => listStudentBranches(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const { data: filterOptions = { grades: [], schools: [] } } = useQuery({
+    queryKey: ["student-filter-options"],
+    queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60 * 1000,
   });
 
@@ -492,6 +500,8 @@ function ClassDetailPage() {
         data: {
           query: query.trim(),
           ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
+          ...(searchGrade !== "__all__" ? { grade: searchGrade } : {}),
+          ...(searchSchool !== "__all__" ? { school: searchSchool } : {}),
         },
       });
       setResults(rows);
@@ -818,16 +828,40 @@ function ClassDetailPage() {
           <form onSubmit={search} className="space-y-2">
 
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Label className="shrink-0 text-xs text-muted-foreground">교육원</Label>
                 <Select value={searchBranch} onValueChange={setSearchBranch}>
-                  <SelectTrigger className="h-9 w-28 sm:w-32">
+                  <SelectTrigger className="h-9 w-24 sm:w-28">
                     <SelectValue placeholder="전체" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__all__">전체</SelectItem>
                     {branchList.map((b) => (
                       <SelectItem key={b} value={b}>{b}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Label className="shrink-0 text-xs text-muted-foreground">기수</Label>
+                <Select value={searchGrade} onValueChange={setSearchGrade}>
+                  <SelectTrigger className="h-9 w-24 sm:w-28">
+                    <SelectValue placeholder="전체" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체</SelectItem>
+                    {filterOptions.grades.map((g) => (
+                      <SelectItem key={g} value={g}>{g}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Label className="shrink-0 text-xs text-muted-foreground">학교</Label>
+                <Select value={searchSchool} onValueChange={setSearchSchool}>
+                  <SelectTrigger className="h-9 w-28 sm:w-36">
+                    <SelectValue placeholder="전체" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체</SelectItem>
+                    {filterOptions.schools.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
