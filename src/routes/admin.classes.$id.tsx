@@ -481,6 +481,11 @@ function ClassDetailPage() {
     queryFn: () => listStudentBranches(),
     staleTime: 5 * 60 * 1000,
   });
+  const { data: filterOptions = { grades: [], schools: [] } } = useQuery({
+    queryKey: ["student-filter-options"],
+    queryFn: () => listStudentFilterOptions(),
+    staleTime: 5 * 60 * 1000,
+  });
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -495,6 +500,8 @@ function ClassDetailPage() {
         data: {
           query: query.trim(),
           ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
+          ...(searchGrade !== "__all__" ? { grade: searchGrade } : {}),
+          ...(searchSchool !== "__all__" ? { school: searchSchool } : {}),
         },
       });
       setResults(rows);
