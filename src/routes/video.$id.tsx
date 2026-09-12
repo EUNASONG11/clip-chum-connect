@@ -675,8 +675,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      // modestbranding=1: 일시정지 시 우하단 YouTube 로고(외부 링크) 숨김
-      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&hl=ko&modestbranding=1&rel=0&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&hl=ko&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
@@ -684,20 +683,6 @@ function VideoPage() {
       iframe.addEventListener("focus", revealFsControls);
       container.appendChild(iframe);
       iframeRef.current = iframe;
-      // 상단 제목/“YouTube에서 보기” 영역 클릭 차단 레이어 (자막 CC 버튼은 하단이라 영향 없음)
-      const blockTop = document.createElement("div");
-      blockTop.className = "absolute left-0 right-0 top-0 z-20";
-      blockTop.style.height = "44px";
-      blockTop.style.touchAction = "none";
-      blockTop.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      blockTop.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      container.appendChild(blockTop);
       cleanup = () => {
         document.removeEventListener("visibilitychange", onVisibilityChange);
         window.removeEventListener("pagehide", saveOnLeave);
