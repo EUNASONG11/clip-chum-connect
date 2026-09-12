@@ -46,6 +46,7 @@ import {
   listClassEnrollmentHistory,
   updateClass,
   listStudentBranches,
+  listStudentFilterOptions,
   listClassCategories,
 } from "@/lib/classes.functions";
 import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
@@ -467,6 +468,8 @@ function ClassDetailPage() {
 
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
+  const [searchGrade, setSearchGrade] = useState<string>("__all__");
+  const [searchSchool, setSearchSchool] = useState<string>("__all__");
   const [listBranch, setListBranch] = useState<string>("__all__");
 
   const [results, setResults] = useState<
