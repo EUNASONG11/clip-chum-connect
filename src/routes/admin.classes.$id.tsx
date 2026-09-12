@@ -483,14 +483,14 @@ function ClassDetailPage() {
     staleTime: 5 * 60 * 1000,
   });
   const { data: filterOptions = { schools: [], schoolsByBranch: {}, cohorts: [], hasNoCohort: false } } = useQuery({
-    queryKey: ["student-filter-options"],
+    queryKey: ["student-filter-options-v2"],
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60 * 1000,
   });
   const schoolOptions =
     searchBranch !== "__all__"
-      ? (filterOptions.schoolsByBranch[searchBranch] ?? [])
-      : filterOptions.schools;
+      ? (filterOptions.schoolsByBranch?.[searchBranch] ?? [])
+      : (filterOptions.schools ?? []);
 
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
