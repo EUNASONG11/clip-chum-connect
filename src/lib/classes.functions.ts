@@ -575,19 +575,24 @@ export const listStudentFilterOptions = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("external_students")
-      .select("grade, school, cohort")
+      .select("school, cohort, branch")
       .eq("is_deleted", false);
     if (error) throw new Error(error.message);
-    const grades = new Set<string>();
     const schools = new Set<string>();
+    const schoolsByBranch: Record<string, Set<string>> = {};
     const cohorts = new Set<string>();
     let hasNoCohort = false;
     (data ?? []).forEach((r: any) => {
-      const g = (r.grade ?? "").toString().trim();
       const s = (r.school ?? "").toString().trim();
       const c = (r.cohort ?? "").toString().trim();
-      if (g) grades.add(g);
-      if (s) schools.add(s);
+      if (s) {
+        schools.add(s);
+        const b = canonicalBranch(r.branch ?? "") ?? "";
+        if (b) {
+          if (!schoolsByBranch[b]) schoolsByBranch[b] = new Set<string>();
+          schoolsByBranch[b].add(s);
+        }
+      }
       if (c) cohorts.add(c);
       else hasNoCohort = true;
     });
@@ -596,9 +601,13 @@ export const listStudentFilterOptions = createServerFn({ method: "GET" })
     const cohortList = Array.from(cohorts).sort(
       (a, b) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0),
     );
+    const schoolsByBranchSorted: Record<string, string[]> = {};
+    for (const b of CANONICAL_BRANCHES) {
+      schoolsByBranchSorted[b] = sortKo(Array.from(schoolsByBranch[b] ?? []));
+    }
     return {
-      grades: sortKo(Array.from(grades)),
       schools: sortKo(Array.from(schools)),
+      schoolsByBranch: schoolsByBranchSorted,
       cohorts: cohortList,
       hasNoCohort,
     };
