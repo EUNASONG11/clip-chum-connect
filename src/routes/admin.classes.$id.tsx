@@ -469,7 +469,6 @@ function ClassDetailPage() {
 
   const [query, setQuery] = useState("");
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
-  const [searchGrade, setSearchGrade] = useState<string>("__all__");
   const [searchSchool, setSearchSchool] = useState<string>("__all__");
   const [searchCohorts, setSearchCohorts] = useState<string[]>([]);
   const [listBranch, setListBranch] = useState<string>("__all__");
