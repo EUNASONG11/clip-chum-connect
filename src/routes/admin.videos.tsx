@@ -108,6 +108,7 @@ function VideosPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [classFilter, setClassFilter] = useState<string>("__all__");
+  const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
