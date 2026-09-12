@@ -1333,9 +1333,11 @@ export const getVideoCreatorNames = createServerFn({ method: "POST" })
         .eq("is_deleted", false),
     ]);
 
-    for (const i of instructors ?? []) names[i.auth_user_id] = i.name;
+    for (const i of instructors ?? []) {
+      if (i.auth_user_id) names[i.auth_user_id] = i.name;
+    }
     for (const s of students ?? []) {
-      if (!names[s.auth_user_id]) names[s.auth_user_id] = s.name;
+      if (s.auth_user_id && !names[s.auth_user_id]) names[s.auth_user_id] = s.name;
     }
 
     const missing = ids.filter((id) => !names[id]);
