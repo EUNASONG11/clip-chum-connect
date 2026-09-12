@@ -95,6 +95,10 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         const classTime = str(rec.class_time);
         const enrollmentStatus = str(rec.enrollment_status);
         const branch = str(rec.education_center) ?? str(rec.branch);
+        // 기수: 외부 DB의 cohort_override(예: "15기", "15")에서 추출
+        const cohortRaw = str(rec.cohort_override);
+        const cohortMatch = cohortRaw ? /(\d+)/.exec(cohortRaw) : null;
+        const cohort = cohortMatch ? `${cohortMatch[1]}기` : null;
         const isDeletedFromMaster = rec.is_deleted === true;
         // 학생 본인 전화번호가 없으면 학부모 전화번호를 로그인용 기본값으로 사용.
         const loginPhone = phone ?? parentPhone;
@@ -187,6 +191,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
               class_time: classTime,
               enrollment_status: enrollmentStatus,
               branch,
+              ...(cohort ? { cohort } : {}),
               is_deleted: isDeletedFromMaster,
               auth_user_id: authUserId,
               synced_at: new Date().toISOString(),

@@ -25,6 +25,7 @@ import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
 import { ExternalAssignmentPanel } from "@/components/admin/ExternalAssignmentPanel";
 
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import {
   getClass,
   listClassStudents,
@@ -470,10 +471,11 @@ function ClassDetailPage() {
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [searchGrade, setSearchGrade] = useState<string>("__all__");
   const [searchSchool, setSearchSchool] = useState<string>("__all__");
+  const [searchCohorts, setSearchCohorts] = useState<string[]>([]);
   const [listBranch, setListBranch] = useState<string>("__all__");
 
   const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string }[]
+    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
   >([]);
   const [searching, setSearching] = useState(false);
   const { data: branchList = [] } = useQuery({
@@ -481,7 +483,7 @@ function ClassDetailPage() {
     queryFn: () => listStudentBranches(),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: filterOptions = { grades: [], schools: [] } } = useQuery({
+  const { data: filterOptions = { grades: [], schools: [], cohorts: [], hasNoCohort: false } } = useQuery({
     queryKey: ["student-filter-options"],
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60 * 1000,
@@ -502,6 +504,7 @@ function ClassDetailPage() {
           ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
           ...(searchGrade !== "__all__" ? { grade: searchGrade } : {}),
           ...(searchSchool !== "__all__" ? { school: searchSchool } : {}),
+          ...(searchCohorts.length > 0 ? { cohorts: searchCohorts } : {}),
         },
       });
       setResults(rows);
@@ -842,6 +845,16 @@ function ClassDetailPage() {
                   </SelectContent>
                 </Select>
                 <Label className="shrink-0 text-xs text-muted-foreground">기수</Label>
+                <CohortMultiSelect
+                  options={filterOptions.cohorts}
+                  selected={searchCohorts}
+                  onChange={setSearchCohorts}
+                  width="w-28 sm:w-32"
+                  placeholder="전체"
+                  allLabel="전체"
+                  assignMode={!filterOptions.hasNoCohort}
+                />
+                <Label className="shrink-0 text-xs text-muted-foreground">학년</Label>
                 <Select value={searchGrade} onValueChange={setSearchGrade}>
                   <SelectTrigger className="h-9 w-24 sm:w-28">
                     <SelectValue placeholder="전체" />
@@ -921,6 +934,7 @@ function ClassDetailPage() {
                           {r.phone}
                           {r.parent_phone ? ` · 학부모 ${r.parent_phone}` : ""}
                           {r.school ? ` · ${r.school}` : ""}
+                          {r.cohort ? ` · ${r.cohort}` : " · 기수 미지정"}
                         </p>
                       </div>
                       <Button

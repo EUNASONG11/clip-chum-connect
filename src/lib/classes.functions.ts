@@ -454,6 +454,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         branch: z.string().trim().min(1).max(100).optional(),
         grade: z.string().trim().min(1).max(100).optional(),
         school: z.string().trim().min(1).max(100).optional(),
+        cohorts: z.array(z.string().trim().min(1).max(20)).max(50).optional(),
       })
       .parse(i),
   )
@@ -468,7 +469,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       if (byId.size >= MAX_STUDENT_SEARCH_RESULTS) break;
       let builder = supabaseAdmin
         .from("external_students")
-        .select("auth_user_id, name, phone, parent_phone, school, grade, branch")
+        .select("auth_user_id, name, phone, parent_phone, school, grade, branch, cohort")
         .not("auth_user_id", "is", null)
         .eq("is_deleted", false)
         .order("name")
@@ -476,6 +477,18 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
       if (data.grade) builder = builder.eq("grade", data.grade);
       if (data.school) builder = builder.eq("school", data.school);
+      const cohortFilter = data.cohorts ?? [];
+      if (cohortFilter.length > 0) {
+        const hasNone = cohortFilter.includes("__none__");
+        const named = cohortFilter.filter((c) => c !== "__none__");
+        if (hasNone && named.length > 0) {
+          builder = builder.or(`cohort.is.null,cohort.in.(${named.join(",")})`);
+        } else if (hasNone) {
+          builder = builder.is("cohort", null);
+        } else {
+          builder = builder.in("cohort", named);
+        }
+      }
       if (token.kind === "phone") {
         builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
       } else {
@@ -562,19 +575,33 @@ export const listStudentFilterOptions = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("external_students")
-      .select("grade, school")
+      .select("grade, school, cohort")
       .eq("is_deleted", false);
     if (error) throw new Error(error.message);
     const grades = new Set<string>();
     const schools = new Set<string>();
+    const cohorts = new Set<string>();
+    let hasNoCohort = false;
     (data ?? []).forEach((r: any) => {
       const g = (r.grade ?? "").toString().trim();
       const s = (r.school ?? "").toString().trim();
+      const c = (r.cohort ?? "").toString().trim();
       if (g) grades.add(g);
       if (s) schools.add(s);
+      if (c) cohorts.add(c);
+      else hasNoCohort = true;
     });
     const sortKo = (arr: string[]) => arr.sort((a, b) => a.localeCompare(b, "ko"));
-    return { grades: sortKo(Array.from(grades)), schools: sortKo(Array.from(schools)) };
+    // 기수는 최신순(19기 → 13기)
+    const cohortList = Array.from(cohorts).sort(
+      (a, b) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0),
+    );
+    return {
+      grades: sortKo(Array.from(grades)),
+      schools: sortKo(Array.from(schools)),
+      cohorts: cohortList,
+      hasNoCohort,
+    };
   });
 
 // 배정 이력의 처리자(actor) 보정: service_role 쓰기에서는 auth.uid()가 없으므로 직접 기록

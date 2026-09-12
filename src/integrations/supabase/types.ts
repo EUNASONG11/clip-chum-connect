@@ -490,6 +490,7 @@ export type Database = {
           auth_user_id: string | null
           branch: string | null
           class_time: string | null
+          cohort: string | null
           created_at: string
           enrollment_status: string | null
           external_id: string
@@ -509,6 +510,7 @@ export type Database = {
           auth_user_id?: string | null
           branch?: string | null
           class_time?: string | null
+          cohort?: string | null
           created_at?: string
           enrollment_status?: string | null
           external_id: string
@@ -528,6 +530,7 @@ export type Database = {
           auth_user_id?: string | null
           branch?: string | null
           class_time?: string | null
+          cohort?: string | null
           created_at?: string
           enrollment_status?: string | null
           external_id?: string
