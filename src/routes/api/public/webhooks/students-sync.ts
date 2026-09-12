@@ -191,6 +191,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
               class_time: classTime,
               enrollment_status: enrollmentStatus,
               branch,
+              ...(cohort ? { cohort } : {}),
               is_deleted: isDeletedFromMaster,
               auth_user_id: authUserId,
               synced_at: new Date().toISOString(),
