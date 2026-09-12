@@ -174,10 +174,25 @@ function VideosPage() {
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
-    setRows(((data as any[] | null) ?? []) as Row[]);
+    const loaded = ((data as any[] | null) ?? []) as Row[];
+    setRows(loaded);
     setTotal(count ?? 0);
     setEdits({});
     setListLoading(false);
+
+    if (isAdmin) {
+      const creatorIds = [...new Set(loaded.map((r) => r.created_by).filter(Boolean))] as string[];
+      if (creatorIds.length > 0) {
+        try {
+          const map = await resolveCreatorNames({ data: { userIds: creatorIds } });
+          setCreatedByNames(map);
+        } catch {
+          setCreatedByNames({});
+        }
+      } else {
+        setCreatedByNames({});
+      }
+    }
   };
   useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
   useEffect(() => { setPage(1); }, [search, classFilter]);
