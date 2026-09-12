@@ -1,4 +1,5 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
-import { listClasses, updateVideo } from "@/lib/classes.functions";
+import { listClasses, updateVideo, getVideoCreatorNames } from "@/lib/classes.functions";
 import { WeekPicker } from "@/components/admin/WeekPicker";
 import { formatWeekLabel } from "@/lib/week";
 import { restoreItem, purgeItem } from "@/lib/trash.functions";
