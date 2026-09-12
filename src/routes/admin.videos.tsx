@@ -471,6 +471,11 @@ function VideosPage() {
                               </>
                             )}
                             {" · "}등록: {new Date(r.created_at).toLocaleDateString("ko-KR")}
+                            {isAdmin && r.created_by && createdByNames[r.created_by] && (
+                              <>
+                                {" · "}업로더: {createdByNames[r.created_by]}
+                              </>
+                            )}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
