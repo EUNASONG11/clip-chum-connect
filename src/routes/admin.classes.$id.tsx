@@ -844,6 +844,16 @@ function ClassDetailPage() {
                   </SelectContent>
                 </Select>
                 <Label className="shrink-0 text-xs text-muted-foreground">기수</Label>
+                <CohortMultiSelect
+                  options={filterOptions.cohorts}
+                  selected={searchCohorts}
+                  onChange={setSearchCohorts}
+                  width="w-28 sm:w-32"
+                  placeholder="전체"
+                  allLabel="전체"
+                  assignMode={!filterOptions.hasNoCohort}
+                />
+                <Label className="shrink-0 text-xs text-muted-foreground">학년</Label>
                 <Select value={searchGrade} onValueChange={setSearchGrade}>
                   <SelectTrigger className="h-9 w-24 sm:w-28">
                     <SelectValue placeholder="전체" />
@@ -923,6 +933,7 @@ function ClassDetailPage() {
                           {r.phone}
                           {r.parent_phone ? ` · 학부모 ${r.parent_phone}` : ""}
                           {r.school ? ` · ${r.school}` : ""}
+                          {r.cohort ? ` · ${r.cohort}` : " · 기수 미지정"}
                         </p>
                       </div>
                       <Button
