@@ -25,6 +25,7 @@ import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
 import { ExternalAssignmentPanel } from "@/components/admin/ExternalAssignmentPanel";
 
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import {
   getClass,
   listClassStudents,
