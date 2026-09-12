@@ -1,4 +1,5 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
-import { listClasses, updateVideo } from "@/lib/classes.functions";
+import { listClasses, updateVideo, getVideoCreatorNames } from "@/lib/classes.functions";
 import { WeekPicker } from "@/components/admin/WeekPicker";
 import { formatWeekLabel } from "@/lib/week";
 import { restoreItem, purgeItem } from "@/lib/trash.functions";
@@ -46,6 +47,7 @@ type Row = {
   completion_ratio: number;
   week_label: string | null;
   created_at: string;
+  created_by?: string;
 };
 
 const NO_CLASS = "__none__";
@@ -109,6 +111,8 @@ function VideosPage() {
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
+  const [createdByNames, setCreatedByNames] = useState<Record<string, string>>({});
+  const resolveCreatorNames = useServerFn(getVideoCreatorNames);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
 
@@ -117,8 +121,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,deleted_at"
-          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
@@ -170,10 +174,25 @@ function VideosPage() {
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
-    setRows(((data as any[] | null) ?? []) as Row[]);
+    const loaded = ((data as any[] | null) ?? []) as Row[];
+    setRows(loaded);
     setTotal(count ?? 0);
     setEdits({});
     setListLoading(false);
+
+    if (isAdmin) {
+      const creatorIds = [...new Set(loaded.map((r) => r.created_by).filter(Boolean))] as string[];
+      if (creatorIds.length > 0) {
+        try {
+          const map = await resolveCreatorNames({ data: { userIds: creatorIds } });
+          setCreatedByNames(map);
+        } catch {
+          setCreatedByNames({});
+        }
+      } else {
+        setCreatedByNames({});
+      }
+    }
   };
   useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
   useEffect(() => { setPage(1); }, [search, classFilter]);
@@ -452,6 +471,11 @@ function VideosPage() {
                               </>
                             )}
                             {" · "}등록: {new Date(r.created_at).toLocaleDateString("ko-KR")}
+                            {isAdmin && r.created_by && createdByNames[r.created_by] && (
+                              <>
+                                {" · "}업로더: {createdByNames[r.created_by]}
+                              </>
+                            )}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
