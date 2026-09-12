@@ -1305,3 +1305,62 @@ export const deleteClassCategory = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// 영상 업로더 이름 조회 (최고 관리자 전용)
+export const getVideoCreatorNames = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ userIds: z.array(z.string().uuid()) }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    if (!(await isAdmin(context))) {
+      throw new Error("관리자만 접근할 수 있습니다.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const ids = [...new Set(data.userIds)];
+    const names: Record<string, string> = {};
+
+    const [{ data: instructors }, { data: students }] = await Promise.all([
+      supabaseAdmin
+        .from("instructors")
+        .select("auth_user_id,name")
+        .in("auth_user_id", ids)
+        .is("deleted_at", null),
+      supabaseAdmin
+        .from("external_students")
+        .select("auth_user_id,name")
+        .in("auth_user_id", ids)
+        .eq("is_deleted", false),
+    ]);
+
+    for (const i of instructors ?? []) names[i.auth_user_id] = i.name;
+    for (const s of students ?? []) {
+      if (!names[s.auth_user_id]) names[s.auth_user_id] = s.name;
+    }
+
+    const missing = ids.filter((id) => !names[id]);
+    if (missing.length > 0) {
+      const users = await Promise.all(
+        missing.map((id) =>
+          supabaseAdmin.auth.admin
+            .getUserById(id)
+            .then((r: any) => ({ id, user: r.data?.user ?? null }))
+            .catch(() => ({ id, user: null })),
+        ),
+      );
+      for (const { id, user } of users) {
+        if (user) {
+          names[id] =
+            (user.user_metadata?.name as string | undefined) ||
+            user.email ||
+            user.phone ||
+            "알 수 없음";
+        } else {
+          names[id] = "알 수 없음";
+        }
+      }
+    }
+
+    return names;
+  });
+
