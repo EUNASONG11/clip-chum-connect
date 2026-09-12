@@ -108,6 +108,7 @@ function VideosPage() {
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [classFilter, setClassFilter] = useState<string>("__all__");
+  const [sourceFilter, setSourceFilter] = useState<string>("__all__");
   const [total, setTotal] = useState(0);
   const [listLoading, setListLoading] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
@@ -130,6 +131,9 @@ function VideosPage() {
     if (!isAdmin) q = q.in("class_id", allowedIds.length > 0 ? allowedIds : ["00000000-0000-0000-0000-000000000000"]);
     if (classFilter !== "__all__") {
       q = classFilter === NO_CLASS ? q.is("class_id", null) : q.eq("class_id", classFilter);
+    }
+    if (isAdmin && sourceFilter !== "__all__") {
+      q = q.eq("source", sourceFilter);
     }
     return q;
   };
@@ -194,8 +198,9 @@ function VideosPage() {
       }
     }
   };
-  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
-  useEffect(() => { setPage(1); }, [search, classFilter]);
+  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter, sourceFilter]);
+  useEffect(() => { setPage(1); }, [search, classFilter, sourceFilter]);
+  useEffect(() => { if (!isAdmin) setSourceFilter("__all__"); }, [isAdmin]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -422,6 +427,16 @@ function VideosPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {isAdmin && (
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">전체 방식</SelectItem>
+                      <SelectItem value="vimeo">파일 업로드</SelectItem>
+                      <SelectItem value="youtube">유튜브 링크</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </CardHeader>
             <CardContent>
