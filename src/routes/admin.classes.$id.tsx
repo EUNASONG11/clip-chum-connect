@@ -835,7 +835,13 @@ function ClassDetailPage() {
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-end gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 <Label className="shrink-0 text-xs text-muted-foreground">교육원</Label>
-                <Select value={searchBranch} onValueChange={setSearchBranch}>
+                <Select
+                  value={searchBranch}
+                  onValueChange={(v) => {
+                    setSearchBranch(v);
+                    setSearchSchool("__all__");
+                  }}
+                >
                   <SelectTrigger className="h-9 w-24 sm:w-28">
                     <SelectValue placeholder="전체" />
                   </SelectTrigger>
@@ -863,7 +869,7 @@ function ClassDetailPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__all__">전체</SelectItem>
-                    {filterOptions.schools.map((s) => (
+                    {schoolOptions.map((s) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
                   </SelectContent>
