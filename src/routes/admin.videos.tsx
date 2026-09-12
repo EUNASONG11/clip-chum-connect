@@ -427,6 +427,16 @@ function VideosPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {isAdmin && (
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">전체 방식</SelectItem>
+                      <SelectItem value="vimeo">파일 업로드</SelectItem>
+                      <SelectItem value="youtube">유튜브 링크</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </CardHeader>
             <CardContent>
