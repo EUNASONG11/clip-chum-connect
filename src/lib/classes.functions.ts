@@ -554,6 +554,29 @@ export const listStudentBranches = createServerFn({ method: "GET" })
     return CANONICAL_BRANCHES.filter((b) => set.has(b)) as string[];
   });
 
+// 학생 배정 검색용 필터 옵션: 재학생의 학년(기수)·학교 고유 목록
+export const listStudentFilterOptions = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdminOrInstructor(context);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("external_students")
+      .select("grade, school")
+      .eq("is_deleted", false);
+    if (error) throw new Error(error.message);
+    const grades = new Set<string>();
+    const schools = new Set<string>();
+    (data ?? []).forEach((r: any) => {
+      const g = (r.grade ?? "").toString().trim();
+      const s = (r.school ?? "").toString().trim();
+      if (g) grades.add(g);
+      if (s) schools.add(s);
+    });
+    const sortKo = (arr: string[]) => arr.sort((a, b) => a.localeCompare(b, "ko"));
+    return { grades: sortKo(Array.from(grades)), schools: sortKo(Array.from(schools)) };
+  });
+
 // 배정 이력의 처리자(actor) 보정: service_role 쓰기에서는 auth.uid()가 없으므로 직접 기록
 async function stampEnrollmentActor(
   supabaseAdmin: any,
