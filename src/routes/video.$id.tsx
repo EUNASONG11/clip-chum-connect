@@ -675,7 +675,7 @@ function VideoPage() {
       const container = containerRef.current;
       container.innerHTML = "";
       const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube-nocookie.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&hl=ko&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&origin=${encodeURIComponent(window.location.origin)}`;
+      iframe.src = `https://www.youtube.com/embed/${video.external_video_id}?enablejsapi=1&playsinline=1&fs=0&hl=ko&origin=${encodeURIComponent(window.location.origin)}`;
       iframe.allow = "autoplay; fullscreen; picture-in-picture; encrypted-media";
       iframe.allowFullscreen = true;
       iframe.title = video.title;
@@ -683,24 +683,6 @@ function VideoPage() {
       iframe.addEventListener("focus", revealFsControls);
       container.appendChild(iframe);
       iframeRef.current = iframe;
-      // 유튜브 embed 상단의 제목/채널/공유 링크를 덮어 유튜브로 이탈하는 것을 막는다.
-      const topGuard = document.createElement("div");
-      topGuard.className = "absolute left-0 right-0 top-0 z-[60] h-16";
-      topGuard.style.cursor = "default";
-      topGuard.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      container.appendChild(topGuard);
-      // 우측 하단 유튜브 로고(외부 링크) 영역 차단
-      const logoGuard = document.createElement("div");
-      logoGuard.className = "absolute bottom-9 right-0 z-[60] h-8 w-24";
-      logoGuard.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-      });
-      container.appendChild(logoGuard);
-
       cleanup = () => {
         document.removeEventListener("visibilitychange", onVisibilityChange);
         window.removeEventListener("pagehide", saveOnLeave);
