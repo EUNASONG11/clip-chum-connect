@@ -452,7 +452,6 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
       .object({
         query: z.string().min(1).max(100),
         branch: z.string().trim().min(1).max(100).optional(),
-        grade: z.string().trim().min(1).max(100).optional(),
         school: z.string().trim().min(1).max(100).optional(),
         cohorts: z.array(z.string().trim().min(1).max(20)).max(50).optional(),
       })
@@ -475,7 +474,6 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         .order("name")
         .limit(PER_TOKEN_FETCH_LIMIT);
       if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
-      if (data.grade) builder = builder.eq("grade", data.grade);
       if (data.school) builder = builder.eq("school", data.school);
       const cohortFilter = data.cohorts ?? [];
       if (cohortFilter.length > 0) {
