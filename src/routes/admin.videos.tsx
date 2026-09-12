@@ -451,6 +451,7 @@ function VideosPage() {
                                 </span>
                               </>
                             )}
+                            {" · "}등록: {new Date(r.created_at).toLocaleDateString("ko-KR")}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
