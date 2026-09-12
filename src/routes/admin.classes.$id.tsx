@@ -470,10 +470,11 @@ function ClassDetailPage() {
   const [searchBranch, setSearchBranch] = useState<string>("__all__");
   const [searchGrade, setSearchGrade] = useState<string>("__all__");
   const [searchSchool, setSearchSchool] = useState<string>("__all__");
+  const [searchCohorts, setSearchCohorts] = useState<string[]>([]);
   const [listBranch, setListBranch] = useState<string>("__all__");
 
   const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string }[]
+    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
   >([]);
   const [searching, setSearching] = useState(false);
   const { data: branchList = [] } = useQuery({
@@ -481,7 +482,7 @@ function ClassDetailPage() {
     queryFn: () => listStudentBranches(),
     staleTime: 5 * 60 * 1000,
   });
-  const { data: filterOptions = { grades: [], schools: [] } } = useQuery({
+  const { data: filterOptions = { grades: [], schools: [], cohorts: [], hasNoCohort: false } } = useQuery({
     queryKey: ["student-filter-options"],
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60 * 1000,
@@ -502,6 +503,7 @@ function ClassDetailPage() {
           ...(searchBranch !== "__all__" ? { branch: searchBranch } : {}),
           ...(searchGrade !== "__all__" ? { grade: searchGrade } : {}),
           ...(searchSchool !== "__all__" ? { school: searchSchool } : {}),
+          ...(searchCohorts.length > 0 ? { cohorts: searchCohorts } : {}),
         },
       });
       setResults(rows);
