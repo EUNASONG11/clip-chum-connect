@@ -132,6 +132,9 @@ function VideosPage() {
     if (classFilter !== "__all__") {
       q = classFilter === NO_CLASS ? q.is("class_id", null) : q.eq("class_id", classFilter);
     }
+    if (isAdmin && sourceFilter !== "__all__") {
+      q = q.eq("source", sourceFilter);
+    }
     return q;
   };
 
@@ -195,8 +198,9 @@ function VideosPage() {
       }
     }
   };
-  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter]);
-  useEffect(() => { setPage(1); }, [search, classFilter]);
+  useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter, sourceFilter]);
+  useEffect(() => { setPage(1); }, [search, classFilter, sourceFilter]);
+  useEffect(() => { if (!isAdmin) setSourceFilter("__all__"); }, [isAdmin]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
