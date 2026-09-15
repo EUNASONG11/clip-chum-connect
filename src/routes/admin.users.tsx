@@ -570,7 +570,13 @@ function UsersPage() {
                       {isStaffTab && (
                         <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">
                           <span className="text-xs text-muted-foreground">
-                            {(((u as any).cohorts ?? []) as string[]).join(", ") || "미지정"}
+                            {(() => {
+                              const cohorts = (((u as any).cohorts ?? []) as string[]);
+                              const isAllCohorts = cohorts.length === COHORT_OPTIONS.length &&
+                                COHORT_OPTIONS.every((c) => cohorts.includes(c));
+                              if (isAllCohorts) return "전 기수";
+                              return cohorts.join(", ") || "미지정";
+                            })()}
                           </span>
                         </td>
                       )}
