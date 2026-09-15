@@ -640,8 +640,10 @@ function UsersPage() {
                               disabled={busy}
                               onClick={() => doRevokeAdmin(u)}
                               className="h-8 gap-1 px-2 text-xs"
+                              aria-label="관리자 해제"
                             >
-                              <UserMinus className="h-3.5 w-3.5" /> 관리자 해제
+                              <UserMinus className="h-3.5 w-3.5" />
+                              <span className="hidden lg:inline">관리자 해제</span>
                             </Button>
                           )}
                         </div>
