@@ -64,8 +64,9 @@ export function StudentPhoneDialog({ authUserId, name, phone, parentPhone, onSav
   return (
     <Dialog open={open} onOpenChange={reset}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs">
-          <Pencil className="h-3.5 w-3.5" /> 번호 수정
+        <Button size="sm" variant="outline" className="h-8 gap-1 px-2 text-xs" aria-label="번호 수정">
+          <Pencil className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">번호 수정</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[420px]">
