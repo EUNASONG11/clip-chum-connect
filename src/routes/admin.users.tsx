@@ -37,6 +37,7 @@ import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly, useAdminRole } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
+import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
 import { LocalInstructorDialog } from "@/components/admin/LocalInstructorDialog";
 import { StudentLearningDetail } from "@/components/admin/StudentLearningDetail";
@@ -568,31 +569,9 @@ function UsersPage() {
                       </td>
                       {isStaffTab && (
                         <td className="hidden whitespace-nowrap px-4 py-3 sm:table-cell">
-                          {!canManage ? (
-                            <span className="text-xs text-muted-foreground">
-                              {(((u as any).cohorts ?? []) as string[]).join(", ") || "미지정"}
-                            </span>
-                          ) : (
-                          <CohortMultiSelect
-                            options={COHORT_OPTIONS}
-                            selected={((u as any).cohorts ?? []) as string[]}
-                            assignMode
-                            placeholder="미지정"
-                            allLabel="전체 기수"
-                            width="w-[150px]"
-                            onChange={async (next) => {
-                              try {
-                                await updateInstructorCohort({
-                                  data: { authUserId: u.id, cohorts: next },
-                                });
-                                refetch();
-                                qc.invalidateQueries({ queryKey: ["admin", "instructors", "roster"] });
-                              } catch (e: any) {
-                                toast.error(e.message ?? "기수 저장 실패");
-                              }
-                            }}
-                          />
-                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {(((u as any).cohorts ?? []) as string[]).join(", ") || "미지정"}
+                          </span>
                         </td>
                       )}
                       {!isStaffTab && (
