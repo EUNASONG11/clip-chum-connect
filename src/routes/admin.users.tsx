@@ -582,7 +582,7 @@ function UsersPage() {
                         </td>
                       )}
                       {isStaffTab && (
-                        <td className="hidden px-3 py-2 md:table-cell">
+                        <td className="hidden px-3 py-2 lg:table-cell">
                           {u.class_names && u.class_names.length > 0 ? (
                             <div className="flex max-w-[240px] flex-wrap gap-1">
                               {u.class_names.map((cn) => (
