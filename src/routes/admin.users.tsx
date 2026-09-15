@@ -602,7 +602,7 @@ function UsersPage() {
                       {!isStaffTab && (
                         <td className="hidden px-3 py-2 sm:table-cell">{u.class_count}개</td>
                       )}
-                      <td className="hidden whitespace-nowrap px-3 py-2 text-xs text-muted-foreground md:table-cell">
+                      <td className="hidden px-3 py-2 text-xs text-muted-foreground md:table-cell">
                         {u.created_at ? new Date(u.created_at).toLocaleDateString("ko-KR") : "-"}
                       </td>
                       <td className="px-3 py-2 sm:px-4">
