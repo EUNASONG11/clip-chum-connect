@@ -61,6 +61,7 @@ type UserRow = {
   branch: string | null;
   cohort: string | null;
   cohorts: string[] | null;
+  class_names?: string[];
 };
 
 
@@ -503,17 +504,20 @@ function UsersPage() {
 
 
 
-                <th className="min-w-[100px] px-3 py-3 sm:px-4">이름</th>
-                <th className="hidden min-w-[110px] whitespace-nowrap px-4 py-3 sm:table-cell">전화번호</th>
-                <th className="min-w-[80px] whitespace-nowrap px-4 py-3">역할</th>
+                <th className="min-w-[100px] px-3 py-2 sm:px-4">이름</th>
+                <th className="hidden min-w-[110px] whitespace-nowrap px-3 py-2 sm:table-cell">전화번호</th>
+                <th className="min-w-[80px] whitespace-nowrap px-3 py-2">역할</th>
                 {isStaffTab && (
-                  <th className="hidden min-w-[110px] whitespace-nowrap px-4 py-3 sm:table-cell">기수</th>
+                  <th className="hidden min-w-[110px] whitespace-nowrap px-3 py-2 sm:table-cell">기수</th>
+                )}
+                {isStaffTab && (
+                  <th className="hidden min-w-[140px] px-3 py-2 md:table-cell">배정 수강반</th>
                 )}
                 {!isStaffTab && (
-                  <th className="hidden min-w-[90px] whitespace-nowrap px-4 py-3 sm:table-cell">수강 중인 반</th>
+                  <th className="hidden min-w-[90px] whitespace-nowrap px-3 py-2 sm:table-cell">수강 중인 반</th>
                 )}
-                <th className="hidden min-w-[100px] whitespace-nowrap px-4 py-3 md:table-cell">가입일</th>
-                <th className="whitespace-nowrap px-3 py-3 text-right sm:px-4 md:min-w-[220px]">작업</th>
+                <th className="hidden min-w-[90px] whitespace-nowrap px-3 py-2 md:table-cell">가입일</th>
+                <th className="whitespace-nowrap px-3 py-2 text-right sm:px-4 md:min-w-[200px]">작업</th>
               </tr>
             </thead>
             <tbody>
