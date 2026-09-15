@@ -213,7 +213,7 @@ function InstructorsPage() {
                 options={COHORT_OPTIONS}
                 selected={cohortFilter}
                 onChange={setCohortFilter}
-                placeholder="기수 전체"
+                placeholder="전 기수"
               />
             </div>
 
