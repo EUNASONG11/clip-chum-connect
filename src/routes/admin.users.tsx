@@ -497,27 +497,24 @@ function UsersPage() {
 
 
 
-        <div className="overflow-x-auto rounded-xl border border-border/60">
-          <table className="w-full text-sm md:min-w-[720px]">
+        <div className="rounded-xl border border-border/60">
+          <table className="w-full text-sm">
             <thead className="bg-muted/40 text-left text-xs font-medium text-muted-foreground">
               <tr>
-
-
-
-                <th className="min-w-[100px] px-3 py-2 sm:px-4">이름</th>
-                <th className="hidden min-w-[110px] whitespace-nowrap px-3 py-2 sm:table-cell">전화번호</th>
-                <th className="min-w-[80px] whitespace-nowrap px-3 py-2">역할</th>
+                <th className="px-3 py-2 sm:px-4">이름</th>
+                <th className="hidden px-3 py-2 sm:table-cell">전화번호</th>
+                <th className="px-3 py-2">역할</th>
                 {isStaffTab && (
-                  <th className="hidden min-w-[110px] whitespace-nowrap px-3 py-2 sm:table-cell">기수</th>
+                  <th className="hidden px-3 py-2 sm:table-cell">기수</th>
                 )}
                 {isStaffTab && (
-                  <th className="hidden min-w-[140px] px-3 py-2 md:table-cell">배정 수강반</th>
+                  <th className="hidden px-3 py-2 md:table-cell">배정 수강반</th>
                 )}
                 {!isStaffTab && (
-                  <th className="hidden min-w-[90px] whitespace-nowrap px-3 py-2 sm:table-cell">수강 중인 반</th>
+                  <th className="hidden px-3 py-2 sm:table-cell">수강 중인 반</th>
                 )}
-                <th className="hidden min-w-[90px] whitespace-nowrap px-3 py-2 md:table-cell">가입일</th>
-                <th className="whitespace-nowrap px-3 py-2 text-right sm:px-4 md:min-w-[200px]">작업</th>
+                <th className="hidden px-3 py-2 text-xs text-muted-foreground md:table-cell">가입일</th>
+                <th className="px-3 py-2 text-right sm:px-4">작업</th>
               </tr>
             </thead>
             <tbody>
