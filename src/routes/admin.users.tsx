@@ -28,6 +28,7 @@ import {
   revokeAdmin,
   setBranchAdminRole,
   bulkCreateInstructorAccounts,
+  updateInstructorCohort,
 } from "@/lib/vimeo.functions";
 
 import { COHORT_OPTIONS } from "@/lib/cohort";
