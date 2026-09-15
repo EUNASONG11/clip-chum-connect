@@ -28,7 +28,6 @@ import {
   revokeAdmin,
   setBranchAdminRole,
   bulkCreateInstructorAccounts,
-  updateInstructorCohort,
 } from "@/lib/vimeo.functions";
 
 import { COHORT_OPTIONS } from "@/lib/cohort";
@@ -37,7 +36,6 @@ import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly, useAdminRole } from "@/components/AdminRole";
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
-import { CohortMultiSelect } from "@/components/admin/CohortMultiSelect";
 import { LocalStudentDialog } from "@/components/admin/LocalStudentDialog";
 import { LocalInstructorDialog } from "@/components/admin/LocalInstructorDialog";
 import { StudentLearningDetail } from "@/components/admin/StudentLearningDetail";
