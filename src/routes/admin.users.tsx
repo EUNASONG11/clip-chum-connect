@@ -564,7 +564,7 @@ function UsersPage() {
                         </div>
                       </td>
 
-                      <td className="hidden px-3 py-2 text-muted-foreground sm:table-cell">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
+                      <td className="hidden break-all px-3 py-2 text-muted-foreground sm:table-cell">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
                       <td className="px-3 py-2 sm:px-4">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
