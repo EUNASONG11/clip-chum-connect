@@ -623,13 +623,14 @@ function UsersPage() {
                               disabled={busy}
                               onClick={() => doToggleBranchAdmin(u, !u.isBranchAdmin)}
                               className="h-8 gap-1 px-2 text-xs"
+                              aria-label={u.isBranchAdmin ? "중간 관리자 해제" : "중간 관리자 승격"}
                             >
                               {busy ? (
                                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
                                 <ShieldCheck className="h-3.5 w-3.5" />
                               )}
-                              {u.isBranchAdmin ? "중간 관리자 해제" : "중간 관리자 승격"}
+                              <span className="hidden lg:inline">{u.isBranchAdmin ? "중간 관리자 해제" : "중간 관리자 승격"}</span>
                             </Button>
                           )}
                           {canManage && u.isAdmin && (
