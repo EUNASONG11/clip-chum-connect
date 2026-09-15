@@ -16,7 +16,7 @@ interface CohortMultiSelectProps {
   placeholder?: string;
   noneLabel?: string;
   width?: string;
-  /** 필터가 아닌 실제 배정용: "기수 전체"/"미지정" 항목을 숨깁니다. */
+  /** 필터가 아닌 실제 배정용: "전 기수"/"미지정" 항목을 숨깁니다. */
   assignMode?: boolean;
   allLabel?: string;
 }
@@ -25,11 +25,11 @@ export function CohortMultiSelect({
   options,
   selected,
   onChange,
-  placeholder = "기수 전체",
+  placeholder = "전 기수",
   noneLabel = "미지정",
   width = "w-full sm:w-44",
   assignMode = false,
-  allLabel = "기수 전체",
+  allLabel = "전 기수",
 }: CohortMultiSelectProps) {
   const allSelected = assignMode
     ? selected.length === options.length
