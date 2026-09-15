@@ -473,7 +473,7 @@ function UsersPage() {
                   setCohortFilter(v);
                   setPages({ admin: 1, branch_admin: 1, instructor: 1, student: 1 });
                 }}
-                placeholder="전 기수"
+                placeholder="기수 전체"
               />
             )}
             {/* <Button
