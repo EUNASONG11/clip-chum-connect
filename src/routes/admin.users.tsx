@@ -569,7 +569,7 @@ function UsersPage() {
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
                       {isStaffTab && (
-                        <td className="hidden whitespace-nowrap px-3 py-2 sm:table-cell">
+                        <td className="hidden px-3 py-2 sm:table-cell">
                           <span className="text-xs text-muted-foreground">
                             {(() => {
                               const cohorts = (((u as any).cohorts ?? []) as string[]);
