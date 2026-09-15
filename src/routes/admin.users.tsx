@@ -549,9 +549,6 @@ function UsersPage() {
                               />
                             </button>
                           )}
-                          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
-                            {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
-                          </span>
                           <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2.5">
                             <div className="flex min-w-0 items-center gap-1.5">
                               <span className="truncate font-medium">{u.nickname || "-"}</span>
