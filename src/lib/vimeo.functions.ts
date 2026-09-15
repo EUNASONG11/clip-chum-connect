@@ -519,6 +519,24 @@ export const listUsers = createServerFn({ method: "GET" })
       if (r.auth_user_id) instMap.set(r.auth_user_id, { name: r.name, phone: r.phone, branch: r.branch, cohort: r.cohort ?? null, cohorts: ((r as any).cohorts ?? []) as string[] });
     });
 
+    // 강사별 배정 수강반 이름 조회
+    const { data: ciRows } = await retry(
+      async () =>
+        await supabaseAdmin
+          .from("class_instructors")
+          .select("instructor_user_id, classes(name)")
+          .is("deleted_at", null),
+      "class_instructors",
+    );
+    const classNamesMap = new Map<string, string[]>();
+    (ciRows ?? []).forEach((r: any) => {
+      const name = (r.classes as any)?.name as string | undefined;
+      if (!r.instructor_user_id || !name) return;
+      const list = classNamesMap.get(r.instructor_user_id) ?? [];
+      if (!list.includes(name)) list.push(name);
+      classNamesMap.set(r.instructor_user_id, list);
+    });
+
     const formatPhone = (p: string | null | undefined) => {
       if (!p) return "";
       const d = p.replace(/[^0-9]/g, "");
@@ -557,6 +575,7 @@ export const listUsers = createServerFn({ method: "GET" })
           branch: inst?.branch ?? ext?.branch ?? null,
           cohort: inst?.cohort ?? null,
           cohorts: inst?.cohorts ?? [],
+          class_names: classNamesMap.get(u.id) ?? [],
         };
       })
       .filter((u: any) => {
