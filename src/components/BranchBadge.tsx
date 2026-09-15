@@ -21,7 +21,7 @@ export function BranchBadge({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none",
+        "inline-flex shrink-0 items-center whitespace-nowrap rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none",
         key ? BRANCH_CLASS[key] : "bg-muted text-muted-foreground",
         className,
       )}

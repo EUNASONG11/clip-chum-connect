@@ -536,7 +536,7 @@ function UsersPage() {
 
 
                       <td className="px-3 py-2 sm:px-4">
-                        <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-2.5">
+                        <div className="flex min-w-0 flex-nowrap items-center gap-2 sm:gap-2.5">
                           {isStudentTab && (
                             <button
                               type="button"
@@ -552,7 +552,7 @@ function UsersPage() {
                           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-xs font-medium text-muted-foreground">
                             {(u.nickname || u.email || "?").slice(0, 1).toUpperCase()}
                           </span>
-                          <div className="flex min-w-0 flex-col flex-wrap gap-0.5 sm:flex-row sm:items-center sm:gap-2.5">
+                          <div className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2.5">
                             <div className="flex min-w-0 items-center gap-1.5">
                               <span className="truncate font-medium">{u.nickname || "-"}</span>
                               <BranchBadge branch={u.branch} />
@@ -564,7 +564,7 @@ function UsersPage() {
                         </div>
                       </td>
 
-                      <td className="hidden break-all px-3 py-2 text-muted-foreground sm:table-cell">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
+                      <td className="hidden max-w-[200px] truncate px-3 py-2 text-muted-foreground sm:table-cell">{u.phone || (u.email && !u.email.endsWith("@mirror.local") ? u.email : "-")}</td>
                       <td className="px-3 py-2 sm:px-4">
                         <Badge tone={roleTone(u)}>{roleLabel(u)}</Badge>
                       </td>
