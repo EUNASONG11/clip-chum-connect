@@ -575,6 +575,7 @@ export const listUsers = createServerFn({ method: "GET" })
           branch: inst?.branch ?? ext?.branch ?? null,
           cohort: inst?.cohort ?? null,
           cohorts: inst?.cohorts ?? [],
+          class_names: classNamesMap.get(u.id) ?? [],
         };
       })
       .filter((u: any) => {
