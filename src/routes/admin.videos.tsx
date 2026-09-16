@@ -431,6 +431,12 @@ function VideosPage() {
                               {(classes as any[]).find((c) => c.id === r.class_id)?.name ?? "미지정"}
                             </>
                           )}
+                          {isAdmin && (r as any).deleted_by && createdByNames[(r as any).deleted_by] && (
+                            <>
+                              {" · 삭제한 사람 "}
+                              {createdByNames[(r as any).deleted_by]}
+                            </>
+                          )}
                         </p>
                       </div>
                       <div className="flex shrink-0 justify-end gap-2">
