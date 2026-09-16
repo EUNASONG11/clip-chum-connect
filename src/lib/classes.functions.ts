@@ -1090,7 +1090,7 @@ export const listClassFolders = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_folders")
-      .select("id, name, sort_order, parent_folder_id, created_at")
+      .select("id, name, sort_order, parent_folder_id, created_at, is_required")
       .eq("class_id", data.classId)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -1108,6 +1108,7 @@ export const createClassFolder = createServerFn({ method: "POST" })
       classId: z.string().uuid(),
       name: z.string().min(1).max(100),
       parentFolderId: z.string().uuid().nullable().optional(),
+      isRequired: z.boolean().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
