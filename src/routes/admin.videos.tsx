@@ -559,6 +559,25 @@ function VideosPage() {
                                 {" · "}용량: {formatFileSize(r.file_size_bytes)}
                               </>
                             )}
+                            {isAdmin && typeof r.upload_stalled_ms === "number" && r.upload_stalled_ms > 0 && (
+                              <>
+                                {" · "}멈춤: {formatUploadDuration(r.upload_stalled_ms)}
+                              </>
+                            )}
+                            {isAdmin && typeof r.upload_retry_count === "number" && r.upload_retry_count > 0 && (
+                              <>
+                                {" · "}재시도: {r.upload_retry_count}회
+                              </>
+                            )}
+                            {isAdmin &&
+                              typeof r.file_size_bytes === "number" &&
+                              typeof r.upload_duration_ms === "number" &&
+                              r.file_size_bytes > 0 &&
+                              r.upload_duration_ms > 0 && (
+                                <>
+                                  {" · "}평균 {formatUploadSpeed(r.file_size_bytes, r.upload_duration_ms)}
+                                </>
+                              )}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
