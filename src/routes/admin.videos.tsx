@@ -542,6 +542,16 @@ function VideosPage() {
                                 {" · "}업로더: {createdByNames[r.created_by]}
                               </>
                             )}
+                            {isAdmin && typeof r.upload_duration_ms === "number" && (
+                              <>
+                                {" · "}업로드 소요: {formatUploadDuration(r.upload_duration_ms)}
+                              </>
+                            )}
+                            {isAdmin && typeof r.file_size_bytes === "number" && r.file_size_bytes > 0 && (
+                              <>
+                                {" · "}용량: {formatFileSize(r.file_size_bytes)}
+                              </>
+                            )}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
