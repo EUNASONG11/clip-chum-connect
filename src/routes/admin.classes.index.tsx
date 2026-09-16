@@ -104,9 +104,20 @@ function ClassesPage() {
   const [pickedInstructors, setPickedInstructors] = useState<any[]>([]);
 
   // 생성 시 함께 만들 폴더 목록 (parent: 상위 폴더 index 또는 null)
-  const [pendingFolders, setPendingFolders] = useState<{ name: string; parent: number | null }[]>([]);
+  const [pendingFolders, setPendingFolders] = useState<{ name: string; parent: number | null; isRequired: boolean }[]>([]);
   const [folderName, setFolderName] = useState("");
   const [folderParent, setFolderParent] = useState<string>("__root__");
+  const [folderIsRequired, setFolderIsRequired] = useState(false);
+
+  // 상위 폴더를 선택하면 해당 폴더의 필수 여부를 기본값으로 따름
+  useEffect(() => {
+    const idx = folderParent === "__root__" ? null : Number(folderParent);
+    if (idx !== null && pendingFolders[idx]) {
+      setFolderIsRequired(pendingFolders[idx].isRequired);
+    } else {
+      setFolderIsRequired(false);
+    }
+  }, [folderParent, pendingFolders]);
 
   const addPendingFolder = () => {
     const nm = folderName.trim();
@@ -115,7 +126,7 @@ function ClassesPage() {
     if (pendingFolders.some((f) => f.name === nm && f.parent === parent)) {
       return toast.error("같은 위치에 동일한 이름의 폴더가 있습니다.");
     }
-    setPendingFolders((prev) => [...prev, { name: nm, parent }]);
+    setPendingFolders((prev) => [...prev, { name: nm, parent, isRequired: folderIsRequired }]);
     setFolderName("");
   };
 
@@ -233,6 +244,7 @@ function ClassesPage() {
                 classId: row.id,
                 name: f.name,
                 parentFolderId: f.parent === null ? null : (idMap.get(f.parent) ?? null),
+                isRequired: f.isRequired,
               },
             });
             if (created?.id) idMap.set(i, created.id);
@@ -255,6 +267,7 @@ function ClassesPage() {
       setPendingFolders([]);
       setFolderName("");
       setFolderParent("__root__");
+      setFolderIsRequired(false);
       setInstQuery("");
       if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
@@ -628,6 +641,18 @@ function ClassesPage() {
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    id="folder_required"
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={folderIsRequired}
+                    onChange={(e) => setFolderIsRequired(e.target.checked)}
+                  />
+                  <Label htmlFor="folder_required" className="cursor-pointer text-sm">
+                    필수 시청 폴더
+                  </Label>
+                </div>
                 {pendingFolders.length === 0 ? (
                   <p className="mt-2 text-xs text-muted-foreground">
                     폴더를 미리 추가하면 수강반 생성과 함께 만들어집니다. (2단계까지)
@@ -639,10 +664,19 @@ function ClassesPage() {
                         key={i}
                         className="flex items-center justify-between rounded border bg-muted/40 px-2 py-1 text-sm"
                       >
-                        <span className="flex items-center gap-1 truncate">
+                        <span className="flex items-center gap-1.5 truncate">
                           {f.parent !== null && <span className="text-muted-foreground">└</span>}
                           <Folder className="h-3.5 w-3.5 text-muted-foreground" />
                           <span className="truncate">{f.name}</span>
+                          <span
+                            className={`rounded px-1.5 py-0.5 text-[10px] ${
+                              f.isRequired
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {f.isRequired ? "필수" : "선택"}
+                          </span>
                         </span>
                         <Button type="button" size="sm" variant="ghost" onClick={() => removePendingFolder(i)}>
                           <X className="h-3.5 w-3.5" />
