@@ -50,6 +50,8 @@ type Row = {
   created_by?: string;
   upload_duration_ms?: number | null;
   file_size_bytes?: number | null;
+  upload_stalled_ms?: number | null;
+  upload_retry_count?: number | null;
 };
 
 function formatUploadDuration(ms: number) {
@@ -62,6 +64,11 @@ function formatUploadDuration(ms: number) {
 function formatFileSize(bytes: number) {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)}GB`;
   return `${Math.max(1, Math.round(bytes / 1024 ** 2))}MB`;
+}
+
+function formatUploadSpeed(bytes: number, ms: number) {
+  const mbps = bytes / 1024 ** 2 / (ms / 1000);
+  return `${mbps.toFixed(1)}MB/s`;
 }
 
 const NO_CLASS = "__none__";
