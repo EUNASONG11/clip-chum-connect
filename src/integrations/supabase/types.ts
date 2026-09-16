@@ -137,6 +137,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           id: string
+          is_required: boolean
           name: string
           parent_folder_id: string | null
           sort_order: number
@@ -149,6 +150,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          is_required?: boolean
           name: string
           parent_folder_id?: string | null
           sort_order?: number
@@ -161,6 +163,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           id?: string
+          is_required?: boolean
           name?: string
           parent_folder_id?: string | null
           sort_order?: number
