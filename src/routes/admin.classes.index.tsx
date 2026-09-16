@@ -267,6 +267,7 @@ function ClassesPage() {
       setPendingFolders([]);
       setFolderName("");
       setFolderParent("__root__");
+      setFolderIsRequired(false);
       setInstQuery("");
       if (fileRef.current) fileRef.current.value = "";
       toast.success("수강반이 생성되었습니다.");
