@@ -1000,6 +1000,8 @@ export type Database = {
           title: string
           updated_at: string
           upload_duration_ms: number | null
+          upload_retry_count: number | null
+          upload_stalled_ms: number | null
           upload_started_at: string | null
           vimeo_uri: string | null
           vimeo_video_id: string | null
@@ -1032,6 +1034,8 @@ export type Database = {
           title: string
           updated_at?: string
           upload_duration_ms?: number | null
+          upload_retry_count?: number | null
+          upload_stalled_ms?: number | null
           upload_started_at?: string | null
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
@@ -1064,6 +1068,8 @@ export type Database = {
           title?: string
           updated_at?: string
           upload_duration_ms?: number | null
+          upload_retry_count?: number | null
+          upload_stalled_ms?: number | null
           upload_started_at?: string | null
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
