@@ -1116,17 +1116,20 @@ export const createClassFolder = createServerFn({ method: "POST" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // 부모 폴더가 같은 수강반 소속인지 검증
+    let parentRequired: boolean | null = null;
     if (data.parentFolderId) {
       const { data: parent } = await supabaseAdmin
         .from("class_folders")
-        .select("class_id")
+        .select("class_id, is_required")
         .eq("id", data.parentFolderId)
         .is("deleted_at", null)
         .maybeSingle();
       if (!parent || (parent as any).class_id !== data.classId) {
         throw new Error("잘못된 상위 폴더입니다.");
       }
+      parentRequired = Boolean((parent as any).is_required);
     }
+
     // 다음 sort_order 계산 (같은 부모 내에서)
     let sortBuilder = supabaseAdmin
       .from("class_folders")
