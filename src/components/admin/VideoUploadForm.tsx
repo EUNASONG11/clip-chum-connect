@@ -342,6 +342,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     setUploading(true);
     setProgress(0);
     try {
+      const uploadStartedAt = new Date();
       const session = await createVimeoUpload({
         data: { name: title, description: description || null, size: file.size },
       });
