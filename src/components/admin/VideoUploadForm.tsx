@@ -351,14 +351,15 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         const up = new tus.Upload(file, {
           endpoint: session.uploadLink,
           uploadUrl: session.uploadLink,
-          retryDelays: [0, 1000, 3000, 5000],
-          chunkSize: 128 * 1024 * 1024,
+          retryDelays: [0, 1000, 3000, 5000, 10000, 20000, 30000],
+          chunkSize: 20 * 1024 * 1024,
           metadata: { filename: file.name, filetype: file.type },
           headers: {},
           onError: (err) => reject(err),
           onProgress: (sent, total) => setProgress(Math.round((sent / total) * 100)),
           onSuccess: () => resolve(),
         });
+
         up.start();
       });
 
