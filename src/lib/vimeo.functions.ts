@@ -132,6 +132,9 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().nullable().optional(),
         week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+        upload_started_at: z.string().datetime().nullable().optional(),
+        upload_duration_ms: z.number().int().min(0).nullable().optional(),
+        file_size_bytes: z.number().int().min(0).nullable().optional(),
 
 
       })
@@ -169,6 +172,9 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         rewatch_allow_seek: data.rewatch_allow_seek ?? null,
         rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
         week_label: data.week_label ?? null,
+        upload_started_at: data.upload_started_at ?? null,
+        upload_duration_ms: data.upload_duration_ms ?? null,
+        file_size_bytes: data.file_size_bytes ?? null,
 
 
       })

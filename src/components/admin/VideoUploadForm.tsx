@@ -342,6 +342,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     setUploading(true);
     setProgress(0);
     try {
+      const uploadStartedAt = new Date();
       const session = await createVimeoUpload({
         data: { name: title, description: description || null, size: file.size },
       });
@@ -371,6 +372,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           is_published: isPublished,
           sort_order: sortOrder,
           week_label: weekLabel,
+          upload_started_at: uploadStartedAt.toISOString(),
+          upload_duration_ms: Date.now() - uploadStartedAt.getTime(),
+          file_size_bytes: file.size,
           ...playback,
         },
       });

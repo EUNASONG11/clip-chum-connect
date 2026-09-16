@@ -48,7 +48,21 @@ type Row = {
   week_label: string | null;
   created_at: string;
   created_by?: string;
+  upload_duration_ms?: number | null;
+  file_size_bytes?: number | null;
 };
+
+function formatUploadDuration(ms: number) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)}GB`;
+  return `${Math.max(1, Math.round(bytes / 1024 ** 2))}MB`;
+}
 
 const NO_CLASS = "__none__";
 
@@ -123,8 +137,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,deleted_at"
-          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
@@ -526,6 +540,16 @@ function VideosPage() {
                             {isAdmin && r.created_by && createdByNames[r.created_by] && (
                               <>
                                 {" · "}업로더: {createdByNames[r.created_by]}
+                              </>
+                            )}
+                            {isAdmin && typeof r.upload_duration_ms === "number" && (
+                              <>
+                                {" · "}업로드 소요: {formatUploadDuration(r.upload_duration_ms)}
+                              </>
+                            )}
+                            {isAdmin && typeof r.file_size_bytes === "number" && r.file_size_bytes > 0 && (
+                              <>
+                                {" · "}용량: {formatFileSize(r.file_size_bytes)}
                               </>
                             )}
                           </p>
