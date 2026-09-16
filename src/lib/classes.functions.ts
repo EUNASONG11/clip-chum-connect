@@ -1151,7 +1151,7 @@ export const createClassFolder = createServerFn({ method: "POST" })
         name: data.name,
         sort_order: nextOrder,
         parent_folder_id: data.parentFolderId ?? null,
-        is_required: data.isRequired ?? false,
+        is_required: data.isRequired ?? parentRequired ?? false,
         created_by: context.userId,
       })
       .select("id, name, sort_order, parent_folder_id, is_required")
