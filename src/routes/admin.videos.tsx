@@ -144,7 +144,7 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count,deleted_at"
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count,deleted_at,deleted_by"
           : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count",
         { count: "exact" },
       );
@@ -275,9 +275,25 @@ function VideosPage() {
     const { data, count } = await buildQuery(true)
       .order("deleted_at", { ascending: false })
       .range(0, 49);
-    setTrashRows(((data as any[] | null) ?? []) as Row[]);
+    const rows = ((data as any[] | null) ?? []) as Row[];
+    setTrashRows(rows);
     setTrashTotal(count ?? 0);
     setTrashLoading(false);
+
+    // 삭제한 사람 이름 조회 (최고 관리자 전용, 업로더 이름 캐시 재사용)
+    if (isAdmin) {
+      const deleterIds = [...new Set(rows.map((r) => (r as any).deleted_by).filter(Boolean))] as string[];
+      const missingIds = deleterIds.filter((id) => !(id in creatorNamesCache.current));
+      if (missingIds.length > 0) {
+        try {
+          const map = await resolveCreatorNames({ data: { userIds: missingIds } });
+          Object.assign(creatorNamesCache.current, map);
+        } catch {
+          // 조회 실패 시 캐시는 유지하고 표시만 생략
+        }
+      }
+      setCreatedByNames({ ...creatorNamesCache.current });
+    }
   };
 
   useEffect(() => { loadTrash(); }, [isAdmin, classes]);
