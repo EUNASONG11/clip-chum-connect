@@ -172,6 +172,9 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         rewatch_allow_seek: data.rewatch_allow_seek ?? null,
         rewatch_max_playback_rate: data.rewatch_max_playback_rate ?? null,
         week_label: data.week_label ?? null,
+        upload_started_at: data.upload_started_at ?? null,
+        upload_duration_ms: data.upload_duration_ms ?? null,
+        file_size_bytes: data.file_size_bytes ?? null,
 
 
       })
