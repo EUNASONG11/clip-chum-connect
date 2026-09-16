@@ -183,6 +183,11 @@ function ClassPage() {
                     <span className="flex items-center gap-2">
                       <Folder className="h-4 w-4 text-muted-foreground" />
                       <span className="font-semibold">{f.name}</span>
+                      {!f.is_required && (
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground whitespace-nowrap">
+                          선택 시청
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground">
                         ({items.length}{children.length > 0 ? ` · 폴더 ${children.length}` : ""})
                       </span>
