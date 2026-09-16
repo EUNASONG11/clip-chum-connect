@@ -27,7 +27,8 @@ export function VideoThumb({
 
   useEffect(() => {
     let cancelled = false;
-    if (!src) {
+    // Vimeo 처리 중 임시 이미지는 실제 미리보기가 아니므로 표시하지 않는다.
+    if (!src || src.includes("/default-")) {
       setUrl(null);
       return;
     }
