@@ -1148,9 +1148,10 @@ export const createClassFolder = createServerFn({ method: "POST" })
         name: data.name,
         sort_order: nextOrder,
         parent_folder_id: data.parentFolderId ?? null,
+        is_required: data.isRequired ?? false,
         created_by: context.userId,
       })
-      .select("id, name, sort_order, parent_folder_id")
+      .select("id, name, sort_order, parent_folder_id, is_required")
       .single();
     if (error) throw new Error(error.message);
     return inserted;
@@ -1162,7 +1163,8 @@ export const updateClassFolder = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid(),
-      name: z.string().min(1).max(100),
+      name: z.string().min(1).max(100).optional(),
+      isRequired: z.boolean().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
