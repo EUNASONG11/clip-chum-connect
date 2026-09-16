@@ -1116,17 +1116,20 @@ export const createClassFolder = createServerFn({ method: "POST" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // 부모 폴더가 같은 수강반 소속인지 검증
+    let parentRequired: boolean | null = null;
     if (data.parentFolderId) {
       const { data: parent } = await supabaseAdmin
         .from("class_folders")
-        .select("class_id")
+        .select("class_id, is_required")
         .eq("id", data.parentFolderId)
         .is("deleted_at", null)
         .maybeSingle();
       if (!parent || (parent as any).class_id !== data.classId) {
         throw new Error("잘못된 상위 폴더입니다.");
       }
+      parentRequired = Boolean((parent as any).is_required);
     }
+
     // 다음 sort_order 계산 (같은 부모 내에서)
     let sortBuilder = supabaseAdmin
       .from("class_folders")
@@ -1148,7 +1151,7 @@ export const createClassFolder = createServerFn({ method: "POST" })
         name: data.name,
         sort_order: nextOrder,
         parent_folder_id: data.parentFolderId ?? null,
-        is_required: data.isRequired ?? false,
+        is_required: data.isRequired ?? parentRequired ?? false,
         created_by: context.userId,
       })
       .select("id, name, sort_order, parent_folder_id, is_required")
@@ -1189,8 +1192,36 @@ export const updateClassFolder = createServerFn({ method: "POST" })
       .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // 필수/선택 전환 시 하위 폴더에도 동일하게 적용
+    if (data.isRequired !== undefined) {
+      const { data: all } = await supabaseAdmin
+        .from("class_folders")
+        .select("id, parent_folder_id")
+        .eq("class_id", (f as any).class_id)
+        .is("deleted_at", null);
+      const rows = (all ?? []) as { id: string; parent_folder_id: string | null }[];
+      const descendants: string[] = [];
+      let frontier = [data.id];
+      while (frontier.length > 0) {
+        const next = rows
+          .filter((r) => r.parent_folder_id && frontier.includes(r.parent_folder_id))
+          .map((r) => r.id)
+          .filter((id) => !descendants.includes(id));
+        descendants.push(...next);
+        frontier = next;
+      }
+      if (descendants.length > 0) {
+        const { error: de } = await supabaseAdmin
+          .from("class_folders")
+          .update({ is_required: data.isRequired })
+          .in("id", descendants);
+        if (de) throw new Error(de.message);
+      }
+    }
     return { ok: true };
   });
+
 
 // 폴더 삭제 (해당 폴더의 영상들은 폴더 미지정 상태로 남음)
 export const deleteClassFolder = createServerFn({ method: "POST" })
