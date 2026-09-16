@@ -194,6 +194,7 @@ export const getClassStats = createServerFn({ method: "GET" })
     let classQuery = supabaseAdmin
       .from("classes")
       .select("id, name")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
     if (allowedIds) classQuery = classQuery.in("id", allowedIds);
     const { data: classes } = await classQuery;
