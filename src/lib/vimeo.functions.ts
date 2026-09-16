@@ -132,6 +132,9 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         rewatch_allow_seek: z.boolean().nullable().optional(),
         rewatch_max_playback_rate: z.number().nullable().optional(),
         week_label: z.string().regex(/^\d{4}-\d{2}-[1-5]$/).nullable().optional(),
+        upload_started_at: z.string().datetime().nullable().optional(),
+        upload_duration_ms: z.number().int().min(0).nullable().optional(),
+        file_size_bytes: z.number().int().min(0).nullable().optional(),
 
 
       })
