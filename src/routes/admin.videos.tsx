@@ -144,8 +144,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,deleted_at"
-          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
