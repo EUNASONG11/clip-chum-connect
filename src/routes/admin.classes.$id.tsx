@@ -1398,12 +1398,29 @@ function ClassDetailPage() {
                           <div className="flex min-w-0 items-center gap-2">
                             <Folder className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="truncate">{f.name}</span>
+                            <span
+                              className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
+                                f.is_required
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {f.is_required ? "필수 시청" : "선택 시청"}
+                            </span>
                             <span className="text-xs text-muted-foreground">
                               (폴더 {childFolders.length} · 영상 {items.length})
                             </span>
                           </div>
                           {canWrite && (
                           <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant={f.is_required ? "secondary" : "outline"}
+                              className="h-7 whitespace-nowrap px-2 text-xs"
+                              onClick={() => handleToggleFolderRequired(f.id, !f.is_required)}
+                            >
+                              {f.is_required ? "선택으로" : "필수로"}
+                            </Button>
                             <Button
                               size="sm"
                               variant="outline"
