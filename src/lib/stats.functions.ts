@@ -170,11 +170,16 @@ export const getClassStats = createServerFn({ method: "GET" })
     let allowedIds: string[] | null = null;
     if (!admin) {
       const [owned, assigned] = await Promise.all([
-        supabaseAdmin.from("classes").select("id").eq("created_by", context.userId),
+        supabaseAdmin
+          .from("classes")
+          .select("id")
+          .eq("created_by", context.userId)
+          .is("deleted_at", null),
         supabaseAdmin
           .from("class_instructors")
           .select("class_id")
-          .eq("instructor_user_id", context.userId),
+          .eq("instructor_user_id", context.userId)
+          .is("deleted_at", null),
       ]);
       const set = new Set<string>();
       (owned.data ?? []).forEach((c: any) => set.add(c.id));
