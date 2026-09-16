@@ -48,7 +48,21 @@ type Row = {
   week_label: string | null;
   created_at: string;
   created_by?: string;
+  upload_duration_ms?: number | null;
+  file_size_bytes?: number | null;
 };
+
+function formatUploadDuration(ms: number) {
+  const total = Math.max(0, Math.round(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return m > 0 ? `${m}분 ${s}초` : `${s}초`;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)}GB`;
+  return `${Math.max(1, Math.round(bytes / 1024 ** 2))}MB`;
+}
 
 const NO_CLASS = "__none__";
 
