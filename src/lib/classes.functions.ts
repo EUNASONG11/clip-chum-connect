@@ -1180,9 +1180,13 @@ export const updateClassFolder = createServerFn({ method: "POST" })
     if (fe) throw new Error(fe.message);
     if (!f) throw new Error("폴더를 찾을 수 없습니다.");
     await assertOwnClassOrAdmin(context, (f as any).class_id);
+    const patch: Record<string, any> = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.isRequired !== undefined) patch.is_required = data.isRequired;
+    if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("class_folders")
-      .update({ name: data.name })
+      .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
