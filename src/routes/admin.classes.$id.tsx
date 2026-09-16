@@ -412,6 +412,16 @@ function ClassDetailPage() {
     }
   };
 
+  const handleToggleFolderRequired = async (folderId: string, next: boolean) => {
+    try {
+      await updateClassFolder({ data: { id: folderId, isRequired: next } });
+      refreshVideosAndFolders();
+      toast.success(next ? "필수 시청 폴더로 변경했습니다." : "선택 시청 폴더로 변경했습니다.");
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   const handleDeleteFolder = async (folderId: string) => {
     if (!confirm("이 폴더를 삭제하시겠습니까? 폴더 내 영상은 폴더 미지정 상태로 남습니다.")) return;
     try {
