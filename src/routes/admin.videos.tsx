@@ -176,7 +176,6 @@ function VideosPage() {
     if (term) q = q.ilike("title", `%${term}%`);
     const from = (page - 1) * PAGE_SIZE;
     const { data, count } = await q
-      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
     const loaded = ((data as any[] | null) ?? []) as Row[];
