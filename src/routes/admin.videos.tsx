@@ -184,6 +184,42 @@ function VideosPage() {
     setEdits({});
     setListLoading(false);
 
+    // Vimeo 처리 중이라 미리보기 이미지가 임시(placeholder)로 저장된 영상은 자동으로 다시 조회해 채운다.
+    const pending = loaded
+      .filter(
+        (r) =>
+          r.source !== "youtube" &&
+          r.vimeo_video_id &&
+          (!r.thumbnail_url || r.thumbnail_url.includes("/default-") || r.status !== "ready"),
+      )
+      .slice(0, 8);
+    if (pending.length > 0) {
+      void Promise.all(
+        pending.map(async (r) => {
+          try {
+            await refreshVideoStatus({ data: { id: r.id } });
+            const { data: fresh } = await supabase
+              .from("videos")
+              .select("id,thumbnail_url,status")
+              .eq("id", r.id)
+              .maybeSingle();
+            if (fresh) {
+              setRows((prev) =>
+                prev.map((x) =>
+                  x.id === r.id
+                    ? { ...x, thumbnail_url: (fresh as any).thumbnail_url, status: (fresh as any).status }
+                    : x,
+                ),
+              );
+            }
+          } catch {
+            // 조회 실패는 무시 (Vimeo 처리 완료 후 다음 로딩에서 재시도)
+          }
+        }),
+      );
+    }
+
+
     if (isAdmin) {
       const creatorIds = [...new Set(loaded.map((r) => r.created_by).filter(Boolean))] as string[];
       // 이미 확인한 업로더는 다시 조회하지 않음 (이름은 거의 바뀌지 않음)
