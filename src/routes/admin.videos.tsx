@@ -425,6 +425,8 @@ function VideosPage() {
                           {(r as any).deleted_at
                             ? new Date((r as any).deleted_at).toLocaleString("ko-KR")
                             : "-"}
+                          {" · "}
+                          {(r as any).source === "youtube" ? "유튜브" : "파일 업로드"}
                           {r.class_id && (
                             <>
                               {" · "}
