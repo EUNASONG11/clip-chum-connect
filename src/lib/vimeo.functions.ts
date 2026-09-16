@@ -135,6 +135,8 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         upload_started_at: z.string().datetime().nullable().optional(),
         upload_duration_ms: z.number().int().min(0).nullable().optional(),
         file_size_bytes: z.number().int().min(0).nullable().optional(),
+        upload_stalled_ms: z.number().int().min(0).nullable().optional(),
+        upload_retry_count: z.number().int().min(0).nullable().optional(),
 
 
       })
@@ -175,6 +177,8 @@ export const finalizeVideo = createServerFn({ method: "POST" })
         upload_started_at: data.upload_started_at ?? null,
         upload_duration_ms: data.upload_duration_ms ?? null,
         file_size_bytes: data.file_size_bytes ?? null,
+        upload_stalled_ms: data.upload_stalled_ms ?? null,
+        upload_retry_count: data.upload_retry_count ?? null,
 
 
       })

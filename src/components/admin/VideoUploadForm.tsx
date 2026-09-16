@@ -347,6 +347,12 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         data: { name: title, description: description || null, size: file.size },
       });
 
+      // 업로드 지연 원인 진단용 측정값
+      let stalledMs = 0;
+      let retryCount = 0;
+      let lastProgressAt = Date.now();
+      const STALL_THRESHOLD_MS = 5000;
+
       await new Promise<void>((resolve, reject) => {
         const up = new tus.Upload(file, {
           endpoint: session.uploadLink,
@@ -355,8 +361,22 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           chunkSize: 20 * 1024 * 1024,
           metadata: { filename: file.name, filetype: file.type },
           headers: {},
+          onShouldRetry: (err: any, retryAttempt: number) => {
+            retryCount = retryAttempt + 1;
+            // tus-js-client 기본 동작 유지: 4xx는 재시도 안 함 (409, 423 제외)
+            const status = err?.originalResponse?.getStatus?.() ?? 0;
+            if (status >= 400 && status < 500 && status !== 409 && status !== 423) return false;
+            return true;
+          },
           onError: (err) => reject(err),
-          onProgress: (sent, total) => setProgress(Math.round((sent / total) * 100)),
+          onProgress: (sent, total) => {
+            const now = Date.now();
+            const gap = now - lastProgressAt;
+            // 5초 넘게 진행이 없었으면 그 구간을 "멈춤"으로 누적
+            if (gap > STALL_THRESHOLD_MS) stalledMs += gap;
+            lastProgressAt = now;
+            setProgress(Math.round((sent / total) * 100));
+          },
           onSuccess: () => resolve(),
         });
 
@@ -376,6 +396,8 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
           upload_started_at: uploadStartedAt.toISOString(),
           upload_duration_ms: Date.now() - uploadStartedAt.getTime(),
           file_size_bytes: file.size,
+          upload_stalled_ms: stalledMs,
+          upload_retry_count: retryCount,
           ...playback,
         },
       });

@@ -50,6 +50,8 @@ type Row = {
   created_by?: string;
   upload_duration_ms?: number | null;
   file_size_bytes?: number | null;
+  upload_stalled_ms?: number | null;
+  upload_retry_count?: number | null;
 };
 
 function formatUploadDuration(ms: number) {
@@ -62,6 +64,11 @@ function formatUploadDuration(ms: number) {
 function formatFileSize(bytes: number) {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)}GB`;
   return `${Math.max(1, Math.round(bytes / 1024 ** 2))}MB`;
+}
+
+function formatUploadSpeed(bytes: number, ms: number) {
+  const mbps = bytes / 1024 ** 2 / (ms / 1000);
+  return `${mbps.toFixed(1)}MB/s`;
 }
 
 const NO_CLASS = "__none__";
@@ -137,8 +144,8 @@ function VideosPage() {
       .from("videos")
       .select(
         trash
-          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,deleted_at"
-          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes",
+          ? "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count,deleted_at"
+          : "id,title,description,status,source,vimeo_video_id,external_video_id,thumbnail_url,class_id,is_published,sort_order,allow_seek,max_playback_rate,rewatch_allow_seek,rewatch_max_playback_rate,completion_ratio,week_label,created_at,created_by,upload_duration_ms,file_size_bytes,upload_stalled_ms,upload_retry_count",
         { count: "exact" },
       );
     q = trash ? q.not("deleted_at", "is", null) : q.is("deleted_at", null);
@@ -552,6 +559,25 @@ function VideosPage() {
                                 {" · "}용량: {formatFileSize(r.file_size_bytes)}
                               </>
                             )}
+                            {isAdmin && typeof r.upload_stalled_ms === "number" && r.upload_stalled_ms > 0 && (
+                              <>
+                                {" · "}멈춤: {formatUploadDuration(r.upload_stalled_ms)}
+                              </>
+                            )}
+                            {isAdmin && typeof r.upload_retry_count === "number" && r.upload_retry_count > 0 && (
+                              <>
+                                {" · "}재시도: {r.upload_retry_count}회
+                              </>
+                            )}
+                            {isAdmin &&
+                              typeof r.file_size_bytes === "number" &&
+                              typeof r.upload_duration_ms === "number" &&
+                              r.file_size_bytes > 0 &&
+                              r.upload_duration_ms > 0 && (
+                                <>
+                                  {" · "}평균 {formatUploadSpeed(r.file_size_bytes, r.upload_duration_ms)}
+                                </>
+                              )}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
