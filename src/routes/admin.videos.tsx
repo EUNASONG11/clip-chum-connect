@@ -113,6 +113,7 @@ function VideosPage() {
   const [listLoading, setListLoading] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
   const [createdByNames, setCreatedByNames] = useState<Record<string, string>>({});
+  const creatorNamesCache = useRef<Record<string, string>>({});
   const resolveCreatorNames = useServerFn(getVideoCreatorNames);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
@@ -186,16 +187,17 @@ function VideosPage() {
 
     if (isAdmin) {
       const creatorIds = [...new Set(loaded.map((r) => r.created_by).filter(Boolean))] as string[];
-      if (creatorIds.length > 0) {
+      // 이미 확인한 업로더는 다시 조회하지 않음 (이름은 거의 바뀌지 않음)
+      const missingIds = creatorIds.filter((id) => !(id in creatorNamesCache.current));
+      if (missingIds.length > 0) {
         try {
-          const map = await resolveCreatorNames({ data: { userIds: creatorIds } });
-          setCreatedByNames(map);
+          const map = await resolveCreatorNames({ data: { userIds: missingIds } });
+          Object.assign(creatorNamesCache.current, map);
         } catch {
-          setCreatedByNames({});
+          // 조회 실패 시 캐시는 유지하고 표시만 생략
         }
-      } else {
-        setCreatedByNames({});
       }
+      setCreatedByNames({ ...creatorNamesCache.current });
     }
   };
   useEffect(() => { load(); }, [isAdmin, classes, page, search, classFilter, sourceFilter]);
