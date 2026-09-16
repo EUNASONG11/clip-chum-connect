@@ -982,6 +982,7 @@ export type Database = {
           duration: number | null
           external_url: string | null
           external_video_id: string | null
+          file_size_bytes: number | null
           folder_id: string | null
           id: string
           is_published: boolean
@@ -995,6 +996,8 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           updated_at: string
+          upload_duration_ms: number | null
+          upload_started_at: string | null
           vimeo_uri: string | null
           vimeo_video_id: string | null
           week_label: string | null
@@ -1011,6 +1014,7 @@ export type Database = {
           duration?: number | null
           external_url?: string | null
           external_video_id?: string | null
+          file_size_bytes?: number | null
           folder_id?: string | null
           id?: string
           is_published?: boolean
@@ -1024,6 +1028,8 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           updated_at?: string
+          upload_duration_ms?: number | null
+          upload_started_at?: string | null
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
           week_label?: string | null
@@ -1040,6 +1046,7 @@ export type Database = {
           duration?: number | null
           external_url?: string | null
           external_video_id?: string | null
+          file_size_bytes?: number | null
           folder_id?: string | null
           id?: string
           is_published?: boolean
@@ -1053,6 +1060,8 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string
+          upload_duration_ms?: number | null
+          upload_started_at?: string | null
           vimeo_uri?: string | null
           vimeo_video_id?: string | null
           week_label?: string | null
