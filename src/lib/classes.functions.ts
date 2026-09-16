@@ -1090,7 +1090,7 @@ export const listClassFolders = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_folders")
-      .select("id, name, sort_order, parent_folder_id, created_at")
+      .select("id, name, sort_order, parent_folder_id, created_at, is_required")
       .eq("class_id", data.classId)
       .is("deleted_at", null)
       .order("sort_order", { ascending: true })
@@ -1108,6 +1108,7 @@ export const createClassFolder = createServerFn({ method: "POST" })
       classId: z.string().uuid(),
       name: z.string().min(1).max(100),
       parentFolderId: z.string().uuid().nullable().optional(),
+      isRequired: z.boolean().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1147,9 +1148,10 @@ export const createClassFolder = createServerFn({ method: "POST" })
         name: data.name,
         sort_order: nextOrder,
         parent_folder_id: data.parentFolderId ?? null,
+        is_required: data.isRequired ?? false,
         created_by: context.userId,
       })
-      .select("id, name, sort_order, parent_folder_id")
+      .select("id, name, sort_order, parent_folder_id, is_required")
       .single();
     if (error) throw new Error(error.message);
     return inserted;
@@ -1161,7 +1163,8 @@ export const updateClassFolder = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid(),
-      name: z.string().min(1).max(100),
+      name: z.string().min(1).max(100).optional(),
+      isRequired: z.boolean().optional(),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -1177,9 +1180,13 @@ export const updateClassFolder = createServerFn({ method: "POST" })
     if (fe) throw new Error(fe.message);
     if (!f) throw new Error("폴더를 찾을 수 없습니다.");
     await assertOwnClassOrAdmin(context, (f as any).class_id);
+    const patch: { name?: string; is_required?: boolean } = {};
+    if (data.name !== undefined) patch.name = data.name;
+    if (data.isRequired !== undefined) patch.is_required = data.isRequired;
+    if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("class_folders")
-      .update({ name: data.name })
+      .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
