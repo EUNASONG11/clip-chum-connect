@@ -502,9 +502,13 @@ function ClassDetailPage() {
       ? (filterOptions.schoolsByBranch?.[searchBranch] ?? [])
       : (filterOptions.schools ?? []);
 
+  const hasSearchFilter =
+    searchBranch !== "__all__" || searchSchool !== "__all__" || searchCohorts.length > 0;
+
   const search = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isSearchableStudentQuery(query)) {
+    // 검색어가 없어도 교육원/학교/기수 필터가 선택되어 있으면 해당 조건 전체 목록 조회
+    if (!isSearchableStudentQuery(query) && !hasSearchFilter) {
       toast.info(STUDENT_SEARCH_HINT);
       return;
     }

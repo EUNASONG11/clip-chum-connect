@@ -450,7 +450,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        query: z.string().min(1).max(100),
+        query: z.string().max(100).default(""),
         branch: z.string().trim().min(1).max(100).optional(),
         school: z.string().trim().min(1).max(100).optional(),
         cohorts: z.array(z.string().trim().min(1).max(20)).max(50).optional(),
@@ -461,10 +461,13 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     await assertAdminOrInstructor(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const tokens = parseStudentSearchTokens(data.query);
-    if (tokens.length === 0) return [];
+    const hasFilter = !!(data.branch || data.school || (data.cohorts ?? []).length > 0);
+    // 검색어가 없으면 필터(교육원/학교/기수)가 있을 때만 전체 목록 조회 허용
+    if (tokens.length === 0 && !hasFilter) return [];
+    const effectiveTokens = tokens.length > 0 ? tokens : [null];
 
     const byId = new Map<string, any>();
-    for (const token of tokens) {
+    for (const token of effectiveTokens) {
       if (byId.size >= MAX_STUDENT_SEARCH_RESULTS) break;
       let builder = supabaseAdmin
         .from("external_students")
@@ -472,7 +475,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         .not("auth_user_id", "is", null)
         .eq("is_deleted", false)
         .order("name")
-        .limit(PER_TOKEN_FETCH_LIMIT);
+        .limit(token ? PER_TOKEN_FETCH_LIMIT : MAX_STUDENT_SEARCH_RESULTS);
       if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
       if (data.school) builder = builder.eq("school", data.school);
       const cohortFilter = data.cohorts ?? [];
@@ -487,9 +490,9 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
           builder = builder.in("cohort", named);
         }
       }
-      if (token.kind === "phone") {
+      if (token?.kind === "phone") {
         builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
-      } else {
+      } else if (token) {
         builder = builder.ilike("name", `%${token.value}%`);
       }
       const { data: rows, error } = await builder;
