@@ -526,6 +526,7 @@ function ClassDetailPage() {
         },
       });
       setResults(rows);
+      setSelectedIds(new Set());
       if (rows.length === 0) toast.info("일치하는 학생이 없습니다.");
     } catch (err: any) {
       toast.error(err.message);
@@ -540,6 +541,12 @@ function ClassDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
       setResults((r) => r.filter((s) => s.user_id !== userId));
+      setSelectedIds((prev) => {
+        if (!prev.has(userId)) return prev;
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
       setQuery("");
       toast.success("배정되었습니다.");
     } catch (err: any) {
