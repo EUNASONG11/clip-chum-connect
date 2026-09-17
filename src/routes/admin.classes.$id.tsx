@@ -572,6 +572,11 @@ function ClassDetailPage() {
     qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
     const assignedIds = new Set(targets.map((t) => t.user_id));
     setResults((r) => r.filter((s) => !assignedIds.has(s.user_id) || failed.length > 0));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      assignedIds.forEach((id) => next.delete(id));
+      return next;
+    });
     setBulkAssigning(false);
     if (ok > 0) {
       setQuery("");
