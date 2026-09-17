@@ -981,6 +981,21 @@ function ClassDetailPage() {
                   const already = students.some((s: any) => s.user_id === r.user_id);
                   return (
                     <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
+                      {!already && (
+                        <Checkbox
+                          checked={selectedIds.has(r.user_id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(r.user_id);
+                              else next.delete(r.user_id);
+                              return next;
+                            });
+                          }}
+                          aria-label={`${r.name} 선택`}
+                          className="shrink-0"
+                        />
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                           <span className="truncate">{r.name}</span>
