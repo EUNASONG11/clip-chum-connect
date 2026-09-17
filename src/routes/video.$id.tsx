@@ -482,9 +482,6 @@ function VideoPage() {
     };
     window.addEventListener("beforeunload", onBeforeUnload);
 
-    // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
-    const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
-    const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
 
     if (video.source === "vimeo") {
       // Vimeo Player SDK
