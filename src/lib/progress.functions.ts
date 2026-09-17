@@ -118,11 +118,14 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
     const allowedGrowth = Math.min(3600, elapsedSec * (maxRate + 0.5) + 7);
     const claimed = Math.max(data.currentSeconds, data.maxSeconds ?? 0);
     const nextMax = Math.max(prevMax, Math.min(claimed, prevMax + allowedGrowth));
-    const ratio = duration && duration > 0 ? Math.min(1, nextMax / duration) : 0;
+    const measuredRatio = duration && duration > 0 ? Math.min(1, nextMax / duration) : 0;
     const alreadyCompleted = prev?.is_completed ?? false;
     // 완료 기준 판정 시 0.5%p 허용 오차 (예: 기준 100% → 99.5% 이상이면 완료 처리)
     const effectiveRatio = Math.max(0, completionRatio - 0.005);
-    const nowCompleted = alreadyCompleted || !!data.endedEvent || ratio >= effectiveRatio;
+    const nowCompleted = alreadyCompleted || !!data.endedEvent || measuredRatio >= effectiveRatio;
+    // 플레이어의 종료 시점은 실제 길이보다 1~2초 작게 보고되는 경우가 있다.
+    // 완료 판정된 기록은 표시와 집계에서도 항상 100%로 통일한다.
+    const ratio = nowCompleted ? 1 : measuredRatio;
 
 
     // 실제 시청 시간 누적 (1회 전송당 최대 30초까지만 인정)

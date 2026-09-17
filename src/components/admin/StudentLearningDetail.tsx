@@ -85,11 +85,11 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
                           <span className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
                             <span
                               className="block h-full rounded-full bg-primary"
-                              style={{ width: `${Math.min(100, Math.ceil(v.watchedRatio * 100))}%` }}
+                              style={{ width: `${v.isCompleted ? 100 : Math.min(99, Math.ceil(v.watchedRatio * 100))}%` }}
                             />
                           </span>
                           <span className="tabular-nums">
-                            {Math.min(100, Math.ceil(v.watchedRatio * 1000) / 10)}%
+                            {v.isCompleted ? 100 : Math.min(99, Math.ceil(v.watchedRatio * 1000) / 10)}%
                           </span>
                         </div>
                       </td>
