@@ -928,19 +928,51 @@ function ClassDetailPage() {
                 const pending = results.filter(
                   (r) => !students.some((s: any) => s.user_id === r.user_id),
                 );
+                const selectedTargets = pending.filter((r) => selectedIds.has(r.user_id));
+                const allPendingSelected =
+                  pending.length > 0 && pending.every((r) => selectedIds.has(r.user_id));
                 return (
                   <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
-                    <span className="text-xs text-muted-foreground">
-                      검색 결과 {results.length}명 · 미배정 {pending.length}명
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={() => assignAll(pending)}
-                      disabled={bulkAssigning || pending.length === 0}
-                      className="shrink-0 whitespace-nowrap"
-                    >
-                      {bulkAssigning ? "배정 중..." : `전체 배정 (${pending.length})`}
-                    </Button>
+                    <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                      <Checkbox
+                        checked={allPendingSelected}
+                        onCheckedChange={(checked) => {
+                          setSelectedIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) {
+                              pending.forEach((r) => next.add(r.user_id));
+                            } else {
+                              pending.forEach((r) => next.delete(r.user_id));
+                            }
+                            return next;
+                          });
+                        }}
+                        aria-label="미배정 학생 전체 선택"
+                      />
+                      <span className="truncate">
+                        검색 결과 {results.length}명 · 미배정 {pending.length}명
+                        {selectedTargets.length > 0 && ` · ${selectedTargets.length}명 선택`}
+                      </span>
+                    </label>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => assignAll(selectedTargets)}
+                        disabled={bulkAssigning || selectedTargets.length === 0}
+                        className="shrink-0 whitespace-nowrap"
+                      >
+                        {bulkAssigning ? "배정 중..." : `선택 배정 (${selectedTargets.length})`}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => assignAll(pending)}
+                        disabled={bulkAssigning || pending.length === 0}
+                        className="shrink-0 whitespace-nowrap"
+                      >
+                        {bulkAssigning ? "배정 중..." : `전체 배정 (${pending.length})`}
+                      </Button>
+                    </div>
                   </div>
                 );
               })()}
