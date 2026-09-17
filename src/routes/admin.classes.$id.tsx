@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -484,8 +485,9 @@ function ClassDetailPage() {
   const [listBranch, setListBranch] = useState<string>("__all__");
 
   const [results, setResults] = useState<
-    { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
+      { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
   >([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [searching, setSearching] = useState(false);
   const { data: branchList = [] } = useQuery({
     queryKey: ["student-branches"],
@@ -524,6 +526,7 @@ function ClassDetailPage() {
         },
       });
       setResults(rows);
+      setSelectedIds(new Set());
       if (rows.length === 0) toast.info("일치하는 학생이 없습니다.");
     } catch (err: any) {
       toast.error(err.message);
@@ -538,6 +541,12 @@ function ClassDetailPage() {
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "students"] });
       qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
       setResults((r) => r.filter((s) => s.user_id !== userId));
+      setSelectedIds((prev) => {
+        if (!prev.has(userId)) return prev;
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
       setQuery("");
       toast.success("배정되었습니다.");
     } catch (err: any) {
@@ -563,6 +572,11 @@ function ClassDetailPage() {
     qc.invalidateQueries({ queryKey: ["admin", "class", id, "history"] });
     const assignedIds = new Set(targets.map((t) => t.user_id));
     setResults((r) => r.filter((s) => !assignedIds.has(s.user_id) || failed.length > 0));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      assignedIds.forEach((id) => next.delete(id));
+      return next;
+    });
     setBulkAssigning(false);
     if (ok > 0) {
       setQuery("");
@@ -914,19 +928,51 @@ function ClassDetailPage() {
                 const pending = results.filter(
                   (r) => !students.some((s: any) => s.user_id === r.user_id),
                 );
+                const selectedTargets = pending.filter((r) => selectedIds.has(r.user_id));
+                const allPendingSelected =
+                  pending.length > 0 && pending.every((r) => selectedIds.has(r.user_id));
                 return (
                   <div className="flex items-center justify-between gap-2 border-b bg-muted/40 px-3 py-2">
-                    <span className="text-xs text-muted-foreground">
-                      검색 결과 {results.length}명 · 미배정 {pending.length}명
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={() => assignAll(pending)}
-                      disabled={bulkAssigning || pending.length === 0}
-                      className="shrink-0 whitespace-nowrap"
-                    >
-                      {bulkAssigning ? "배정 중..." : `전체 배정 (${pending.length})`}
-                    </Button>
+                    <label className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                      <Checkbox
+                        checked={allPendingSelected}
+                        onCheckedChange={(checked) => {
+                          setSelectedIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) {
+                              pending.forEach((r) => next.add(r.user_id));
+                            } else {
+                              pending.forEach((r) => next.delete(r.user_id));
+                            }
+                            return next;
+                          });
+                        }}
+                        aria-label="미배정 학생 전체 선택"
+                      />
+                      <span className="truncate">
+                        검색 결과 {results.length}명 · 미배정 {pending.length}명
+                        {selectedTargets.length > 0 && ` · ${selectedTargets.length}명 선택`}
+                      </span>
+                    </label>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => assignAll(selectedTargets)}
+                        disabled={bulkAssigning || selectedTargets.length === 0}
+                        className="shrink-0 whitespace-nowrap"
+                      >
+                        {bulkAssigning ? "배정 중..." : `선택 배정 (${selectedTargets.length})`}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => assignAll(pending)}
+                        disabled={bulkAssigning || pending.length === 0}
+                        className="shrink-0 whitespace-nowrap"
+                      >
+                        {bulkAssigning ? "배정 중..." : `전체 배정 (${pending.length})`}
+                      </Button>
+                    </div>
                   </div>
                 );
               })()}
@@ -935,6 +981,21 @@ function ClassDetailPage() {
                   const already = students.some((s: any) => s.user_id === r.user_id);
                   return (
                     <li key={r.user_id} className="flex items-center gap-2 px-3 py-2">
+                      {!already && (
+                        <Checkbox
+                          checked={selectedIds.has(r.user_id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedIds((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(r.user_id);
+                              else next.delete(r.user_id);
+                              return next;
+                            });
+                          }}
+                          aria-label={`${r.name} 선택`}
+                          className="shrink-0"
+                        />
+                      )}
                       <div className="min-w-0 flex-1">
                         <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                           <span className="truncate">{r.name}</span>
