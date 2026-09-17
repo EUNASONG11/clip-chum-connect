@@ -76,6 +76,8 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
       .object({
         videoId: z.string().uuid(),
         currentSeconds: z.number().int().min(0),
+        // 클라이언트가 추적한 최대 시청 지점 (선택)
+        maxSeconds: z.number().int().min(0).optional(),
         duration: z.number().int().min(0).nullable().optional(),
         endedEvent: z.boolean().optional(),
         // 마지막 전송 이후 실제로 재생된 시간(초). 되감아 다시 본 구간도 합산됨
@@ -87,7 +89,7 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
     // 영상의 완료 기준을 조회 (삭제되었거나 접근 불가한 영상이면 조용히 무시)
     const { data: video, error: videoErr } = await context.supabase
       .from("videos")
-      .select("completion_ratio, duration, deleted_at")
+      .select("completion_ratio, duration, deleted_at, max_playback_rate")
       .eq("id", data.videoId)
       .maybeSingle();
     if (videoErr || !video || video.deleted_at) {
@@ -95,26 +97,33 @@ export const upsertMyProgress = createServerFn({ method: "POST" })
     }
     const completionRatio = Number(video?.completion_ratio ?? 0.9);
     const duration = data.duration ?? video?.duration ?? null;
+    const maxRate = Math.max(1, Math.min(4, Number((video as any)?.max_playback_rate ?? 2)));
 
 
     // 기존 진도
     const { data: prev } = await context.supabase
       .from("video_progress")
-      .select("max_seconds, is_completed, watched_seconds")
+      .select("max_seconds, is_completed, watched_seconds, updated_at")
       .eq("user_id", context.userId)
       .eq("video_id", data.videoId)
       .maybeSingle();
 
     const prevMax = prev?.max_seconds ?? 0;
-    // 서버 측 이중 차단: 이전 최대치 대비 tick 주기(~5s) + 여유 2s = 7s 초과분은 무시
-    // 클라이언트가 이미 재생속도 기반으로 걸러내지만, 조작 방지용 서버 캡
-    const cappedCurrent = Math.min(data.currentSeconds, prevMax + 7);
-    const nextMax = Math.max(prevMax, cappedCurrent);
+    // 마지막 저장 이후 실제로 흐른 시간 × 허용 배속 만큼은 최대 시청 지점 상승을 허용한다.
+    // (고정 +7초 캡은 배속 재생/전송 누락 시 max_seconds가 실제보다 크게 뒤처져
+    //  이미 본 구간으로 이동조차 막히는 문제를 만들었다)
+    const elapsedSec = prev?.updated_at
+      ? Math.max(0, (Date.now() - new Date(prev.updated_at).getTime()) / 1000)
+      : 0;
+    const allowedGrowth = Math.min(3600, elapsedSec * (maxRate + 0.5) + 7);
+    const claimed = Math.max(data.currentSeconds, data.maxSeconds ?? 0);
+    const nextMax = Math.max(prevMax, Math.min(claimed, prevMax + allowedGrowth));
     const ratio = duration && duration > 0 ? Math.min(1, nextMax / duration) : 0;
     const alreadyCompleted = prev?.is_completed ?? false;
     // 완료 기준 판정 시 0.5%p 허용 오차 (예: 기준 100% → 99.5% 이상이면 완료 처리)
     const effectiveRatio = Math.max(0, completionRatio - 0.005);
     const nowCompleted = alreadyCompleted || !!data.endedEvent || ratio >= effectiveRatio;
+
 
     // 실제 시청 시간 누적 (1회 전송당 최대 30초까지만 인정)
     const prevWatched = Number(prev?.watched_seconds ?? 0);

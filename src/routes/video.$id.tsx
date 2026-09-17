@@ -419,6 +419,12 @@ function VideoPage() {
       : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
+    // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
+    const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
+    const maxAllowedRef = {
+      current: Math.max(progressRef.current?.max_seconds ?? 0, resumeAtRef.current),
+    };
+
     // 실제 재생된 시간 누적 (전송 시 서버로 넘기고 초기화)
     const watchedAccRef = { current: 0 };
     const lastSeekLogRef = { current: 0 };
@@ -449,6 +455,8 @@ function VideoPage() {
           data: {
             videoId: id,
             currentSeconds: Math.floor(currentSeconds),
+            // 클라이언트가 추적한 실제 최대 시청 지점 (배속 재생 시 서버 캡 때문에 뒤처지는 문제 방지)
+            maxSeconds: Math.max(0, Math.floor(Math.max(maxAllowedRef.current, currentSeconds))),
             duration: duration ? Math.floor(duration) : null,
             endedEvent: ended,
             watchedDelta: Math.min(600, Math.max(0, Math.round(delta))),
@@ -478,9 +486,6 @@ function VideoPage() {
     };
     window.addEventListener("beforeunload", onBeforeUnload);
 
-    // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
-    const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
-    const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
 
     if (video.source === "vimeo") {
       // Vimeo Player SDK
@@ -691,7 +696,6 @@ function VideoPage() {
       };
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current || !container.contains(iframeRef.current)) return;
-        const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
         const enforceRate = () => {
