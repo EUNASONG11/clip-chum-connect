@@ -694,7 +694,6 @@ function VideoPage() {
       };
       loadYouTubeApi().then((YT) => {
         if (!iframeRef.current || !container.contains(iframeRef.current)) return;
-        const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
         const isSeekingRef = { current: false };
         const lastTimeRef = { current: 0 };
         const enforceRate = () => {
