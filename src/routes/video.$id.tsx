@@ -419,6 +419,10 @@ function VideoPage() {
       : Number(video.max_playback_rate ?? 2);
     let cleanup = () => {};
 
+    // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
+    const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
+    const maxAllowedRef = { current: progressRef.current?.max_seconds ?? resumeAtRef.current };
+
     // 실제 재생된 시간 누적 (전송 시 서버로 넘기고 초기화)
     const watchedAccRef = { current: 0 };
     const lastSeekLogRef = { current: 0 };
