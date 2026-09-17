@@ -467,7 +467,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
     const effectiveTokens = tokens.length > 0 ? tokens : [null];
 
     const byId = new Map<string, any>();
-    for (const token of tokens) {
+    for (const token of effectiveTokens) {
       if (byId.size >= MAX_STUDENT_SEARCH_RESULTS) break;
       let builder = supabaseAdmin
         .from("external_students")
@@ -475,7 +475,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
         .not("auth_user_id", "is", null)
         .eq("is_deleted", false)
         .order("name")
-        .limit(PER_TOKEN_FETCH_LIMIT);
+        .limit(token ? PER_TOKEN_FETCH_LIMIT : MAX_STUDENT_SEARCH_RESULTS);
       if (data.branch) builder = builder.ilike("branch", `%${data.branch}%`);
       if (data.school) builder = builder.eq("school", data.school);
       const cohortFilter = data.cohorts ?? [];
