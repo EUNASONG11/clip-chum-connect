@@ -490,9 +490,9 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
           builder = builder.in("cohort", named);
         }
       }
-      if (token.kind === "phone") {
+      if (token?.kind === "phone") {
         builder = builder.or(`phone.ilike.%${token.value}%,parent_phone.ilike.%${token.value}%`);
-      } else {
+      } else if (token) {
         builder = builder.ilike("name", `%${token.value}%`);
       }
       const { data: rows, error } = await builder;
