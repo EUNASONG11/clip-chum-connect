@@ -27,7 +27,7 @@ function str(v: unknown): string | null {
 }
 
 // 이름 전용: 앞뒤 공백 제거 + 중간의 연속 공백(스페이스 여러 개, 탭, 전각공백 등)을 하나로.
-// 외부 마스터 쪽에서 "홍길동 "처럼 공백이 붙은 값을내도 여기서 항상 정리해 저장한다.
+// 외부 마스터 쪽에서 "홍길동 "처럼 공백이 붙은 값을 내도 여기서 항상 정리해 저장한다.
 function cleanName(v: unknown): string | null {
   const s = str(v);
   if (!s) return null;
