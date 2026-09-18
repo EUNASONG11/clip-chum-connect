@@ -568,41 +568,36 @@ function VideosPage() {
                               </>
                             )}
                             {" · "}등록: {new Date(r.created_at).toLocaleDateString("ko-KR")}
-                            {isAdmin && r.created_by && createdByNames[r.created_by] && (
-                              <>
-                                {" · "}업로더: {createdByNames[r.created_by]}
-                              </>
-                            )}
-                            {isAdmin && typeof r.upload_duration_ms === "number" && (
-                              <>
-                                {" · "}업로드 소요: {formatUploadDuration(r.upload_duration_ms)}
-                              </>
-                            )}
-                            {isAdmin && typeof r.file_size_bytes === "number" && r.file_size_bytes > 0 && (
-                              <>
-                                {" · "}용량: {formatFileSize(r.file_size_bytes)}
-                              </>
-                            )}
-                            {isAdmin && typeof r.upload_stalled_ms === "number" && r.upload_stalled_ms > 0 && (
-                              <>
-                                {" · "}멈춤: {formatUploadDuration(r.upload_stalled_ms)}
-                              </>
-                            )}
-                            {isAdmin && typeof r.upload_retry_count === "number" && r.upload_retry_count > 0 && (
-                              <>
-                                {" · "}재시도: {r.upload_retry_count}회
-                              </>
-                            )}
-                            {isAdmin &&
-                              typeof r.file_size_bytes === "number" &&
-                              typeof r.upload_duration_ms === "number" &&
-                              r.file_size_bytes > 0 &&
-                              r.upload_duration_ms > 0 && (
-                                <>
-                                  {" · "}평균 {formatUploadSpeed(r.file_size_bytes, r.upload_duration_ms)}
-                                </>
-                              )}
                           </p>
+                          {isAdmin && (
+                            <p className="truncate text-xs text-muted-foreground mt-1">
+                              {[
+                                r.created_by && createdByNames[r.created_by]
+                                  ? `업로더: ${createdByNames[r.created_by]}`
+                                  : null,
+                                typeof r.upload_duration_ms === "number"
+                                  ? `업로드 소요: ${formatUploadDuration(r.upload_duration_ms)}`
+                                  : null,
+                                typeof r.file_size_bytes === "number" && r.file_size_bytes > 0
+                                  ? `용량: ${formatFileSize(r.file_size_bytes)}`
+                                  : null,
+                                typeof r.upload_stalled_ms === "number" && r.upload_stalled_ms > 0
+                                  ? `멈춤: ${formatUploadDuration(r.upload_stalled_ms)}`
+                                  : null,
+                                typeof r.upload_retry_count === "number" && r.upload_retry_count > 0
+                                  ? `재시도: ${r.upload_retry_count}회`
+                                  : null,
+                                typeof r.file_size_bytes === "number" &&
+                                typeof r.upload_duration_ms === "number" &&
+                                r.file_size_bytes > 0 &&
+                                r.upload_duration_ms > 0
+                                  ? `평균 ${formatUploadSpeed(r.file_size_bytes, r.upload_duration_ms)}`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          )}
                         </div>
                         <div className="flex shrink-0 items-center justify-end gap-1 sm:gap-2">
                           {r.source === "vimeo" && (
