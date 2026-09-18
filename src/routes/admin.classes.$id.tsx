@@ -483,6 +483,7 @@ function ClassDetailPage() {
   const [searchSchool, setSearchSchool] = useState<string>("__all__");
   const [searchCohorts, setSearchCohorts] = useState<string[]>([]);
   const [listBranch, setListBranch] = useState<string>("__all__");
+  const [assignedQuery, setAssignedQuery] = useState("");
 
   const [results, setResults] = useState<
       { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
@@ -1025,9 +1026,17 @@ function ClassDetailPage() {
           )}
 
           {(() => {
-            const listed = (students as any[]).filter(
-              (s) => listBranch === "__all__" || matchesBranch(listBranch, s.branch),
-            );
+            const q = assignedQuery.replace(/\s+/g, "").toLowerCase();
+            const listed = (students as any[]).filter((s) => {
+              const branchOk = listBranch === "__all__" || matchesBranch(listBranch, s.branch);
+              if (!q) return branchOk;
+              const nameMatch = (s.name || "").replace(/\s+/g, "").toLowerCase().includes(q);
+              const phoneMatch = (s.phone || "").replace(/[^0-9]/g, "").includes(q);
+              const parentPhoneMatch = (s.parent_phone || "").replace(/[^0-9]/g, "").includes(q);
+              const schoolMatch = (s.school || "").replace(/\s+/g, "").toLowerCase().includes(q);
+              const cohortMatch = String(s.cohort || "").includes(q);
+              return branchOk && (nameMatch || phoneMatch || parentPhoneMatch || schoolMatch || cohortMatch);
+            });
             return (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -1044,6 +1053,13 @@ function ClassDetailPage() {
                 </SelectContent>
               </Select>
             </div>
+            <ClearableSearchInput
+              value={assignedQuery}
+              onChange={setAssignedQuery}
+              placeholder="배정된 학생 이름·전화번호·학교 검색"
+              className="w-full"
+              showIcon={false}
+            />
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
           ) : listed.length === 0 ? (
