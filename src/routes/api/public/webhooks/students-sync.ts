@@ -185,6 +185,20 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
 
 
 
+        // 이름이 바뀐 경우: 로그인 계정의 표시 이름(메타데이터)도 함께 갱신
+        if (authUserId && existing && (existing as { name?: string | null }).name !== name) {
+          const { error: nameErr } = await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+            user_metadata: {
+              name,
+              phone,
+              parent_phone: parentPhone,
+              external_id: externalId,
+              source: "master-mirror",
+            },
+          });
+          if (nameErr) console.error("sync display name failed", nameErr);
+        }
+
         // Upsert mirror row.
         const { error: upsertErr } = await supabaseAdmin
           .from("external_students")
