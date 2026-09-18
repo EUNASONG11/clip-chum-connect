@@ -26,6 +26,14 @@ function str(v: unknown): string | null {
   return s.length ? s : null;
 }
 
+// 이름 전용: 앞뒤 공백 제거 + 중간의 연속 공백(스페이스 여러 개, 탭, 전각공백 등)을 하나로.
+// 외부 마스터 쪽에서 "홍길동 "처럼 공백이 붙은 값을내도 여기서 항상 정리해 저장한다.
+function cleanName(v: unknown): string | null {
+  const s = str(v);
+  if (!s) return null;
+  return s.replace(/[\s\u3000]+/g, " ").trim();
+}
+
 function normalizePhone(v: unknown): string | null {
   const s = str(v);
   if (!s) return null;
@@ -82,7 +90,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         if (!rec) return new Response("Missing record", { status: 400 });
 
         const externalId = str(rec.id);
-        const name = str(rec.name);
+        const name = cleanName(rec.name);
         if (!externalId || !name) {
           return new Response("Missing id or name", { status: 400 });
         }
@@ -106,7 +114,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         // Check if we already have this student mirrored.
         const { data: existing } = await supabaseAdmin
           .from("external_students")
-          .select("id, auth_user_id, phone, parent_phone")
+          .select("id, auth_user_id, name, phone, parent_phone")
           .eq("external_id", externalId)
           .maybeSingle();
 
