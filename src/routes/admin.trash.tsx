@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RotateCcw, Trash2 } from "lucide-react";
+import { useAdminRole } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/trash")({
   head: () => ({ meta: [{ title: "휴지통 — 관리자" }] }),
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/admin/trash")({
 
 function TrashPage() {
   const qc = useQueryClient();
+  const { isAdmin } = useAdminRole();
   const getCounts = useServerFn(listTrashCounts);
   const getList = useServerFn(listTrash);
   const restore = useServerFn(restoreItem);
@@ -140,15 +142,17 @@ function TrashPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={restoreMut.isPending}
-                    onClick={() => restoreMut.mutate({ entity: active, id })}
-                  >
-                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                    복원
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={restoreMut.isPending}
+                      onClick={() => restoreMut.mutate({ entity: active, id })}
+                    >
+                      <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                      복원
+                    </Button>
+                  )}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="sm" variant="destructive">
