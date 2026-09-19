@@ -202,16 +202,24 @@ export const purgeItem = createServerFn({ method: "POST" })
     z.object({ entity: z.enum(ENTITIES), id: z.string().min(1) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let vimeoError: string | null = null;
 
     if (data.entity === "videos") {
       const { data: row } = await supabaseAdmin
         .from("videos")
-        .select("source, vimeo_video_id")
+        .select("source, vimeo_video_id, created_by")
         .eq("id", data.id)
         .maybeSingle();
+      // 영상은 최고 관리자 또는 업로더 본인만 영구 삭제 가능
+      if (!row) throw new Error("삭제할 영상을 찾을 수 없습니다.");
+      const { data: isAdmin } = await context.supabase.rpc("has_role", {
+        _user_id: context.userId,
+        _role: "admin",
+      });
+      if (!isAdmin && row.created_by !== context.userId) {
+        throw new Error("최고 관리자 또는 영상을 업로드한 사람만 영구 삭제할 수 있습니다.");
+      }
       if (row?.source === "vimeo" && row?.vimeo_video_id) {
         try {
           await vimeoFetch(`/videos/${row.vimeo_video_id}`, { method: "DELETE" });
@@ -219,6 +227,8 @@ export const purgeItem = createServerFn({ method: "POST" })
           vimeoError = e?.message ?? "Vimeo 삭제 실패";
         }
       }
+    } else {
+      await assertAdmin(context);
     }
 
     const q = applyPkFilter(
