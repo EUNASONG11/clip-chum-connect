@@ -27,6 +27,7 @@ export const Route = createFileRoute("/admin/trash")({
 
 function TrashPage() {
   const qc = useQueryClient();
+  const { isAdmin } = useAdminRole();
   const getCounts = useServerFn(listTrashCounts);
   const getList = useServerFn(listTrash);
   const restore = useServerFn(restoreItem);
