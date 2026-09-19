@@ -51,6 +51,7 @@ const instructorNavItems = [
   { title: "대시보드", url: "/admin/dashboard", icon: BarChart3 },
   { title: "영상 관리", url: "/admin/videos", icon: Film },
   { title: "수강반 관리", url: "/admin/classes", icon: GraduationCap },
+  { title: "휴지통", url: "/admin/trash", icon: Trash2 },
 ];
 
 function AdminSidebar() {
