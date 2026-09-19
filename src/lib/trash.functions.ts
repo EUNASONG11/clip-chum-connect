@@ -137,7 +137,7 @@ export const listTrash = createServerFn({ method: "GET" })
       .from(data.entity)
       .select(SELECT_COLS[data.entity], { count: "exact" })
       .not("deleted_at", "is", null);
-    if (!isAdmin) q = q.eq("created_by", context.userId);
+    if (!isAdmin) q = (q as any).eq("created_by", context.userId);
     const { data: rows, error, count } = await q
       .order("deleted_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
@@ -170,7 +170,7 @@ export const listTrashCounts = createServerFn({ method: "GET" })
           .from(e)
           .select("*", { count: "exact", head: true })
           .not("deleted_at", "is", null);
-        if (!isAdmin) q = q.eq("created_by", context.userId);
+        if (!isAdmin) q = (q as any).eq("created_by", context.userId);
         const { count } = await q;
         return [e, count ?? 0] as const;
       }),
