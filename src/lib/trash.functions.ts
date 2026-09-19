@@ -102,13 +102,17 @@ async function fetchNameMaps(supabaseAdmin: any, rows: any[]) {
   };
 }
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+async function checkAdmin(context: { supabase: any; userId: string }): Promise<boolean> {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
   });
   if (error) throw new Error(error.message);
-  if (!data) throw new Error("관리자만 접근할 수 있습니다.");
+  return Boolean(data);
+}
+
+async function assertAdmin(context: { supabase: any; userId: string }) {
+  if (!(await checkAdmin(context))) throw new Error("관리자만 접근할 수 있습니다.");
 }
 
 export const listTrash = createServerFn({ method: "GET" })
