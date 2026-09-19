@@ -127,12 +127,18 @@ export const listTrash = createServerFn({ method: "GET" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context);
+    const isAdmin = await checkAdmin(context);
+    // 관리자가 아니면 영상(본인 업로드분)만 조회 가능
+    if (!isAdmin && data.entity !== "videos") {
+      throw new Error("관리자만 접근할 수 있습니다.");
+    }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error, count } = await supabaseAdmin
+    let q = supabaseAdmin
       .from(data.entity)
       .select(SELECT_COLS[data.entity], { count: "exact" })
-      .not("deleted_at", "is", null)
+      .not("deleted_at", "is", null);
+    if (!isAdmin) q = q.eq("created_by", context.userId);
+    const { data: rows, error, count } = await q
       .order("deleted_at", { ascending: false })
       .range(data.offset, data.offset + data.limit - 1);
     if (error) throw new Error(error.message);
@@ -154,21 +160,25 @@ export const listTrash = createServerFn({ method: "GET" })
 export const listTrashCounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context);
+    const isAdmin = await checkAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // 관리자가 아니면 영상 탭만, 본인 업로드분 개수만 제공
+    const entities: readonly Entity[] = isAdmin ? ENTITIES : (["videos"] as const);
     const results = await Promise.all(
-      ENTITIES.map(async (e) => {
-        const { count } = await supabaseAdmin
+      entities.map(async (e) => {
+        let q = supabaseAdmin
           .from(e)
           .select("*", { count: "exact", head: true })
           .not("deleted_at", "is", null);
+        if (!isAdmin) q = q.eq("created_by", context.userId);
+        const { count } = await q;
         return [e, count ?? 0] as const;
       }),
     );
     return {
       counts: Object.fromEntries(results) as Record<Entity, number>,
       labels: ENTITY_LABEL,
-      entities: ENTITIES as unknown as string[],
+      entities: entities as unknown as string[],
     };
   });
 

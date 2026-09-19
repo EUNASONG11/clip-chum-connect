@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { RotateCcw, Trash2 } from "lucide-react";
+import { useAdminRole } from "@/components/AdminRole";
 
 export const Route = createFileRoute("/admin/trash")({
   head: () => ({ meta: [{ title: "휴지통 — 관리자" }] }),
