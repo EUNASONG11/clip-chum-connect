@@ -142,15 +142,17 @@ function TrashPage() {
                   </p>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={restoreMut.isPending}
-                    onClick={() => restoreMut.mutate({ entity: active, id })}
-                  >
-                    <RotateCcw className="mr-1 h-3.5 w-3.5" />
-                    복원
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={restoreMut.isPending}
+                      onClick={() => restoreMut.mutate({ entity: active, id })}
+                    >
+                      <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                      복원
+                    </Button>
+                  )}
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button size="sm" variant="destructive">
