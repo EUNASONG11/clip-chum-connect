@@ -117,9 +117,27 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
   if (data.length === 0) {
     return <p className="px-3 py-3 text-sm text-muted-foreground">시청 대상 영상이 없습니다.</p>;
   }
-  return (
-    <div className="flex flex-col gap-2 rounded-lg bg-muted/40 p-3">
-      {data.map((v: any) => (
+  const groups = (() => {
+    const map = new Map<string, { key: string; name: string | null; sort: number; required: boolean | null; items: any[] }>();
+    for (const v of data as any[]) {
+      const key = (v.folder_id ?? "__none__") as string;
+      let g = map.get(key);
+      if (!g) {
+        g = {
+          key,
+          name: v.folder_name ?? null,
+          sort: v.folder_id ? Number(v.folder_sort ?? 9999) : 99999,
+          required: v.folder_is_required ?? null,
+          items: [],
+        };
+        map.set(key, g);
+      }
+      g.items.push(v);
+    }
+    return [...map.values()].sort((a, b) => a.sort - b.sort || (a.name ?? "").localeCompare(b.name ?? ""));
+  })();
+
+  const renderVideoRow = (v: any) => (
         <div key={v.video_id} className="rounded-md bg-background">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
             <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
