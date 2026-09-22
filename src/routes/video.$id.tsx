@@ -421,8 +421,24 @@ function VideoPage() {
 
     // 최초 이어보기 위치 (current_seconds) 와 최대 시청 지점 (max_seconds) 분리
     const resumeAtRef = { current: progressRef.current?.current_seconds ?? 0 };
+    // 이미 본 구간으로의 이동은 항상 허용되어야 한다.
+    // max_seconds 가 전송 누락/배속 등으로 뒤처질 수 있어 시청률(watched_ratio)과
+    // 완료 여부까지 고려해 상한을 계산한다. (완료한 영상은 전체 구간 이동 허용)
+    const knownDuration = video.duration ?? null;
+    const ratioBased =
+      knownDuration && progressRef.current
+        ? Number(progressRef.current.watched_ratio || 0) * knownDuration
+        : 0;
     const maxAllowedRef = {
-      current: Math.max(progressRef.current?.max_seconds ?? 0, resumeAtRef.current),
+      current: progressRef.current?.is_completed
+        ? knownDuration ?? Number.MAX_SAFE_INTEGER
+        : Math.max(progressRef.current?.max_seconds ?? 0, resumeAtRef.current, ratioBased),
+    };
+    // 완료 기록이 있으면 실제 길이를 알게 된 뒤에도 전체 구간을 허용한다.
+    const unlockAll = (duration: number | null) => {
+      if (progressRef.current?.is_completed && duration && duration > maxAllowedRef.current) {
+        maxAllowedRef.current = duration;
+      }
     };
 
     // 실제 재생된 시간 누적 (전송 시 서버로 넘기고 초기화)
