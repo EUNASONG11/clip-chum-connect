@@ -1217,12 +1217,24 @@ export const syncStudentPassword = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, is_deleted")
+      .select("auth_user_id, is_deleted, phone, enrollment_status, cohort")
       .eq("name", name)
       .or(`phone.eq.${phoneDigits},parent_phone.eq.${phoneDigits}`)
-      .limit(3);
+      .limit(5);
     if (error) throw new Error(error.message);
-    const active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    let active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    if (active.length > 1) {
+      const own = active.filter((r) => (r.phone ?? "") === phoneDigits);
+      if (own.length) active = own;
+      if (active.length > 1) {
+        const enrolled = active.filter((r) => r.enrollment_status === "재원");
+        if (enrolled.length) active = enrolled;
+      }
+      if (active.length > 1) {
+        const withCohort = active.filter((r) => !!r.cohort);
+        if (withCohort.length) active = withCohort;
+      }
+    }
     if (active.length !== 1) throw new Error("계정을 특정할 수 없습니다. 관리자에게 문의하세요.");
 
     const password = phoneDigits.slice(-8);
