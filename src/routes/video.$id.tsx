@@ -472,7 +472,15 @@ function VideoPage() {
             videoId: id,
             currentSeconds: Math.floor(currentSeconds),
             // 클라이언트가 추적한 실제 최대 시청 지점 (배속 재생 시 서버 캡 때문에 뒤처지는 문제 방지)
-            maxSeconds: Math.max(0, Math.floor(Math.max(maxAllowedRef.current, currentSeconds))),
+            maxSeconds: Math.max(
+              0,
+              Math.floor(
+                Math.min(
+                  Math.max(maxAllowedRef.current, currentSeconds),
+                  duration && duration > 0 ? duration : Math.max(maxAllowedRef.current === Number.MAX_SAFE_INTEGER ? currentSeconds : maxAllowedRef.current, currentSeconds),
+                ),
+              ),
+            ),
             duration: duration ? Math.floor(duration) : null,
             endedEvent: ended,
             watchedDelta: Math.min(600, Math.max(0, Math.round(delta))),
