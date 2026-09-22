@@ -211,6 +211,26 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
             </div>
           )}
         </div>
+  );
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg bg-muted/40 p-3">
+      {groups.map((g) => (
+        <div key={g.key} className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 px-1">
+            <Folder className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="text-xs font-semibold text-muted-foreground">
+              {g.name ?? "폴더 미지정"}
+            </span>
+            {g.required === false && (
+              <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                선택 시청
+              </span>
+            )}
+            <span className="text-[11px] text-muted-foreground">({g.items.length})</span>
+          </div>
+          <div className="flex flex-col gap-2">{g.items.map(renderVideoRow)}</div>
+        </div>
       ))}
     </div>
   );
