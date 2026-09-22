@@ -547,6 +547,7 @@ function VideoPage() {
         try {
           durationCached = await player.getDuration();
           durationRef.current = durationCached;
+          unlockAll(durationCached);
           if (resumeAtRef.current > 5 && durationCached && resumeAtRef.current < durationCached - 3) {
             await player.setCurrentTime(resumeAtRef.current);
             lastTimeRef.current = resumeAtRef.current;
