@@ -1143,13 +1143,37 @@ export const resolveStudentLogin = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("external_students")
-      .select("name, phone, parent_phone, auth_user_id, is_deleted")
+      .select("name, phone, parent_phone, auth_user_id, is_deleted, enrollment_status, cohort, synced_at")
       .eq("name", name)
       .or(`phone.eq.${phoneDigits},parent_phone.eq.${phoneDigits}`)
-      .limit(3);
+      .limit(5);
     if (error) throw new Error(error.message);
 
-    const active = (rows ?? []).filter((r) => !r.is_deleted);
+    let active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    if (active.length > 1) {
+      // 동일 이름/번호가 여러 건 미러링된 경우: 실제 사용 계정을 자동으로 특정한다.
+      // 1) 학생 본인 전화번호가 일치하는 행 2) 재원 상태 3) 기수 정보 보유 4) 수강반 배정/학습 기록 보유
+      const own = active.filter((r) => (r.phone ?? "") === phoneDigits);
+      if (own.length) active = own;
+      if (active.length > 1) {
+        const enrolled = active.filter((r) => r.enrollment_status === "재원");
+        if (enrolled.length) active = enrolled;
+      }
+      if (active.length > 1) {
+        const withCohort = active.filter((r) => !!r.cohort);
+        if (withCohort.length) active = withCohort;
+      }
+      if (active.length > 1) {
+        const ids = active.map((r) => r.auth_user_id!) as string[];
+        const [{ data: cs }, { data: vp }] = await Promise.all([
+          supabaseAdmin.from("class_students").select("user_id").in("user_id", ids).is("deleted_at", null),
+          supabaseAdmin.from("video_progress").select("user_id").in("user_id", ids),
+        ]);
+        const used = new Set([...(cs ?? []), ...(vp ?? [])].map((r) => r.user_id));
+        const withUsage = active.filter((r) => used.has(r.auth_user_id!));
+        if (withUsage.length) active = withUsage;
+      }
+    }
     if (active.length > 1) {
       throw new Error("동일한 이름/전화번호의 계정이 여러 개 존재합니다. 관리자에게 문의하세요.");
     }
@@ -1193,12 +1217,24 @@ export const syncStudentPassword = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, is_deleted")
+      .select("auth_user_id, is_deleted, phone, enrollment_status, cohort")
       .eq("name", name)
       .or(`phone.eq.${phoneDigits},parent_phone.eq.${phoneDigits}`)
-      .limit(3);
+      .limit(5);
     if (error) throw new Error(error.message);
-    const active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    let active = (rows ?? []).filter((r) => !r.is_deleted && r.auth_user_id);
+    if (active.length > 1) {
+      const own = active.filter((r) => (r.phone ?? "") === phoneDigits);
+      if (own.length) active = own;
+      if (active.length > 1) {
+        const enrolled = active.filter((r) => r.enrollment_status === "재원");
+        if (enrolled.length) active = enrolled;
+      }
+      if (active.length > 1) {
+        const withCohort = active.filter((r) => !!r.cohort);
+        if (withCohort.length) active = withCohort;
+      }
+    }
     if (active.length !== 1) throw new Error("계정을 특정할 수 없습니다. 관리자에게 문의하세요.");
 
     const password = phoneDigits.slice(-8);
