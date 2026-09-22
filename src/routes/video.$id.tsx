@@ -773,6 +773,7 @@ function VideoPage() {
               try {
                 const d = player.getDuration?.();
                 durationRef.current = d ?? null;
+                unlockAll(d ?? null);
                 if (resumeAtRef.current > 5 && d && resumeAtRef.current < d - 3) {
                   player.seekTo(resumeAtRef.current, true);
                 }
