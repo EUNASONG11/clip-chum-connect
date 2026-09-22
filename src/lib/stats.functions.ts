@@ -363,9 +363,14 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     const pMap = new Map(((progress ?? []) as any[]).map((p: any) => [p.video_id, p]));
     return list.map((v: any) => {
       const p: any = pMap.get(v.id);
+      const folder: any = v.folder_id ? folderById.get(v.folder_id) : null;
       return {
         video_id: v.id,
         title: v.title,
+        folder_id: (v.folder_id ?? null) as string | null,
+        folder_name: folderPath(v.folder_id ?? null),
+        folder_sort: folder?.sort_order ?? 9999,
+        folder_is_required: folder ? !!folder.is_required : null,
         duration: v.duration ?? p?.duration ?? null,
         watched_ratio: p ? Math.min(1, Number(p.watched_ratio ?? 0)) : 0,
         watched_seconds: Number(p?.watched_seconds ?? 0),
