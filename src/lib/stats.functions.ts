@@ -313,10 +313,10 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: videos }, { data: history }] = await Promise.all([
+    const [{ data: videos }, { data: history }, { data: folders }] = await Promise.all([
       supabaseAdmin
         .from("videos")
-        .select("id, title, duration, created_at, sort_order")
+        .select("id, title, duration, created_at, sort_order, folder_id")
         .eq("class_id", data.classId)
         .is("deleted_at", null)
         .order("created_at", { ascending: true }),
@@ -326,7 +326,26 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         .eq("class_id", data.classId)
         .eq("user_id", data.userId)
         .eq("action", "added"),
+      supabaseAdmin
+        .from("class_folders")
+        .select("id, name, parent_folder_id, sort_order, is_required")
+        .eq("class_id", data.classId)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true }),
     ]);
+
+    const folderById = new Map<string, any>(((folders ?? []) as any[]).map((f: any) => [f.id, f]));
+    const folderPath = (fid: string | null) => {
+      if (!fid) return null;
+      const parts: string[] = [];
+      let cur: any = folderById.get(fid);
+      let guard = 0;
+      while (cur && guard++ < 20) {
+        parts.unshift(cur.name);
+        cur = cur.parent_folder_id ? folderById.get(cur.parent_folder_id) : null;
+      }
+      return parts.length > 0 ? parts.join(" / ") : null;
+    };
 
     const start = ((history ?? []) as any[]).reduce(
       (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
