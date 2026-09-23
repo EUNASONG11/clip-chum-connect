@@ -168,6 +168,10 @@ export async function notifyVideoCompletion(
   }
 
 
+  let anySent = false;
+  let anyFailed = false;
+  let anyAlready = false;
+
   for (const link of links) {
     // 이미 전송된 건은 건너뜀 (link_id + user_id 유니크)
     const { data: existing } = await supabaseAdmin
@@ -176,7 +180,10 @@ export async function notifyVideoCompletion(
       .eq("link_id", link.id)
       .eq("user_id", userId)
       .maybeSingle();
-    if (existing?.status === "sent") continue;
+    if (existing?.status === "sent") {
+      anyAlready = true;
+      continue;
+    }
 
     const rowId = existing?.id ?? null;
     if (!rowId) {
