@@ -383,7 +383,71 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     });
   });
 
+// 강사/관리자가 특정 학생의 영상 시청률을 임의로 수정
+export const setStudentVideoProgress = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        userId: z.string().uuid(),
+        videoId: z.string().uuid(),
+        ratio: z.number().min(0).max(1),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // 영상이 해당 수강반 소속인지 확인
+    const { data: video, error: vErr } = await supabaseAdmin
+      .from("videos")
+      .select("id, duration, completion_ratio, class_id")
+      .eq("id", data.videoId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (vErr) throw new Error(vErr.message);
+    if (!video || (video as any).class_id !== data.classId) {
+      throw new Error("해당 수강반의 영상이 아닙니다.");
+    }
+
+    const { data: prev } = await supabaseAdmin
+      .from("video_progress")
+      .select("duration, seek_attempts, completed_at")
+      .eq("user_id", data.userId)
+      .eq("video_id", data.videoId)
+      .maybeSingle();
+
+    const duration = Number((video as any).duration ?? (prev as any)?.duration ?? 0) || 0;
+    const ratio = Math.min(1, Math.max(0, data.ratio));
+    const threshold = Number((video as any).completion_ratio ?? 0.9) || 0.9;
+    const completed = ratio >= Math.min(1, threshold);
+    const seconds = duration > 0 ? Math.round(duration * ratio) : 0;
+    const nowIso = new Date().toISOString();
+
+    const { error } = await supabaseAdmin.from("video_progress").upsert(
+      {
+        user_id: data.userId,
+        video_id: data.videoId,
+        current_seconds: seconds,
+        max_seconds: seconds,
+        watched_seconds: seconds,
+        watched_ratio: ratio,
+        duration: duration > 0 ? duration : null,
+        is_completed: completed,
+        completed_at: completed ? ((prev as any)?.completed_at ?? nowIso) : null,
+        seek_attempts: Number((prev as any)?.seek_attempts ?? 0),
+        updated_at: nowIso,
+      } as any,
+      { onConflict: "user_id,video_id" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true, ratio, is_completed: completed };
+  });
+
 // 특정 학생의 특정 영상 건너뛰기 시도 상세 로그
+
 export const listStudentSeekEvents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>

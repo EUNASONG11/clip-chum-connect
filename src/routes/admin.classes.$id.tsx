@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -57,7 +57,7 @@ import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-sea
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents } from "@/lib/stats.functions";
+import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
 
 function fmtDur(sec: number) {
   const s = Math.max(0, Math.floor(sec || 0));
@@ -99,14 +99,38 @@ function SeekEventList({ classId, userId, videoId }: { classId: string; userId: 
   );
 }
 
-function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
+function StudentVideoDetail({
+  classId,
+  userId,
+  canEdit = false,
+}: {
+  classId: string;
+  userId: string;
+  canEdit?: boolean;
+}) {
   const [openVideoId, setOpenVideoId] = useState<string | null>(null);
   const [openWatchId, setOpenWatchId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const qcDetail = useQueryClient();
+
+  const saveRatio = useMutation({
+    mutationFn: (p: { videoId: string; ratio: number }) =>
+      setStudentVideoProgress({ data: { classId, userId, videoId: p.videoId, ratio: p.ratio } }),
+    onSuccess: () => {
+      toast.success("시청률을 수정했습니다.");
+      setEditId(null);
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-video-detail", userId] });
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "수정에 실패했습니다."),
+  });
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
   });
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
@@ -148,9 +172,70 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
                 style={{ width: `${Math.min(100, Math.ceil(v.watched_ratio * 100))}%` }}
               />
             </div>
-            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-              {v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))}%
-            </span>
+            {canEdit && editId === v.video_id ? (
+              <span className="flex shrink-0 items-center gap-1">
+                <Input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const n = Number(editValue);
+                      if (!Number.isFinite(n) || n < 0 || n > 100) {
+                        toast.error("0~100 사이 숫자를 입력하세요.");
+                        return;
+                      }
+                      saveRatio.mutate({ videoId: v.video_id, ratio: n / 100 });
+                    }
+                    if (e.key === "Escape") setEditId(null);
+                  }}
+                  className="h-7 w-16 text-right text-xs tabular-nums"
+                  inputMode="decimal"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+                <Button
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={saveRatio.isPending}
+                  onClick={() => {
+                    const n = Number(editValue);
+                    if (!Number.isFinite(n) || n < 0 || n > 100) {
+                      toast.error("0~100 사이 숫자를 입력하세요.");
+                      return;
+                    }
+                    saveRatio.mutate({ videoId: v.video_id, ratio: n / 100 });
+                  }}
+                >
+                  저장
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setEditId(null)}
+                >
+                  취소
+                </Button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={!canEdit}
+                onClick={() => {
+                  setEditId(v.video_id);
+                  setEditValue(
+                    String(v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))),
+                  );
+                }}
+                title={canEdit ? "시청률 수정" : undefined}
+                className={`w-12 shrink-0 rounded text-right text-sm tabular-nums ${
+                  canEdit ? "hover:bg-muted" : ""
+                }`}
+              >
+                {v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))}%
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setOpenWatchId((cur) => (cur === v.video_id ? null : v.video_id))}
@@ -1822,7 +1907,7 @@ function ClassDetailPage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <StudentVideoDetail classId={id} userId={s.user_id} />
+                      <StudentVideoDetail classId={id} userId={s.user_id} canEdit={canWrite} />
                     </AccordionContent>
                   </AccordionItem>
                 ))}
