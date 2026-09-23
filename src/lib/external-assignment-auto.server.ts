@@ -89,7 +89,7 @@ export async function autoPushWeekAssignment(params: {
       : roster;
 
     const externalStudentIds = Array.from(new Set(targets.map((s) => s.external_id)));
-    if (externalStudentIds.length === 0) return;
+    if (externalStudentIds.length === 0) return false;
 
     const studentBranches: Record<string, string | null> = {};
     for (const s of targets) studentBranches[s.external_id] = s.branch ?? null;
