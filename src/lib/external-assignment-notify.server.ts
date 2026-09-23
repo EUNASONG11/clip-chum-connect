@@ -217,9 +217,11 @@ export async function notifyVideoCompletion(
         })
         .eq("link_id", link.id)
         .eq("user_id", userId);
+      anySent = true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error("[external-assignment] complete push failed", message);
+      anyFailed = true;
       await supabaseAdmin
         .from("external_assignment_completions")
         .update({ status: "failed", error_message: message.slice(0, 500) })
@@ -227,4 +229,9 @@ export async function notifyVideoCompletion(
         .eq("user_id", userId);
     }
   }
+
+  if (anyFailed) return "failed";
+  if (anySent) return "sent";
+  if (anyAlready) return "already_sent";
+  return "no_link";
 }
