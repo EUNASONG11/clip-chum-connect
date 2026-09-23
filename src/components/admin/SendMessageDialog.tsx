@@ -47,7 +47,8 @@ type StudentStatus = "all" | "completed" | "incomplete";
 
 export function SendMessageDialog({ open, onOpenChange, classId, className }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
-  const [videoId, setVideoId] = useState<string>("");
+  const [videoIds, setVideoIds] = useState<string[]>([]);
+  const [requiredOnly, setRequiredOnly] = useState(true);
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("incomplete");
