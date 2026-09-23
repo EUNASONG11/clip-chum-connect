@@ -579,10 +579,9 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </ul>
               )}
             </div>
-          </div>
+          </Section>
 
-          <div className="space-y-2">
-            <Label className="text-sm">채널</Label>
+          <Section title="채널">
             <RadioGroup
               value={channel}
               onValueChange={(v) => setChannel(v as "sms" | "brandtalk")}
