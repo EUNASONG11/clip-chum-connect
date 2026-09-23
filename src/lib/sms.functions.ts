@@ -187,7 +187,7 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
       .map((uid) => {
         const e: any = extMap.get(uid) ?? {};
         const start = enrollStart.get(uid);
-        const eligible = data.videoId
+        const eligible = selectedIds.size > 0
           ? targetVideos
           : targetVideos.filter((v) => !start || v.created_at >= start);
         if (eligible.length === 0) return null;
