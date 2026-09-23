@@ -81,7 +81,7 @@ export async function autoPushWeekAssignment(params: {
     externalId: string,
     branchFilter: string | null,
     existing: ExistingLink,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const targets = branchFilter
       ? roster.filter((s) =>
           branchFilter === "미지정" ? !s.branch : s.branch === branchFilter,
@@ -147,19 +147,32 @@ export async function autoPushWeekAssignment(params: {
     );
 
     if (lastError) console.error("[external-assignment] auto push failed", externalId, lastError);
+    return !lastError;
+  }
+
+  /** 과제 생성/갱신이 성공하면, 이미 다 본 학생에게 완료 통보를 한 번 보정한다. */
+  async function resyncOnce(): Promise<void> {
+    try {
+      const { resyncWeekCompletions } = await import("./external-assignment-resync.server");
+      await resyncWeekCompletions({ classId: classId!, weekLabel: weekLabel as string });
+    } catch (e) {
+      console.error("[external-assignment] auto resync failed", classId, weekLabel, e);
+    }
   }
 
   if (branchLinks.length > 0) {
     // 교육원별로 내보낸 주차 → 전체용을 만들지 않고 교육원별 과제만 갱신
+    let anyOk = false;
     for (const link of branchLinks) {
       const branchFilter = link.external_id.slice(baseExternalId.length + 1) || null;
-      await upsertOne(link.external_id, branchFilter, link);
+      if (await upsertOne(link.external_id, branchFilter, link)) anyOk = true;
     }
+    if (anyOk) await resyncOnce();
     return;
   }
 
   // 관리자가 휴지통으로 보낸 전체용 과제는 자동 복구하지 않는다.
   if (baseLink?.deleted_at) return;
 
-  await upsertOne(baseExternalId, null, baseLink);
+  if (await upsertOne(baseExternalId, null, baseLink)) await resyncOnce();
 }
