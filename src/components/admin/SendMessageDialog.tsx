@@ -453,7 +453,8 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                   </Button>
                 ))}
               </div>
-            </div>
+            }
+          >
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">
