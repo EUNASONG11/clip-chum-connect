@@ -915,9 +915,18 @@ export const updateVideo = createServerFn({ method: "POST" })
     // 주차를 새로 지정/변경하면 해당 주차 외부 과제를 기본값으로 자동 생성/갱신
     if (data.week_label) {
       try {
+        let targetClassId = data.class_id ?? null;
+        if (!targetClassId) {
+          const { data: cur } = await supabaseAdmin
+            .from("videos")
+            .select("class_id")
+            .eq("id", data.id)
+            .maybeSingle();
+          targetClassId = (cur?.class_id ?? null) as string | null;
+        }
         const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
         await autoPushWeekAssignment({
-          classId: (data.class_id ?? (v as any)?.class_id ?? null) as string | null,
+          classId: targetClassId,
           weekLabel: data.week_label,
           userId: context.userId,
         });
