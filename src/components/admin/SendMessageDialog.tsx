@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -40,6 +40,26 @@ type Props = {
   className?: string;
 };
 
+
+function Section({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border bg-muted/30 p-3.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground">{title}</h3>
+        {aside}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
 
 type SelectionKey = string; // `${user_id}:self` | `${user_id}:parent`
 
