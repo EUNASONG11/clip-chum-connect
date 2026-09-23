@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
@@ -40,6 +40,26 @@ type Props = {
   className?: string;
 };
 
+
+function Section({
+  title,
+  aside,
+  children,
+}: {
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-lg border bg-muted/30 p-3.5">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-xs font-semibold tracking-wide text-muted-foreground">{title}</h3>
+        {aside}
+      </div>
+      <div className="space-y-3">{children}</div>
+    </section>
+  );
+}
 
 type SelectionKey = string; // `${user_id}:self` | `${user_id}:parent`
 
@@ -305,9 +325,8 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-sm">시청 기준</Label>
+        <div className="space-y-3">
+          <Section title="시청 기준">
             <RadioGroup
               value={mode}
               onValueChange={(v) => setMode(v as "video" | "class")}
@@ -326,7 +345,6 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </Label>
               </div>
             </RadioGroup>
-          </div>
 
           {mode === "video" && (
             <div className="space-y-2">
@@ -400,10 +418,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
               <span>필수 폴더 영상만 진도 계산에 포함</span>
             </label>
           )}
+          </Section>
 
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label className="text-sm">수신 대상</Label>
+          <Section
+            title="수신 대상"
+            aside={
               <div className="flex flex-wrap items-center gap-2">
                 {branchOptions.length > 0 && (
                   <Select value={branchFilter} onValueChange={setBranchFilter} disabled={isFetching}>
@@ -434,7 +453,8 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                   </Button>
                 ))}
               </div>
-            </div>
+            }
+          >
 
             <div className="flex flex-wrap items-center justify-between gap-2">
               <Label className="text-sm">
@@ -559,10 +579,9 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </ul>
               )}
             </div>
-          </div>
+          </Section>
 
-          <div className="space-y-2">
-            <Label className="text-sm">채널</Label>
+          <Section title="채널">
             <RadioGroup
               value={channel}
               onValueChange={(v) => setChannel(v as "sms" | "brandtalk")}
@@ -581,15 +600,12 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </Label>
               </div>
             </RadioGroup>
-          </div>
+          </Section>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="msg" className="text-sm">
-                메시지 ({message.length}자)
-              </Label>
-              <span className="text-xs text-muted-foreground">사용 가능한 변수</span>
-            </div>
+          <Section
+            title={`메시지 (${message.length}자)`}
+            aside={<span className="text-xs text-muted-foreground">사용 가능한 변수</span>}
+          >
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
@@ -617,7 +633,7 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
               rows={5}
               placeholder="예) [{수강반명}] {영상명} 영상이 아직 시청되지 않았어요. 오늘 안에 시청 부탁드립니다."
             />
-          </div>
+          </Section>
 
         </div>
 
