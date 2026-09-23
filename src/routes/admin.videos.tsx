@@ -18,6 +18,7 @@ import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
