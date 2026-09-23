@@ -43,15 +43,26 @@ async function weekFullyCompleted(
   return { ok: done >= ids.length, total: ids.length, done };
 }
 
-export async function notifyVideoCompletion(userId: string, videoId: string): Promise<void> {
-  if (!isExternalAssignmentConfigured()) return;
+export type NotifyResult =
+  | "sent"
+  | "already_sent"
+  | "not_complete"
+  | "no_link"
+  | "no_student"
+  | "failed";
+
+export async function notifyVideoCompletion(
+  userId: string,
+  videoId: string,
+): Promise<NotifyResult> {
+  if (!isExternalAssignmentConfigured()) return "no_link";
 
   const { data: video } = await supabaseAdmin
     .from("videos")
     .select("id, class_id, title, week_label")
     .eq("id", videoId)
     .maybeSingle();
-  if (!video?.class_id) return;
+  if (!video?.class_id) return "no_link";
 
   // 외부 시스템이 아는 학생 식별자 (마스터 students.id)
   const { data: student } = await supabaseAdmin
@@ -59,7 +70,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     .select("external_id, branch")
     .eq("auth_user_id", userId)
     .maybeSingle();
-  if (!student?.external_id) return;
+  if (!student?.external_id) return "no_student";
 
 
   let links: LinkRow[] = [];
