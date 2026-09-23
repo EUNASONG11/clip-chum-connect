@@ -1907,7 +1907,7 @@ function ClassDetailPage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <StudentVideoDetail classId={id} userId={s.user_id} />
+                      <StudentVideoDetail classId={id} userId={s.user_id} canEdit={canWrite} />
                     </AccordionContent>
                   </AccordionItem>
                 ))}
