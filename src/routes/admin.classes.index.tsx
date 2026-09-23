@@ -39,6 +39,7 @@ import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getMyCohorts } from "@/lib/vimeo.functions";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
