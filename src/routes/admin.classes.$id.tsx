@@ -172,9 +172,70 @@ function StudentVideoDetail({
                 style={{ width: `${Math.min(100, Math.ceil(v.watched_ratio * 100))}%` }}
               />
             </div>
-            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-              {v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))}%
-            </span>
+            {canEdit && editId === v.video_id ? (
+              <span className="flex shrink-0 items-center gap-1">
+                <Input
+                  autoFocus
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const n = Number(editValue);
+                      if (!Number.isFinite(n) || n < 0 || n > 100) {
+                        toast.error("0~100 사이 숫자를 입력하세요.");
+                        return;
+                      }
+                      saveRatio.mutate({ videoId: v.video_id, ratio: n / 100 });
+                    }
+                    if (e.key === "Escape") setEditId(null);
+                  }}
+                  className="h-7 w-16 text-right text-xs tabular-nums"
+                  inputMode="decimal"
+                />
+                <span className="text-xs text-muted-foreground">%</span>
+                <Button
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  disabled={saveRatio.isPending}
+                  onClick={() => {
+                    const n = Number(editValue);
+                    if (!Number.isFinite(n) || n < 0 || n > 100) {
+                      toast.error("0~100 사이 숫자를 입력하세요.");
+                      return;
+                    }
+                    saveRatio.mutate({ videoId: v.video_id, ratio: n / 100 });
+                  }}
+                >
+                  저장
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setEditId(null)}
+                >
+                  취소
+                </Button>
+              </span>
+            ) : (
+              <button
+                type="button"
+                disabled={!canEdit}
+                onClick={() => {
+                  setEditId(v.video_id);
+                  setEditValue(
+                    String(v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))),
+                  );
+                }}
+                title={canEdit ? "시청률 수정" : undefined}
+                className={`w-12 shrink-0 rounded text-right text-sm tabular-nums ${
+                  canEdit ? "hover:bg-muted" : ""
+                }`}
+              >
+                {v.is_completed ? 100 : Math.min(99, Math.ceil(v.watched_ratio * 100))}%
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setOpenWatchId((cur) => (cur === v.video_id ? null : v.video_id))}
