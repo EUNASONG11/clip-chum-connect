@@ -534,40 +534,11 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
       throw new Error("선택한 주차 과제가 아직 없습니다. 먼저 '선택 주차 내보내기'를 실행해 주세요.");
     }
 
-    const { data: videos, error: vidErr } = await supabaseAdmin
-      .from("videos")
-      .select("id")
-      .eq("class_id", data.classId)
-      .eq("week_label", data.weekLabel)
-      .eq("is_published", true)
-      .is("deleted_at", null);
-    if (vidErr) throw new Error(vidErr.message);
-    const videoIds = (videos ?? []).map((v) => v.id as string);
-    if (videoIds.length === 0) return { sent: 0, total: 0 };
-
-    let progQuery = supabaseAdmin
-      .from("video_progress")
-      .select("user_id, video_id")
-      .in("video_id", videoIds)
-      .eq("is_completed", true);
-    if (data.userIds && data.userIds.length > 0) {
-      progQuery = progQuery.in("user_id", data.userIds);
-    }
-    const { data: rows, error: progErr } = await progQuery;
-    if (progErr) throw new Error(progErr.message);
-
-    const results = await Promise.allSettled(
-      (rows ?? []).map((r) =>
-        notifyVideoCompletion(r.user_id as string, r.video_id as string),
-      ),
-    );
-    const failed = results.filter((result) => result.status === "rejected");
-    for (const result of failed) {
-      if (result.status === "rejected") {
-        console.error("[external-assignment] resync failed", result.reason);
-      }
-    }
-    return { sent: results.length - failed.length, failed: failed.length, total: results.length };
+    return await resyncWeekCompletions({
+      classId: data.classId,
+      weekLabel: data.weekLabel,
+      ...(data.userIds && data.userIds.length > 0 ? { userIds: data.userIds } : {}),
+    });
   });
 
 
