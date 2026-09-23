@@ -408,6 +408,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
       .select("id")
       .eq("class_id", data.classId)
       .in("week_label", weekLabels)
+      .eq("is_published", true)
       .is("deleted_at", null);
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
@@ -538,6 +539,7 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
       .select("id")
       .eq("class_id", data.classId)
       .eq("week_label", data.weekLabel)
+      .eq("is_published", true)
       .is("deleted_at", null);
     if (vidErr) throw new Error(vidErr.message);
     const videoIds = (videos ?? []).map((v) => v.id as string);

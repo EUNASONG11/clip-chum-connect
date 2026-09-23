@@ -10,7 +10,7 @@
  */
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { isExternalAssignmentConfigured, pushAssignmentComplete } from "./external-assignment.server";
-import { formatWeekLabel, weekRange } from "./week";
+import { formatWeekLabel, weekRangeForExternal } from "./week";
 
 const COMPLETED_STATUS = "review_completed";
 
@@ -27,6 +27,7 @@ async function weekFullyCompleted(
     .select("id")
     .eq("class_id", classId)
     .eq("week_label", weekLabel)
+    .eq("is_published", true)
     .is("deleted_at", null);
 
   const ids = (weekVideos ?? []).map((v) => v.id as string);
@@ -144,14 +145,14 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
   let occurredAt = (prog?.completed_at ?? prog?.updated_at ?? new Date().toISOString()) as string;
 
-  // 주차 과제라면 해당 주차 기간(월~일) 안으로 보정
+  // 주차 과제라면 외부에 보낸 기간(월~토, 한국 시간 기준) 안으로 보정
   if (weekLabel && weekLinked) {
-    const { start, end } = weekRange(weekLabel);
+    const { start, end } = weekRangeForExternal(weekLabel);
     const t = new Date(occurredAt).getTime();
-    const s = new Date(`${start}T00:00:00Z`).getTime();
-    const e = new Date(`${end}T23:59:59Z`).getTime();
+    const s = new Date(`${start}T00:00:00+09:00`).getTime();
+    const e = new Date(`${end}T23:59:59+09:00`).getTime();
     if (Number.isNaN(t) || t < s || t > e) {
-      occurredAt = new Date(`${end}T12:00:00Z`).toISOString();
+      occurredAt = new Date(`${end}T12:00:00+09:00`).toISOString();
     }
   }
 

@@ -5,9 +5,18 @@
  *  - 기간: 그 주차의 월~토 (weekRangeForExternal)
  *  - 대상: 해당 수강반에 배정된 전원 (교육원 구분 없음)
  * 관리자가 휴지통으로 보낸(soft delete) 주차 과제는 다시 만들지 않는다.
+ * 이미 교육원별로 내보낸 주차라면 전체용 과제를 새로 만들지 않고 교육원별 과제만 갱신한다.
  */
 import { formatWeekLabel, isWeekLabel, weekRangeForExternal } from "./week";
 import { EXTERNAL_SOURCE, pushAssignmentSync } from "./external-assignment.server";
+
+type ExistingLink = {
+  external_id: string;
+  assignment_type: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  deleted_at: string | null;
+} | null;
 
 export async function autoPushWeekAssignment(params: {
   classId: string | null | undefined;
@@ -27,17 +36,23 @@ export async function autoPushWeekAssignment(params: {
     .maybeSingle();
   if (!klass) return;
 
-  const externalId = `class-${classId}-week-${weekLabel}`;
+  const baseExternalId = `class-${classId}-week-${weekLabel}`;
 
-  // 이미 삭제 처리된 주차 과제는 자동 복구하지 않는다.
-  const { data: existing } = await supabaseAdmin
+  // 같은 주차의 기존 링크(전체용 + 교육원별) 조회
+  const { data: allLinks } = await supabaseAdmin
     .from("external_assignment_links")
-    .select("id, deleted_at, assignment_type, period_start, period_end")
+    .select("external_id, assignment_type, period_start, period_end, deleted_at")
     .eq("source", EXTERNAL_SOURCE)
-    .eq("external_id", externalId)
-    .maybeSingle();
-  if (existing?.deleted_at) return;
+    .eq("class_id", classId)
+    .eq("week_label", weekLabel);
 
+  const links = (allLinks ?? []) as NonNullable<ExistingLink>[];
+  const baseLink = links.find((l) => l.external_id === baseExternalId) ?? null;
+  const branchLinks = links.filter(
+    (l) => l.external_id.startsWith(`${baseExternalId}-`) && !l.deleted_at,
+  );
+
+  // 대상 학생
   const { data: enrolled } = await supabaseAdmin
     .from("class_students")
     .select("user_id")
@@ -52,68 +67,99 @@ export async function autoPushWeekAssignment(params: {
     .in("auth_user_id", userIds)
     .eq("is_deleted", false);
 
-  const externalStudentIds = Array.from(
-    new Set((students ?? []).map((s: any) => s.external_id).filter((v: any): v is string => !!v)),
-  );
-  if (externalStudentIds.length === 0) return;
+  const roster = (students ?? []).filter((s: any) => !!s.external_id) as {
+    external_id: string;
+    branch: string | null;
+  }[];
+  if (roster.length === 0) return;
 
-  const studentBranches: Record<string, string | null> = {};
-  for (const s of students ?? []) {
-    if ((s as any).external_id) studentBranches[(s as any).external_id as string] = (s as any).branch ?? null;
-  }
-
-  const assignmentType =
-    (existing?.assignment_type as string | null) ??
-    `${(klass as any).name} ${formatWeekLabel(weekLabel)} 영상 과제`;
+  const classBranch = ((klass as any).branch ?? null) as string | null;
+  const className = (klass as any).name as string;
   const range = weekRangeForExternal(weekLabel);
-  const periodStart = (existing?.period_start as string | null) ?? range.start;
-  const periodEnd = (existing?.period_end as string | null) ?? range.end;
-  const payloadBranch = ((klass as any).branch ?? null) as string | null;
 
-  let remoteAssignmentTypeId: string | null = null;
-  let lastError: string | null = null;
-  try {
-    const res = await pushAssignmentSync({
-      external_id: externalId,
-      assignment_type: assignmentType.slice(0, 200),
-      scope: "individual",
-      target: {
-        class_name: (klass as any).name,
-        week: weekLabel,
+  async function upsertOne(
+    externalId: string,
+    branchFilter: string | null,
+    existing: ExistingLink,
+  ): Promise<void> {
+    const targets = branchFilter
+      ? roster.filter((s) =>
+          branchFilter === "미지정" ? !s.branch : s.branch === branchFilter,
+        )
+      : roster;
+
+    const externalStudentIds = Array.from(new Set(targets.map((s) => s.external_id)));
+    if (externalStudentIds.length === 0) return;
+
+    const studentBranches: Record<string, string | null> = {};
+    for (const s of targets) studentBranches[s.external_id] = s.branch ?? null;
+
+    const assignmentType =
+      existing?.assignment_type ?? `${className} ${formatWeekLabel(weekLabel)} 영상 과제`;
+    const periodStart = existing?.period_start ?? range.start;
+    const periodEnd = existing?.period_end ?? range.end;
+    const payloadBranch =
+      branchFilter && branchFilter !== "미지정" ? branchFilter : classBranch;
+
+    let remoteAssignmentTypeId: string | null = null;
+    let lastError: string | null = null;
+    try {
+      const res = await pushAssignmentSync({
+        external_id: externalId,
+        assignment_type: assignmentType.slice(0, 200),
+        scope: "individual",
+        target: {
+          class_name: className,
+          week: weekLabel,
+          branch: payloadBranch,
+          student_branches: studentBranches,
+        },
+        period: { start: periodStart, end: periodEnd },
+        students: externalStudentIds,
         branch: payloadBranch,
         student_branches: studentBranches,
+      });
+      remoteAssignmentTypeId = res.remoteAssignmentTypeId;
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+    }
+
+    await supabaseAdmin.from("external_assignment_links").upsert(
+      {
+        source: EXTERNAL_SOURCE,
+        external_id: externalId,
+        class_id: classId,
+        video_id: null,
+        week_label: weekLabel,
+        assignment_type: assignmentType.slice(0, 200),
+        scope: "individual",
+        period_start: periodStart,
+        period_end: periodEnd,
+        remote_assignment_type_id: remoteAssignmentTypeId,
+        student_count: externalStudentIds.length,
+        last_synced_at: lastError ? null : new Date().toISOString(),
+        last_error: lastError,
+        created_by: userId,
+        deleted_at: null,
+        deleted_by: null,
       },
-      period: { start: periodStart, end: periodEnd },
-      students: externalStudentIds,
-      branch: payloadBranch,
-      student_branches: studentBranches,
-    });
-    remoteAssignmentTypeId = res.remoteAssignmentTypeId;
-  } catch (e) {
-    lastError = e instanceof Error ? e.message : String(e);
+      { onConflict: "source,external_id" },
+    );
+
+    if (lastError) console.error("[external-assignment] auto push failed", externalId, lastError);
   }
 
-  await supabaseAdmin.from("external_assignment_links").upsert(
-    {
-      source: EXTERNAL_SOURCE,
-      external_id: externalId,
-      class_id: classId,
-      video_id: null,
-      week_label: weekLabel,
-      assignment_type: assignmentType.slice(0, 200),
-      scope: "individual",
-      period_start: periodStart,
-      period_end: periodEnd,
-      remote_assignment_type_id: remoteAssignmentTypeId,
-      student_count: externalStudentIds.length,
-      last_synced_at: lastError ? null : new Date().toISOString(),
-      last_error: lastError,
-      created_by: userId,
-      deleted_at: null,
-      deleted_by: null,
-    },
-    { onConflict: "source,external_id" },
-  );
+  if (branchLinks.length > 0) {
+    // 교육원별로 내보낸 주차 → 전체용을 만들지 않고 교육원별 과제만 갱신
+    for (const link of branchLinks) {
+      const branchFilter = link.external_id.slice(baseExternalId.length + 1) || null;
+      await upsertOne(link.external_id, branchFilter, link);
+    }
+    return;
+  }
 
-  if (lastError) console.error("[external-assignment] auto push failed", externalId, lastError);
+  // 관리자가 휴지통으로 보낸 전체용 과제는 자동 복구하지 않는다.
+  if (baseLink?.deleted_at) return;
+
+  await upsertOne(baseExternalId, null, baseLink);
 }
