@@ -604,7 +604,7 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 size="sm"
                 variant="secondary"
                 onClick={() => insertVariable("{영상명}")}
-                disabled={mode !== "video" || !videoId}
+                disabled={mode !== "video" || videoIds.length === 0}
               >
                 {"{영상명}"}
               </Button>
