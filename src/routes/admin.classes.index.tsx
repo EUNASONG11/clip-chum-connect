@@ -55,6 +55,13 @@ function ClassesPage() {
     queryKey: ["admin", "classes"],
     queryFn: () => listClasses(),
   });
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  useEffect(() => {
+    const paths = (classes as any[])
+      .map((c) => extractStoragePath("class-thumbnails", c.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (paths.length > 0) prefetchSignedThumbUrls("class-thumbnails", paths);
+  }, [classes]);
   const { data: categories = [] } = useQuery({
     queryKey: ["admin", "class-categories"],
     queryFn: () => listClassCategories(),
