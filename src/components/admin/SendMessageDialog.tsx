@@ -69,7 +69,24 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     enabled: open,
   });
 
-  const effectiveVideoId = mode === "video" ? videoId : undefined;
+  const { data: folders = [] } = useQuery({
+    queryKey: ["admin", "class", classId, "folders-lite"],
+    queryFn: () => listClassFolders({ data: { classId } }),
+    enabled: open,
+  });
+
+  const folderMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (folders as any[]).forEach((f) => m.set(f.id, f));
+    return m;
+  }, [folders]);
+
+  const isRequiredVideo = (v: any) => {
+    if (!v?.folder_id) return false;
+    return !!folderMap.get(v.folder_id)?.is_required;
+  };
+
+  const effectiveVideoIds = mode === "video" ? videoIds : [];
 
   const { data: classData } = useQuery({
     queryKey: ["admin", "class", classId, "name"],
@@ -78,8 +95,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   });
   const resolvedClassName = className ?? (classData as any)?.name ?? "";
 
-  const selectedVideo = useMemo(() => (videos as any[]).find((v) => v.id === videoId), [videos, videoId]);
-  const videoTitle = selectedVideo?.title ?? "";
+  const selectedVideos = useMemo(
+    () => (videos as any[]).filter((v) => videoIds.includes(v.id)),
+    [videos, videoIds],
+  );
+  const videoTitle = selectedVideos.map((v) => v.title).join(", ");
 
 
   const {
@@ -87,12 +107,21 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["class-students-messaging", classId, effectiveVideoId ?? "__all__"],
+    queryKey: [
+      "class-students-messaging",
+      classId,
+      effectiveVideoIds.length > 0 ? [...effectiveVideoIds].sort().join(",") : "__all__",
+      mode === "class" ? requiredOnly : false,
+    ],
     queryFn: () =>
       listClassStudentsForMessaging({
-        data: { classId, ...(effectiveVideoId ? { videoId: effectiveVideoId } : {}) },
+        data: {
+          classId,
+          ...(effectiveVideoIds.length > 0 ? { videoIds: effectiveVideoIds } : {}),
+          ...(mode === "class" ? { requiredOnly } : {}),
+        },
       }),
-    enabled: open && (mode === "class" || !!videoId),
+    enabled: open && (mode === "class" || videoIds.length > 0),
   });
 
   const allStudents = studentsData ?? [];
