@@ -8,6 +8,7 @@ import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
 export const Route = createFileRoute("/class/$id")({
   component: ClassPage,
