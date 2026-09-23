@@ -9,6 +9,7 @@ import { GraduationCap, LogOut, Play, User } from "lucide-react";
 import { getMyDisplayName, getMyRole } from "@/lib/vimeo.functions";
 import { listClasses, listMyRecentProgress } from "@/lib/classes.functions";
 import { ClassThumb } from "@/components/ClassThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 import { VideoThumb } from "@/components/VideoThumb";
 
 

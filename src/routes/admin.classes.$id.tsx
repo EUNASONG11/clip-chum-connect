@@ -247,6 +247,7 @@ function StudentVideoDetail({ classId, userId }: { classId: string; userId: stri
 
 import { useAdminRole } from "@/components/AdminRole";
 import { VideoThumb } from "@/components/VideoThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
 import { BranchBadge } from "@/components/BranchBadge";
 
