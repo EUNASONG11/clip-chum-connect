@@ -176,10 +176,14 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   }, [open, studentsData]);
 
   useEffect(() => {
-    if (open && mode === "video" && !videoId && videos.length > 0) {
-      setVideoId((videos[0] as any).id);
+    if (open && mode === "video" && videoIds.length === 0 && videos.length > 0) {
+      setVideoIds([(videos[0] as any).id]);
     }
-  }, [open, mode, videoId, videos]);
+  }, [open, mode, videoIds, videos]);
+
+  const toggleVideo = (id: string, checked: boolean) => {
+    setVideoIds((prev) => (checked ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+  };
 
   type Recipient = { user_id: string; name: string; phone: string; branch: string };
 
