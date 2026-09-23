@@ -325,9 +325,8 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-sm">시청 기준</Label>
+        <div className="space-y-3">
+          <Section title="시청 기준">
             <RadioGroup
               value={mode}
               onValueChange={(v) => setMode(v as "video" | "class")}
@@ -346,7 +345,6 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </Label>
               </div>
             </RadioGroup>
-          </div>
 
           {mode === "video" && (
             <div className="space-y-2">
