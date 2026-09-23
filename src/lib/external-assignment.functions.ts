@@ -519,7 +519,7 @@ export const resyncCompletionsToExternal = createServerFn({ method: "POST" })
     await assertExternalAssignmentStaff(context as any);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { notifyVideoCompletion } = await import("./external-assignment-notify.server");
+    const { resyncWeekCompletions } = await import("./external-assignment-resync.server");
 
     const { data: weekLink, error: linkErr } = await supabaseAdmin
       .from("external_assignment_links")
