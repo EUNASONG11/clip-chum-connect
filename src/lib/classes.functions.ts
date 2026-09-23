@@ -911,6 +911,29 @@ export const updateVideo = createServerFn({ method: "POST" })
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin.from("videos").update(patch as any).eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // 주차를 새로 지정/변경하면 해당 주차 외부 과제를 기본값으로 자동 생성/갱신
+    if (data.week_label) {
+      try {
+        let targetClassId = data.class_id ?? null;
+        if (!targetClassId) {
+          const { data: cur } = await supabaseAdmin
+            .from("videos")
+            .select("class_id")
+            .eq("id", data.id)
+            .maybeSingle();
+          targetClassId = (cur?.class_id ?? null) as string | null;
+        }
+        const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+        await autoPushWeekAssignment({
+          classId: targetClassId,
+          weekLabel: data.week_label,
+          userId: context.userId,
+        });
+      } catch (e) {
+        console.error("[external-assignment] auto push error", e);
+      }
+    }
     return { ok: true };
   });
 
