@@ -65,6 +65,14 @@ function ClassPage() {
     retry: false,
   });
 
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  React.useEffect(() => {
+    const paths = (videos as any[])
+      .map((v) => extractStoragePath("video-thumbnails", v.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (paths.length > 0) prefetchSignedThumbUrls("video-thumbnails", paths);
+  }, [videos]);
+
   if (!authed) {
     return (
       <div className="min-h-screen bg-background">
