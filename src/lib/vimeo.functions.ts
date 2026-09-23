@@ -185,6 +185,19 @@ export const finalizeVideo = createServerFn({ method: "POST" })
       .select("*")
       .single();
     if (error) throw new Error(error.message);
+
+    // 주차가 지정된 영상이면 해당 주차 외부 과제를 기본값으로 자동 생성/갱신
+    try {
+      const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+      await autoPushWeekAssignment({
+        classId: data.class_id ?? null,
+        weekLabel: data.week_label ?? null,
+        userId: context.userId,
+      });
+    } catch (e) {
+      console.error("[external-assignment] auto push error", e);
+    }
+
     return row;
   });
 
