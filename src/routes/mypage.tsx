@@ -60,6 +60,20 @@ function MyPage() {
     enabled: ready,
   });
 
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  useEffect(() => {
+    const classPaths = (classes as any[])
+      .map((c) => extractStoragePath("class-thumbnails", c.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (classPaths.length > 0) prefetchSignedThumbUrls("class-thumbnails", classPaths);
+  }, [classes]);
+  useEffect(() => {
+    const videoPaths = (progress as any[])
+      .map((p) => extractStoragePath("video-thumbnails", p.videos?.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (videoPaths.length > 0) prefetchSignedThumbUrls("video-thumbnails", videoPaths);
+  }, [progress]);
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-background">

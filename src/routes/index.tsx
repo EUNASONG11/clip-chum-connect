@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { listClasses } from "@/lib/classes.functions";
 import { getMyRole } from "@/lib/vimeo.functions";
 import { ClassThumb } from "@/components/ClassThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
 
 export const Route = createFileRoute("/")({
