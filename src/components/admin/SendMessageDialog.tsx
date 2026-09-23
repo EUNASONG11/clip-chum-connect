@@ -255,11 +255,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     try {
       const res =
         channel === "sms"
-          ? await sendClassSms({ data: { classId, videoId: effectiveVideoId, recipients: selectedList, message: message.trim() } })
+          ? await sendClassSms({ data: { classId, videoId: effectiveVideoIds[0], recipients: selectedList, message: message.trim() } })
           : await sendClassBrandTalk({
               data: {
                 classId,
-                videoId: effectiveVideoId,
+                videoId: effectiveVideoIds[0],
                 recipients: selectedList,
                 message: message.trim(),
                 fallbackToSms: true,
