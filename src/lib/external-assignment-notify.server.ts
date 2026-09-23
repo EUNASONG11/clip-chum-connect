@@ -101,13 +101,13 @@ export async function notifyVideoCompletion(
 
       if (picked) {
         const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
-        if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
+        if (!status.ok) return "not_complete"; // 주차 영상 일부만 완료 → 통보 보류
         links = [picked];
         weekLinked = true;
         memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
       } else {
         // 주차 과제는 있는데 이 학생 교육원용 과제가 없으면 구버전 과제로 잘못 보내지 않도록 중단
-        return;
+        return "no_link";
       }
     }
   }
@@ -143,7 +143,7 @@ export async function notifyVideoCompletion(
     links = (classLinks ?? []) as LinkRow[];
   }
 
-  if (links.length === 0) return;
+  if (links.length === 0) return "no_link";
 
   // 통보 시각은 "지금"이 아니라 실제 시청 완료 시각을 사용합니다.
   // (외부 시스템이 occurred_at 으로 주차를 계산하기 때문에 지금 시각을 보내면 엉뚱한 주차로 반영됨)
