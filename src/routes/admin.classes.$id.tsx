@@ -57,7 +57,7 @@ import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-sea
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents } from "@/lib/stats.functions";
+import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
 
 function fmtDur(sec: number) {
   const s = Math.max(0, Math.floor(sec || 0));
