@@ -92,6 +92,8 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
       .object({
         classId: z.string().uuid(),
         videoId: z.string().uuid().optional(),
+        videoIds: z.array(z.string().uuid()).optional(),
+        requiredOnly: z.boolean().optional(),
       })
       .parse(i),
   )
@@ -99,23 +101,29 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     await assertAdminOrInstructorOnClass(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: videos }, { data: students }, { data: history }] = await Promise.all([
-      supabaseAdmin
-        .from("videos")
-        .select("id, title, created_at")
-        .eq("class_id", data.classId)
-        .is("deleted_at", null),
-      supabaseAdmin
-        .from("class_students")
-        .select("user_id")
-        .eq("class_id", data.classId)
-        .is("deleted_at", null),
-      supabaseAdmin
-        .from("class_enrollment_history")
-        .select("user_id, action, created_at")
-        .eq("class_id", data.classId)
-        .eq("action", "added"),
-    ]);
+    const [{ data: videos }, { data: students }, { data: history }, { data: folders }] =
+      await Promise.all([
+        supabaseAdmin
+          .from("videos")
+          .select("id, title, created_at, folder_id")
+          .eq("class_id", data.classId)
+          .is("deleted_at", null),
+        supabaseAdmin
+          .from("class_students")
+          .select("user_id")
+          .eq("class_id", data.classId)
+          .is("deleted_at", null),
+        supabaseAdmin
+          .from("class_enrollment_history")
+          .select("user_id, action, created_at")
+          .eq("class_id", data.classId)
+          .eq("action", "added"),
+        supabaseAdmin
+          .from("class_folders")
+          .select("id, is_required")
+          .eq("class_id", data.classId)
+          .is("deleted_at", null),
+      ]);
 
     const studentIds = ((students ?? []) as any[]).map((s) => s.user_id);
     if (studentIds.length === 0) return [] as any[];
@@ -126,15 +134,33 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
       if (!prev || h.created_at > prev) enrollStart.set(h.user_id, h.created_at);
     });
 
-    const videoList = ((videos ?? []) as any[]) as { id: string; title: string; created_at: string }[];
+    const requiredFolders = new Set(
+      ((folders ?? []) as any[]).filter((f) => f.is_required).map((f) => f.id as string),
+    );
+
+    const videoList = ((videos ?? []) as any[]) as {
+      id: string;
+      title: string;
+      created_at: string;
+      folder_id: string | null;
+    }[];
+
+    const selectedIds = new Set<string>([
+      ...(data.videoIds ?? []),
+      ...(data.videoId ? [data.videoId] : []),
+    ]);
 
     // 대상 영상 목록
     let targetVideos: typeof videoList;
-    if (data.videoId) {
-      targetVideos = videoList.filter((v) => v.id === data.videoId);
+    if (selectedIds.size > 0) {
+      targetVideos = videoList.filter((v) => selectedIds.has(v.id));
       if (targetVideos.length === 0) throw new Error("영상을 찾을 수 없습니다.");
     } else {
       targetVideos = videoList;
+      // 필수 폴더에 속한 영상만 진도 계산에 포함
+      if (data.requiredOnly) {
+        targetVideos = targetVideos.filter((v) => v.folder_id && requiredFolders.has(v.folder_id));
+      }
     }
     const targetIds = targetVideos.map((v) => v.id);
 
@@ -161,7 +187,7 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
       .map((uid) => {
         const e: any = extMap.get(uid) ?? {};
         const start = enrollStart.get(uid);
-        const eligible = data.videoId
+        const eligible = selectedIds.size > 0
           ? targetVideos
           : targetVideos.filter((v) => !start || v.created_at >= start);
         if (eligible.length === 0) return null;

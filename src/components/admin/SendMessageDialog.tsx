@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { listClassStudentsForMessaging, sendClassSms, sendClassBrandTalk } from "@/lib/sms.functions";
-import { listClassVideos, getClass } from "@/lib/classes.functions";
+import { listClassVideos, getClass, listClassFolders } from "@/lib/classes.functions";
 import { getMyStatus } from "@/lib/vimeo.functions";
 import { canonicalBranch } from "@/lib/branch";
 
@@ -47,7 +47,8 @@ type StudentStatus = "all" | "completed" | "incomplete";
 
 export function SendMessageDialog({ open, onOpenChange, classId, className }: Props) {
   const [mode, setMode] = useState<"video" | "class">("video");
-  const [videoId, setVideoId] = useState<string>("");
+  const [videoIds, setVideoIds] = useState<string[]>([]);
+  const [requiredOnly, setRequiredOnly] = useState(true);
   const [channel, setChannel] = useState<"sms" | "brandtalk">("brandtalk");
   const [message, setMessage] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus>("incomplete");
@@ -68,7 +69,24 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     enabled: open,
   });
 
-  const effectiveVideoId = mode === "video" ? videoId : undefined;
+  const { data: folders = [] } = useQuery({
+    queryKey: ["admin", "class", classId, "folders-lite"],
+    queryFn: () => listClassFolders({ data: { classId } }),
+    enabled: open,
+  });
+
+  const folderMap = useMemo(() => {
+    const m = new Map<string, any>();
+    (folders as any[]).forEach((f) => m.set(f.id, f));
+    return m;
+  }, [folders]);
+
+  const isRequiredVideo = (v: any) => {
+    if (!v?.folder_id) return false;
+    return !!folderMap.get(v.folder_id)?.is_required;
+  };
+
+  const effectiveVideoIds = mode === "video" ? videoIds : [];
 
   const { data: classData } = useQuery({
     queryKey: ["admin", "class", classId, "name"],
@@ -77,8 +95,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   });
   const resolvedClassName = className ?? (classData as any)?.name ?? "";
 
-  const selectedVideo = useMemo(() => (videos as any[]).find((v) => v.id === videoId), [videos, videoId]);
-  const videoTitle = selectedVideo?.title ?? "";
+  const selectedVideos = useMemo(
+    () => (videos as any[]).filter((v) => videoIds.includes(v.id)),
+    [videos, videoIds],
+  );
+  const videoTitle = selectedVideos.map((v) => v.title).join(", ");
 
 
   const {
@@ -86,12 +107,21 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     isFetching,
     refetch,
   } = useQuery({
-    queryKey: ["class-students-messaging", classId, effectiveVideoId ?? "__all__"],
+    queryKey: [
+      "class-students-messaging",
+      classId,
+      effectiveVideoIds.length > 0 ? [...effectiveVideoIds].sort().join(",") : "__all__",
+      mode === "class" ? requiredOnly : false,
+    ],
     queryFn: () =>
       listClassStudentsForMessaging({
-        data: { classId, ...(effectiveVideoId ? { videoId: effectiveVideoId } : {}) },
+        data: {
+          classId,
+          ...(effectiveVideoIds.length > 0 ? { videoIds: effectiveVideoIds } : {}),
+          ...(mode === "class" ? { requiredOnly } : {}),
+        },
       }),
-    enabled: open && (mode === "class" || !!videoId),
+    enabled: open && (mode === "class" || videoIds.length > 0),
   });
 
   const allStudents = studentsData ?? [];
@@ -146,10 +176,14 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
   }, [open, studentsData]);
 
   useEffect(() => {
-    if (open && mode === "video" && !videoId && videos.length > 0) {
-      setVideoId((videos[0] as any).id);
+    if (open && mode === "video" && videoIds.length === 0 && videos.length > 0) {
+      setVideoIds([(videos[0] as any).id]);
     }
-  }, [open, mode, videoId, videos]);
+  }, [open, mode, videoIds, videos]);
+
+  const toggleVideo = (id: string, checked: boolean) => {
+    setVideoIds((prev) => (checked ? [...new Set([...prev, id])] : prev.filter((x) => x !== id)));
+  };
 
   type Recipient = { user_id: string; name: string; phone: string; branch: string };
 
@@ -221,11 +255,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
     try {
       const res =
         channel === "sms"
-          ? await sendClassSms({ data: { classId, videoId: effectiveVideoId, recipients: selectedList, message: message.trim() } })
+          ? await sendClassSms({ data: { classId, videoId: effectiveVideoIds[0], recipients: selectedList, message: message.trim() } })
           : await sendClassBrandTalk({
               data: {
                 classId,
-                videoId: effectiveVideoId,
+                videoId: effectiveVideoIds[0],
                 recipients: selectedList,
                 message: message.trim(),
                 fallbackToSms: true,
@@ -296,20 +330,75 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
 
           {mode === "video" && (
             <div className="space-y-2">
-              <Label className="text-sm">영상 선택</Label>
-              <Select value={videoId} onValueChange={setVideoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="영상을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {videos.map((v: any) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="text-sm">영상 선택 (여러 개 선택 가능 · {videoIds.length}개)</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setVideoIds((videos as any[]).filter(isRequiredVideo).map((v) => v.id))
+                    }
+                  >
+                    필수 영상 전체
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setVideoIds((videos as any[]).map((v) => v.id))}
+                  >
+                    전체 선택
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setVideoIds([])}>
+                    선택 해제
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-md border">
+                {videos.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">영상이 없습니다.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {(videos as any[]).map((v) => {
+                      const required = isRequiredVideo(v);
+                      return (
+                        <li key={v.id}>
+                          <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                            <Checkbox
+                              checked={videoIds.includes(v.id)}
+                              onCheckedChange={(c) => toggleVideo(v.id, !!c)}
+                            />
+                            <span className="truncate">{v.title}</span>
+                            <span
+                              className={cn(
+                                "shrink-0 rounded px-1.5 py-0.5 text-xs",
+                                required
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {required ? "필수" : "선택"}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
+          )}
+
+          {mode === "class" && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={requiredOnly}
+                onCheckedChange={(c) => setRequiredOnly(!!c)}
+              />
+              <span>필수 폴더 영상만 진도 계산에 포함</span>
+            </label>
           )}
 
           <div className="space-y-2">
@@ -515,7 +604,7 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 size="sm"
                 variant="secondary"
                 onClick={() => insertVariable("{영상명}")}
-                disabled={mode !== "video" || !videoId}
+                disabled={mode !== "video" || videoIds.length === 0}
               >
                 {"{영상명}"}
               </Button>
