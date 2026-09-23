@@ -600,15 +600,12 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
                 </Label>
               </div>
             </RadioGroup>
-          </div>
+          </Section>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="msg" className="text-sm">
-                메시지 ({message.length}자)
-              </Label>
-              <span className="text-xs text-muted-foreground">사용 가능한 변수</span>
-            </div>
+          <Section
+            title={`메시지 (${message.length}자)`}
+            aside={<span className="text-xs text-muted-foreground">사용 가능한 변수</span>}
+          >
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
