@@ -18,6 +18,7 @@ import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { VideoThumb } from "@/components/VideoThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 import { VideoThumbnailUploader } from "@/components/VideoThumbnailUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
@@ -201,6 +202,11 @@ function VideosPage() {
       .range(from, from + PAGE_SIZE - 1);
     const loaded = ((data as any[] | null) ?? []) as Row[];
     setRows(loaded);
+    // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+    const thumbPaths = (loaded as Row[])
+      .map((r) => extractStoragePath("video-thumbnails", r.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (thumbPaths.length > 0) prefetchSignedThumbUrls("video-thumbnails", thumbPaths);
     setTotal(count ?? 0);
     setEdits({});
     setListLoading(false);

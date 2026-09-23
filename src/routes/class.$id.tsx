@@ -8,6 +8,7 @@ import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
 export const Route = createFileRoute("/class/$id")({
   component: ClassPage,
@@ -63,6 +64,14 @@ function ClassPage() {
     enabled: authed,
     retry: false,
   });
+
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  React.useEffect(() => {
+    const paths = (videos as any[])
+      .map((v) => extractStoragePath("video-thumbnails", v.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (paths.length > 0) prefetchSignedThumbUrls("video-thumbnails", paths);
+  }, [videos]);
 
   if (!authed) {
     return (

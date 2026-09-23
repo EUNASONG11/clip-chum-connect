@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { listClasses } from "@/lib/classes.functions";
 import { getMyRole } from "@/lib/vimeo.functions";
 import { ClassThumb } from "@/components/ClassThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
 
 export const Route = createFileRoute("/")({
@@ -51,6 +52,14 @@ function Home() {
     queryFn: () => listClasses(),
     enabled: ready,
   });
+
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  useEffect(() => {
+    const paths = (classes as any[])
+      .map((c) => extractStoragePath("class-thumbnails", c.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (paths.length > 0) prefetchSignedThumbUrls("class-thumbnails", paths);
+  }, [classes]);
 
   if (!ready) {
     return (

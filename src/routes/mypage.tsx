@@ -9,6 +9,7 @@ import { GraduationCap, LogOut, Play, User } from "lucide-react";
 import { getMyDisplayName, getMyRole } from "@/lib/vimeo.functions";
 import { listClasses, listMyRecentProgress } from "@/lib/classes.functions";
 import { ClassThumb } from "@/components/ClassThumb";
+import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 import { VideoThumb } from "@/components/VideoThumb";
 
 
@@ -59,6 +60,20 @@ function MyPage() {
     queryFn: () => listMyRecentProgress(),
     enabled: ready,
   });
+
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  useEffect(() => {
+    const classPaths = (classes as any[])
+      .map((c) => extractStoragePath("class-thumbnails", c.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (classPaths.length > 0) prefetchSignedThumbUrls("class-thumbnails", classPaths);
+  }, [classes]);
+  useEffect(() => {
+    const videoPaths = (progress as any[])
+      .map((p) => extractStoragePath("video-thumbnails", p.videos?.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (videoPaths.length > 0) prefetchSignedThumbUrls("video-thumbnails", videoPaths);
+  }, [progress]);
 
   if (!ready) {
     return (
