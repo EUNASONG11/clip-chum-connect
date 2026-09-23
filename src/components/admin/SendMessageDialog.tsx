@@ -418,10 +418,11 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
               <span>필수 폴더 영상만 진도 계산에 포함</span>
             </label>
           )}
+          </Section>
 
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label className="text-sm">수신 대상</Label>
+          <Section
+            title="수신 대상"
+            aside={
               <div className="flex flex-wrap items-center gap-2">
                 {branchOptions.length > 0 && (
                   <Select value={branchFilter} onValueChange={setBranchFilter} disabled={isFetching}>
