@@ -330,20 +330,75 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
 
           {mode === "video" && (
             <div className="space-y-2">
-              <Label className="text-sm">영상 선택</Label>
-              <Select value={videoId} onValueChange={setVideoId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="영상을 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  {videos.map((v: any) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="text-sm">영상 선택 (여러 개 선택 가능 · {videoIds.length}개)</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setVideoIds((videos as any[]).filter(isRequiredVideo).map((v) => v.id))
+                    }
+                  >
+                    필수 영상 전체
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setVideoIds((videos as any[]).map((v) => v.id))}
+                  >
+                    전체 선택
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setVideoIds([])}>
+                    선택 해제
+                  </Button>
+                </div>
+              </div>
+              <div className="max-h-48 overflow-y-auto rounded-md border">
+                {videos.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">영상이 없습니다.</p>
+                ) : (
+                  <ul className="divide-y">
+                    {(videos as any[]).map((v) => {
+                      const required = isRequiredVideo(v);
+                      return (
+                        <li key={v.id}>
+                          <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                            <Checkbox
+                              checked={videoIds.includes(v.id)}
+                              onCheckedChange={(c) => toggleVideo(v.id, !!c)}
+                            />
+                            <span className="truncate">{v.title}</span>
+                            <span
+                              className={cn(
+                                "shrink-0 rounded px-1.5 py-0.5 text-xs",
+                                required
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {required ? "필수" : "선택"}
+                            </span>
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
             </div>
+          )}
+
+          {mode === "class" && (
+            <label className="flex cursor-pointer items-center gap-2 text-sm">
+              <Checkbox
+                checked={requiredOnly}
+                onCheckedChange={(c) => setRequiredOnly(!!c)}
+              />
+              <span>필수 폴더 영상만 진도 계산에 포함</span>
+            </label>
           )}
 
           <div className="space-y-2">
