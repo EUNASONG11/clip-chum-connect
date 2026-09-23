@@ -27,6 +27,7 @@ async function weekFullyCompleted(
     .select("id")
     .eq("class_id", classId)
     .eq("week_label", weekLabel)
+    .eq("is_published", true)
     .is("deleted_at", null);
 
   const ids = (weekVideos ?? []).map((v) => v.id as string);
