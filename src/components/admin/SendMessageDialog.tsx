@@ -633,7 +633,7 @@ export function SendMessageDialog({ open, onOpenChange, classId, className }: Pr
               rows={5}
               placeholder="예) [{수강반명}] {영상명} 영상이 아직 시청되지 않았어요. 오늘 안에 시청 부탁드립니다."
             />
-          </div>
+          </Section>
 
         </div>
 
