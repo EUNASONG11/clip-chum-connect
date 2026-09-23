@@ -99,14 +99,38 @@ function SeekEventList({ classId, userId, videoId }: { classId: string; userId: 
   );
 }
 
-function StudentVideoDetail({ classId, userId }: { classId: string; userId: string }) {
+function StudentVideoDetail({
+  classId,
+  userId,
+  canEdit = false,
+}: {
+  classId: string;
+  userId: string;
+  canEdit?: boolean;
+}) {
   const [openVideoId, setOpenVideoId] = useState<string | null>(null);
   const [openWatchId, setOpenWatchId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const qcDetail = useQueryClient();
+
+  const saveRatio = useMutation({
+    mutationFn: (p: { videoId: string; ratio: number }) =>
+      setStudentVideoProgress({ data: { classId, userId, videoId: p.videoId, ratio: p.ratio } }),
+    onSuccess: () => {
+      toast.success("시청률을 수정했습니다.");
+      setEditId(null);
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-video-detail", userId] });
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "수정에 실패했습니다."),
+  });
 
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
   });
+
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 px-3 py-3 text-sm text-muted-foreground">
