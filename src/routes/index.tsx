@@ -53,6 +53,14 @@ function Home() {
     enabled: ready,
   });
 
+  // 썸네일 서명 주소를 한 번에 묶어 미리 발급받아 표시 속도를 높인다.
+  useEffect(() => {
+    const paths = (classes as any[])
+      .map((c) => extractStoragePath("class-thumbnails", c.thumbnail_url ?? ""))
+      .filter((p): p is string => !!p);
+    if (paths.length > 0) prefetchSignedThumbUrls("class-thumbnails", paths);
+  }, [classes]);
+
   if (!ready) {
     return (
       <div className="min-h-screen bg-background">
