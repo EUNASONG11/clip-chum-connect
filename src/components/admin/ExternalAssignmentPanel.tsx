@@ -159,7 +159,9 @@ export function ExternalAssignmentPanel({
         data: { classId, weekLabel, userIds: resyncUsers },
       });
       toast.success(
-        `학생 ${resyncUsers.length}명 · 완료 기록 ${res.total}건 확인, ${res.sent}건 통보 처리했습니다.`,
+        `학생 ${res.total}명 확인 · 통보 ${res.sent}명 · 이미 통보 ${res.alreadySent}명 · 미완료 ${res.notComplete}명${
+          res.failed > 0 ? ` · 실패 ${res.failed}명` : ""
+        }`,
       );
       setResyncOpen(false);
       setResyncUsers([]);

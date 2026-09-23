@@ -43,15 +43,26 @@ async function weekFullyCompleted(
   return { ok: done >= ids.length, total: ids.length, done };
 }
 
-export async function notifyVideoCompletion(userId: string, videoId: string): Promise<void> {
-  if (!isExternalAssignmentConfigured()) return;
+export type NotifyResult =
+  | "sent"
+  | "already_sent"
+  | "not_complete"
+  | "no_link"
+  | "no_student"
+  | "failed";
+
+export async function notifyVideoCompletion(
+  userId: string,
+  videoId: string,
+): Promise<NotifyResult> {
+  if (!isExternalAssignmentConfigured()) return "no_link";
 
   const { data: video } = await supabaseAdmin
     .from("videos")
     .select("id, class_id, title, week_label")
     .eq("id", videoId)
     .maybeSingle();
-  if (!video?.class_id) return;
+  if (!video?.class_id) return "no_link";
 
   // 외부 시스템이 아는 학생 식별자 (마스터 students.id)
   const { data: student } = await supabaseAdmin
@@ -59,7 +70,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     .select("external_id, branch")
     .eq("auth_user_id", userId)
     .maybeSingle();
-  if (!student?.external_id) return;
+  if (!student?.external_id) return "no_student";
 
 
   let links: LinkRow[] = [];
@@ -90,13 +101,13 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
 
       if (picked) {
         const status = await weekFullyCompleted(userId, video.class_id, weekLabel);
-        if (!status.ok) return; // 주차 영상 일부만 완료 → 통보 보류
+        if (!status.ok) return "not_complete"; // 주차 영상 일부만 완료 → 통보 보류
         links = [picked];
         weekLinked = true;
         memo = `이러닝: ${formatWeekLabel(weekLabel)} 영상 ${status.total}개 시청 완료`;
       } else {
         // 주차 과제는 있는데 이 학생 교육원용 과제가 없으면 구버전 과제로 잘못 보내지 않도록 중단
-        return;
+        return "no_link";
       }
     }
   }
@@ -132,7 +143,7 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
     links = (classLinks ?? []) as LinkRow[];
   }
 
-  if (links.length === 0) return;
+  if (links.length === 0) return "no_link";
 
   // 통보 시각은 "지금"이 아니라 실제 시청 완료 시각을 사용합니다.
   // (외부 시스템이 occurred_at 으로 주차를 계산하기 때문에 지금 시각을 보내면 엉뚱한 주차로 반영됨)
@@ -157,6 +168,10 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
   }
 
 
+  let anySent = false;
+  let anyFailed = false;
+  let anyAlready = false;
+
   for (const link of links) {
     // 이미 전송된 건은 건너뜀 (link_id + user_id 유니크)
     const { data: existing } = await supabaseAdmin
@@ -165,7 +180,10 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
       .eq("link_id", link.id)
       .eq("user_id", userId)
       .maybeSingle();
-    if (existing?.status === "sent") continue;
+    if (existing?.status === "sent") {
+      anyAlready = true;
+      continue;
+    }
 
     const rowId = existing?.id ?? null;
     if (!rowId) {
@@ -199,9 +217,11 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
         })
         .eq("link_id", link.id)
         .eq("user_id", userId);
+      anySent = true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error("[external-assignment] complete push failed", message);
+      anyFailed = true;
       await supabaseAdmin
         .from("external_assignment_completions")
         .update({ status: "failed", error_message: message.slice(0, 500) })
@@ -209,4 +229,9 @@ export async function notifyVideoCompletion(userId: string, videoId: string): Pr
         .eq("user_id", userId);
     }
   }
+
+  if (anyFailed) return "failed";
+  if (anySent) return "sent";
+  if (anyAlready) return "already_sent";
+  return "no_link";
 }
