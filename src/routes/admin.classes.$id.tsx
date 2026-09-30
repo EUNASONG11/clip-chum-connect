@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare, RefreshCw,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, EyeOff, Eye,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
@@ -58,6 +58,7 @@ const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
+import { setVideoExclusion } from "@/lib/video-exclusions.functions";
 
 function fmtDur(sec: number) {
   const s = Math.max(0, Math.floor(sec || 0));
@@ -124,6 +125,17 @@ function StudentVideoDetail({
       qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-stats"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "수정에 실패했습니다."),
+  });
+
+  const toggleHidden = useMutation({
+    mutationFn: (p: { videoId: string; hidden: boolean }) =>
+      setVideoExclusion({ data: { videoId: p.videoId, userId, hidden: p.hidden } }),
+    onSuccess: (_r, p) => {
+      toast.success(p.hidden ? "이 학생에게 영상을 숨겼습니다." : "다시 보이도록 했습니다.");
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-video-detail", userId] });
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "처리에 실패했습니다."),
   });
 
   const { data = [], isLoading } = useQuery({
