@@ -60,7 +60,8 @@ function InstructorsPage() {
     queryFn: async () => (await listInstructorRoster()) as Row[],
     staleTime: 30_000,
   });
-  const { isAdmin: canManage } = useAdminRole();
+  const { isAdmin: canManage, isBranchAdmin } = useAdminRole();
+  const canReset = canManage || isBranchAdmin;
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -275,7 +276,7 @@ function InstructorsPage() {
                                 <span className="text-green-600">
                                   계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                 </span>
-                                {canManage && !r.must_change_password && (
+                                {canReset && !r.must_change_password && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -472,7 +473,7 @@ function InstructorsPage() {
                                   <span className="text-green-600">
                                     계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                   </span>
-                                  {canManage && !r.must_change_password && (
+                                  {canReset && !r.must_change_password && (
                                     <Button
                                       size="sm"
                                       variant="ghost"

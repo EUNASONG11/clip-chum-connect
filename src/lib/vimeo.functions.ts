@@ -1370,15 +1370,20 @@ export const resetInstructorPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ instructorId: z.string().uuid() }).parse(i))
   .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+    const scope = await getStaffScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: inst, error } = await supabaseAdmin
       .from("instructors")
-      .select("id, name, auth_user_id")
+      .select("id, name, auth_user_id, branch")
       .eq("id", data.instructorId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!inst?.auth_user_id) throw new Error("계정이 없는 강사입니다.");
+    if (!scope.isAdmin) {
+      if (!scope.branch || !matchesBranch(scope.branch, inst.branch)) {
+        throw new Error("담당 교육원 소속 강사만 초기화할 수 있습니다.");
+      }
+    }
 
     const { error: uErr } = await supabaseAdmin.auth.admin.updateUserById(inst.auth_user_id, {
       password: "12345678",
