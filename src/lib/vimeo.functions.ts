@@ -1380,7 +1380,7 @@ export const resetInstructorPassword = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!inst?.auth_user_id) throw new Error("계정이 없는 강사입니다.");
     if (!scope.isAdmin) {
-      if (!scope.branch || !matchesBranch(inst.branch, scope.branch)) {
+      if (!scope.branch || !matchesBranch(scope.branch, inst.branch)) {
         throw new Error("담당 교육원 소속 강사만 초기화할 수 있습니다.");
       }
     }
