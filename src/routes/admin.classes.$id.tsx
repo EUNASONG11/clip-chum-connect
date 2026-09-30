@@ -174,10 +174,15 @@ function StudentVideoDetail({
   })();
 
   const renderVideoRow = (v: any) => (
-        <div key={v.video_id} className="rounded-md bg-background">
+        <div key={v.video_id} className={`rounded-md bg-background ${v.is_hidden ? "opacity-55" : ""}`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
             <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
+            {v.is_hidden && (
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                숨김
+              </span>
+            )}
             <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
               <div
                 className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
@@ -276,6 +281,17 @@ function StudentVideoDetail({
             <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
               {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
             </span>
+            {canEdit && (
+              <button
+                type="button"
+                disabled={toggleHidden.isPending}
+                onClick={() => toggleHidden.mutate({ videoId: v.video_id, hidden: !v.is_hidden })}
+                title={v.is_hidden ? "이 학생에게 다시 보이기" : "이 학생에게 숨기기"}
+                className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {v.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            )}
             <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
               {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
             </span>
