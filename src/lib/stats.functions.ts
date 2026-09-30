@@ -354,13 +354,22 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     const list = ((videos ?? []) as any[]).filter((v: any) => (start ? v.created_at >= start : true));
     if (list.length === 0) return [];
 
-    const { data: progress } = await supabaseAdmin
-      .from("video_progress")
-      .select("video_id, watched_ratio, watched_seconds, seek_attempts, max_seconds, current_seconds, duration, is_completed, completed_at, updated_at")
-      .eq("user_id", data.userId)
-      .in("video_id", list.map((v: any) => v.id));
+    const [{ data: progress }, { data: exclusions }] = await Promise.all([
+      supabaseAdmin
+        .from("video_progress")
+        .select("video_id, watched_ratio, watched_seconds, seek_attempts, max_seconds, current_seconds, duration, is_completed, completed_at, updated_at")
+        .eq("user_id", data.userId)
+        .in("video_id", list.map((v: any) => v.id)),
+      supabaseAdmin
+        .from("video_student_exclusions")
+        .select("video_id")
+        .eq("user_id", data.userId)
+        .in("video_id", list.map((v: any) => v.id))
+        .is("deleted_at", null),
+    ]);
 
     const pMap = new Map(((progress ?? []) as any[]).map((p: any) => [p.video_id, p]));
+    const hiddenSet = new Set(((exclusions ?? []) as any[]).map((x: any) => x.video_id as string));
     return list.map((v: any) => {
       const p: any = pMap.get(v.id);
       const folder: any = v.folder_id ? folderById.get(v.folder_id) : null;
@@ -371,6 +380,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         folder_name: folderPath(v.folder_id ?? null),
         folder_sort: folder?.sort_order ?? 9999,
         folder_is_required: folder ? !!folder.is_required : null,
+        is_hidden: hiddenSet.has(v.id as string),
         duration: v.duration ?? p?.duration ?? null,
         watched_ratio: p ? Math.min(1, Number(p.watched_ratio ?? 0)) : 0,
         watched_seconds: Number(p?.watched_seconds ?? 0),

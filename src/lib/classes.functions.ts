@@ -831,6 +831,20 @@ export const listClassVideos = createServerFn({ method: "GET" })
 
     const videos = rows ?? [];
     const videoIds = videos.map((r: any) => r.id);
+
+    // 본인에게 숨겨진 영상은 목록에서 제외 (숨김은 학생에게만 설정됨)
+    const hiddenIds = new Set<string>();
+    if (videoIds.length > 0) {
+      const { data: excl } = await supabaseAdmin
+        .from("video_student_exclusions")
+        .select("video_id")
+        .eq("user_id", context.userId)
+        .in("video_id", videoIds)
+        .is("deleted_at", null);
+      for (const x of excl ?? []) hiddenIds.add((x as any).video_id as string);
+    }
+    const visibleVideos = videos.filter((r: any) => !hiddenIds.has(r.id as string));
+
     const progressMap = new Map<string, any>();
     if (videoIds.length > 0) {
       const { data: progress, error: pErr } = await supabaseAdmin
@@ -843,7 +857,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
         progressMap.set(p.video_id as string, p);
       }
     }
-    return videos.map((r: any) => ({
+    return visibleVideos.map((r: any) => ({
       ...r,
       progress: progressMap.get(r.id as string) ?? null,
     }));

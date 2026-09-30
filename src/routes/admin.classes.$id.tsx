@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare, RefreshCw,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, EyeOff, Eye,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
@@ -58,6 +58,7 @@ const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
+import { setVideoExclusion } from "@/lib/video-exclusions.functions";
 
 function fmtDur(sec: number) {
   const s = Math.max(0, Math.floor(sec || 0));
@@ -126,6 +127,17 @@ function StudentVideoDetail({
     onError: (e: any) => toast.error(e?.message ?? "수정에 실패했습니다."),
   });
 
+  const toggleHidden = useMutation({
+    mutationFn: (p: { videoId: string; hidden: boolean }) =>
+      setVideoExclusion({ data: { videoId: p.videoId, userId, hidden: p.hidden } }),
+    onSuccess: (_r, p) => {
+      toast.success(p.hidden ? "이 학생에게 영상을 숨겼습니다." : "다시 보이도록 했습니다.");
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-video-detail", userId] });
+      qcDetail.invalidateQueries({ queryKey: ["admin", "class", classId, "student-stats"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "처리에 실패했습니다."),
+  });
+
   const { data = [], isLoading } = useQuery({
     queryKey: ["admin", "class", classId, "student-video-detail", userId],
     queryFn: () => getStudentVideoDetail({ data: { classId, userId } }),
@@ -162,10 +174,15 @@ function StudentVideoDetail({
   })();
 
   const renderVideoRow = (v: any) => (
-        <div key={v.video_id} className="rounded-md bg-background">
+        <div key={v.video_id} className={`rounded-md bg-background ${v.is_hidden ? "opacity-55" : ""}`}>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
             <Film className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="min-w-0 flex-1 truncate text-sm">{v.title}</span>
+            {v.is_hidden && (
+              <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                숨김
+              </span>
+            )}
             <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
               <div
                 className={`h-full ${v.is_completed ? "bg-green-500" : "bg-primary"}`}
@@ -264,6 +281,17 @@ function StudentVideoDetail({
             <span className={`w-16 shrink-0 text-right text-xs ${v.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
               {v.is_completed ? "완료" : v.watched_ratio > 0 ? "시청 중" : "미시청"}
             </span>
+            {canEdit && (
+              <button
+                type="button"
+                disabled={toggleHidden.isPending}
+                onClick={() => toggleHidden.mutate({ videoId: v.video_id, hidden: !v.is_hidden })}
+                title={v.is_hidden ? "이 학생에게 다시 보이기" : "이 학생에게 숨기기"}
+                className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                {v.is_hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+              </button>
+            )}
             <span className="hidden w-36 shrink-0 text-right text-xs text-muted-foreground md:block">
               {v.updated_at ? new Date(v.updated_at).toLocaleString("ko-KR") : "-"}
             </span>
