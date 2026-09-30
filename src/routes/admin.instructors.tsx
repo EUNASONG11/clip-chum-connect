@@ -276,7 +276,7 @@ function InstructorsPage() {
                                 <span className="text-green-600">
                                   계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                 </span>
-                                {canManage && !r.must_change_password && (
+                                {canReset && !r.must_change_password && (
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -473,7 +473,7 @@ function InstructorsPage() {
                                   <span className="text-green-600">
                                     계정 있음{r.must_change_password ? " · 비번 변경 필요" : ""}
                                   </span>
-                                  {canManage && !r.must_change_password && (
+                                  {canReset && !r.must_change_password && (
                                     <Button
                                       size="sm"
                                       variant="ghost"
