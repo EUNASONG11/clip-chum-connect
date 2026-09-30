@@ -1,7 +1,7 @@
 import { createFileRoute, useBlocker } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,9 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, RefreshCw, Save, Settings2, RotateCcw } from "lucide-react";
+import { Trash2, RefreshCw, Save, Settings2, RotateCcw, EyeOff, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { listVideoClassStudents, listVideoExclusions, setVideoExclusion } from "@/lib/video-exclusions.functions";
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo, getVideoCreatorNames } from "@/lib/classes.functions";
 import { WeekPicker } from "@/components/admin/WeekPicker";
@@ -87,6 +89,77 @@ const statusMap: Record<string, string> = {
 };
 const statusLabel = (s: string) => statusMap[s] ?? s;
 
+
+// 영상을 숨길 학생 관리 (수강반 배정 학생 중 선택)
+function VideoExclusionManager({ videoId }: { videoId: string }) {
+  const qc = useQueryClient();
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ["admin", "video", videoId, "class-students"],
+    queryFn: () => listVideoClassStudents({ data: { videoId } }),
+  });
+  const { data: hiddenIds = [], isLoading: loadingHidden } = useQuery({
+    queryKey: ["admin", "video", videoId, "exclusions"],
+    queryFn: () => listVideoExclusions({ data: { videoId } }),
+  });
+
+  const toggle = useMutation({
+    mutationFn: (p: { userId: string; hidden: boolean }) =>
+      setVideoExclusion({ data: { videoId, userId: p.userId, hidden: p.hidden } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "video", videoId, "exclusions"] });
+    },
+    onError: (e: any) => toast.error(e?.message ?? "처리에 실패했습니다."),
+  });
+
+  const hiddenSet = new Set(hiddenIds as string[]);
+
+  return (
+    <div className="rounded-md border p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
+        <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+        학생별 숨기기
+        {hiddenSet.size > 0 && (
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+            {hiddenSet.size}명 숨김
+          </span>
+        )}
+      </div>
+      {loadingStudents || loadingHidden ? (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" /> 불러오는 중...
+        </p>
+      ) : (students as any[]).length === 0 ? (
+        <p className="text-xs text-muted-foreground">수강반에 배정된 학생이 없습니다.</p>
+      ) : (
+        <div className="max-h-48 space-y-1 overflow-y-auto">
+          {(students as any[]).map((s) => (
+            <label
+              key={s.user_id}
+              className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-muted"
+            >
+              <Checkbox
+                checked={hiddenSet.has(s.user_id)}
+                disabled={toggle.isPending}
+                onCheckedChange={(c) =>
+                  toggle.mutate({ userId: s.user_id, hidden: c === true })
+                }
+              />
+              <span className="truncate">
+                {s.name || "(이름 없음)"}
+                <span className="ml-1 text-xs text-muted-foreground">
+                  {[s.school, s.grade, s.branch].filter(Boolean).join(" · ")}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-muted-foreground">
+        체크한 학생에게는 이 영상이 목록에 보이지 않고, 학습 현황 계산에서도 제외됩니다.
+      </p>
+    </div>
+  );
+}
 
 function VideosPage() {
   const { isAdmin } = useAdminRole();
@@ -803,6 +876,7 @@ function VideosPage() {
                             </div>
                           </div>
                           </div>
+                          {r.class_id && <VideoExclusionManager videoId={r.id} />}
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
                             <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
