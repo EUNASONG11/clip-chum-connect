@@ -164,13 +164,24 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     }
     const targetIds = targetVideos.map((v) => v.id);
 
-    const { data: progress } =
+    const [{ data: progress }, { data: exclusions }] =
       targetIds.length > 0
-        ? await supabaseAdmin
-            .from("video_progress")
-            .select("video_id, user_id, is_completed")
-            .in("video_id", targetIds)
-        : { data: [] as any[] };
+        ? await Promise.all([
+            supabaseAdmin
+              .from("video_progress")
+              .select("video_id, user_id, is_completed")
+              .in("video_id", targetIds),
+            supabaseAdmin
+              .from("video_student_exclusions")
+              .select("video_id, user_id")
+              .in("video_id", targetIds)
+              .is("deleted_at", null),
+          ])
+        : [{ data: [] as any[] }, { data: [] as any[] }];
+    // 학생에게 숨겨진 영상은 그 학생의 진도 계산에서 제외
+    const hiddenSet = new Set(
+      ((exclusions ?? []) as any[]).map((x: any) => `${x.user_id}::${x.video_id}`),
+    );
     const completedSet = new Set(
       ((progress ?? []) as any[])
         .filter((p: any) => p.is_completed)
@@ -187,9 +198,10 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
       .map((uid) => {
         const e: any = extMap.get(uid) ?? {};
         const start = enrollStart.get(uid);
-        const eligible = selectedIds.size > 0
+        const eligible = (selectedIds.size > 0
           ? targetVideos
-          : targetVideos.filter((v) => !start || v.created_at >= start);
+          : targetVideos.filter((v) => !start || v.created_at >= start)
+        ).filter((v) => !hiddenSet.has(`${uid}::${v.id}`));
         if (eligible.length === 0) return null;
         const completedCount = eligible.reduce(
           (n, v) => (completedSet.has(`${uid}::${v.id}`) ? n + 1 : n),
