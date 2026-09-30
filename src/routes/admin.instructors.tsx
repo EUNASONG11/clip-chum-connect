@@ -60,7 +60,8 @@ function InstructorsPage() {
     queryFn: async () => (await listInstructorRoster()) as Row[],
     staleTime: 30_000,
   });
-  const { isAdmin: canManage } = useAdminRole();
+  const { isAdmin: canManage, isBranchAdmin } = useAdminRole();
+  const canReset = canManage || isBranchAdmin;
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
