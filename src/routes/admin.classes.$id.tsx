@@ -121,7 +121,12 @@ function VideoStudentStatsDialog({
     queryFn: () => getVideoStudentStats({ data: { classId, videoId: video!.id } }),
     enabled: !!video,
   });
-  const completed = data.filter((s: any) => s.is_completed).length;
+  const [nameQuery, setNameQuery] = useState("");
+  const q = nameQuery.replace(/\s+/g, "").toLowerCase();
+  const filtered = q
+    ? data.filter((s: any) => (s.name || "").replace(/\s+/g, "").toLowerCase().includes(q))
+    : data;
+  const completed = filtered.filter((s: any) => s.is_completed).length;
   return (
     <Dialog open={!!video} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
