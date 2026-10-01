@@ -393,6 +393,72 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     });
   });
 
+// 특정 영상을 학생별로 얼마나 시청했는지 (학습현황의 역방향 조회)
+export const getVideoStudentStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ classId: z.string().uuid(), videoId: z.string().uuid() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: students }, { data: progress }, { data: exclusions }] = await Promise.all([
+      supabaseAdmin
+        .from("class_students")
+        .select("user_id, created_at")
+        .eq("class_id", data.classId)
+        .is("deleted_at", null),
+      supabaseAdmin
+        .from("video_progress")
+        .select("user_id, watched_ratio, watched_seconds, seek_attempts, is_completed, completed_at, updated_at")
+        .eq("video_id", data.videoId),
+      supabaseAdmin
+        .from("video_student_exclusions")
+        .select("user_id")
+        .eq("video_id", data.videoId)
+        .is("deleted_at", null),
+    ]);
+
+    const ids = ((students ?? []) as any[]).map((s: any) => s.user_id as string);
+    if (ids.length === 0) return [];
+
+    const { data: externals } = await supabaseAdmin
+      .from("external_students")
+      .select("auth_user_id, name, school, grade, branch")
+      .in("auth_user_id", ids)
+      .eq("is_deleted", false);
+
+    const nameMap = new Map(
+      ((externals ?? []) as any[]).map((e: any) => [e.auth_user_id as string, e]),
+    );
+    const pMap = new Map(((progress ?? []) as any[]).map((p: any) => [p.user_id, p]));
+    const hiddenSet = new Set(((exclusions ?? []) as any[]).map((x: any) => x.user_id as string));
+
+    const list = ids.map((uid) => {
+      const e: any = nameMap.get(uid);
+      const p: any = pMap.get(uid);
+      return {
+        user_id: uid,
+        name: e?.name ?? "(이름 없음)",
+        school: e?.school ?? "",
+        grade: e?.grade ?? "",
+        branch: e?.branch ?? "",
+        is_hidden: hiddenSet.has(uid),
+        watched_ratio: p ? Math.min(1, Number(p.watched_ratio ?? 0)) : 0,
+        watched_seconds: Number(p?.watched_seconds ?? 0),
+        seek_attempts: Number(p?.seek_attempts ?? 0),
+        is_completed: !!p?.is_completed,
+        completed_at: p?.completed_at ?? null,
+        updated_at: p?.updated_at ?? null,
+      };
+    });
+    // 완료 → 시청 중 → 미시청 순, 같은 상태면 이름순
+    const rank = (r: any) => (r.is_completed ? 0 : r.watched_ratio > 0 ? 1 : 2);
+    list.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name, "ko"));
+    return list;
+  });
+
 // 강사/관리자가 특정 학생의 영상 시청률을 임의로 수정
 export const setStudentVideoProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

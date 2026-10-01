@@ -15,11 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   ArrowLeft, UserPlus, X, Film, BarChart3, Search, ArrowUp, ArrowDown,
   GraduationCap, FolderPlus, Folder, Pencil, Trash2, Loader2, History, MessageSquare, RefreshCw,
-  ChevronDown, ChevronUp, EyeOff, Eye,
+  ChevronDown, ChevronUp, EyeOff, Eye, Users,
 } from "lucide-react";
 import { SendMessageDialog } from "@/components/admin/SendMessageDialog";
 import { SmsLogPanel } from "@/components/admin/SmsLogPanel";
@@ -57,7 +63,7 @@ import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-sea
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { getClassStudentStats, getStudentVideoDetail, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
+import { getClassStudentStats, getStudentVideoDetail, getVideoStudentStats, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
 import { setVideoExclusion } from "@/lib/video-exclusions.functions";
 
 function fmtDur(sec: number) {
@@ -97,6 +103,80 @@ function SeekEventList({ classId, userId, videoId }: { classId: string; userId: 
         </li>
       ))}
     </ul>
+  );
+}
+
+// 특정 영상의 학생별 시청 현황 다이얼로그 (학습현황의 역방향)
+function VideoStudentStatsDialog({
+  classId,
+  video,
+  onClose,
+}: {
+  classId: string;
+  video: { id: string; title: string } | null;
+  onClose: () => void;
+}) {
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["admin", "class", classId, "video-student-stats", video?.id],
+    queryFn: () => getVideoStudentStats({ data: { classId, videoId: video!.id } }),
+    enabled: !!video,
+  });
+  const completed = data.filter((s: any) => s.is_completed).length;
+  return (
+    <Dialog open={!!video} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-base">
+            학생별 시청 현황 — <span className="font-normal">{video?.title}</span>
+          </DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" /> 불러오는 중...
+          </div>
+        ) : data.length === 0 ? (
+          <p className="py-6 text-sm text-muted-foreground">배정된 학생이 없습니다.</p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground">
+              전체 {data.length}명 · 완료 {completed}명 · 미완료 {data.length - completed}명
+            </p>
+            <ul className="mt-2 divide-y rounded-md border">
+              {data.map((s: any) => (
+                <li key={s.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate text-sm">
+                    {s.name}
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      {[s.branch, s.school, s.grade].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                  {s.is_hidden && (
+                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      숨김
+                    </span>
+                  )}
+                  <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
+                    <div
+                      className={`h-full ${s.is_completed ? "bg-green-500" : "bg-primary"}`}
+                      style={{ width: `${Math.min(100, Math.ceil(s.watched_ratio * 100))}%` }}
+                    />
+                  </div>
+                  <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+                    {s.is_completed ? 100 : Math.min(99, Math.ceil(s.watched_ratio * 100))}%
+                  </span>
+                  <span className="w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                    {fmtDur(s.watched_seconds)}
+                  </span>
+                  <span className={`w-14 shrink-0 text-right text-xs ${s.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
+                    {s.is_completed ? "완료" : s.watched_ratio > 0 ? "시청 중" : "미시청"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -651,6 +731,7 @@ function ClassDetailPage() {
   const [searchCohorts, setSearchCohorts] = useState<string[]>([]);
   const [listBranch, setListBranch] = useState<string>("__all__");
   const [assignedQuery, setAssignedQuery] = useState("");
+  const [statsVideo, setStatsVideo] = useState<{ id: string; title: string } | null>(null);
 
   const [results, setResults] = useState<
       { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
@@ -986,6 +1067,11 @@ function ClassDetailPage() {
         </div>
       </div>
 
+      <VideoStudentStatsDialog
+        classId={id}
+        video={statsVideo}
+        onClose={() => setStatsVideo(null)}
+      />
       <SendMessageDialog
         open={messageDialogOpen}
         onOpenChange={setMessageDialogOpen}
@@ -1546,6 +1632,15 @@ function ClassDetailPage() {
                           {v.is_published ? "공개" : "비공개"} · {v.status}
                         </p>
                       </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 shrink-0"
+                        title="학생별 시청 현황"
+                        onClick={() => setStatsVideo({ id: v.id, title: v.title })}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
                       {canWrite && (
                       <div className="flex shrink-0 items-center gap-1">
                         <Select
