@@ -78,13 +78,18 @@ function TrashPage() {
   const bulkPurgeMut = useMutation({
     mutationFn: async (ids: string[]) => {
       let failed = 0;
-      for (const id of ids) {
-        try {
-          await purge({ data: { entity: active as any, id } });
-        } catch {
-          failed += 1;
+      let idx = 0;
+      const worker = async () => {
+        while (idx < ids.length) {
+          const id = ids[idx++];
+          try {
+            await purge({ data: { entity: active as any, id } });
+          } catch {
+            failed += 1;
+          }
         }
-      }
+      };
+      await Promise.all(Array.from({ length: Math.min(6, ids.length) }, worker));
       return { total: ids.length, failed };
     },
     onSuccess: (r) => {
