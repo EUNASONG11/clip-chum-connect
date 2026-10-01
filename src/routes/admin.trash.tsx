@@ -39,11 +39,17 @@ function TrashPage() {
   const counts = (countsQ.data?.counts ?? {}) as Record<string, number>;
 
   const [active, setActive] = useState<string>("videos");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const listQ = useQuery({
     queryKey: ["trash", "list", active],
     queryFn: () => getList({ data: { entity: active as any, limit: 100, offset: 0 } }),
     enabled: !!active,
   });
+
+  const switchTab = (e: string) => {
+    setActive(e);
+    setSelected(new Set());
+  };
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["trash"] });
@@ -68,6 +74,52 @@ function TrashPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "삭제 실패"),
   });
+
+  const bulkPurgeMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      let failed = 0;
+      for (const id of ids) {
+        try {
+          await purge({ data: { entity: active as any, id } });
+        } catch {
+          failed += 1;
+        }
+      }
+      return { total: ids.length, failed };
+    },
+    onSuccess: (r) => {
+      if (r.failed > 0) {
+        toast.warning(`${r.total - r.failed}건 삭제, ${r.failed}건 실패했습니다.`);
+      } else {
+        toast.success(`${r.total}건이 영구 삭제되었습니다.`);
+      }
+      setSelected(new Set());
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "삭제 실패"),
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const rows = listQ.data?.rows ?? [];
+  const allIds = rows.map((row: any) =>
+    active === "class_students"
+      ? `${row.class_id}::${row.user_id}`
+      : active === "team_members"
+        ? `${row.team_id}::${row.user_id}`
+        : row.id,
+  );
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(allIds));
+  };
 
   const pkOf = (entity: string, row: any): string => {
     if (entity === "class_students") return `${row.class_id}::${row.user_id}`;
@@ -115,7 +167,7 @@ function TrashPage() {
             key={e}
             size="sm"
             variant={active === e ? "default" : "outline"}
-            onClick={() => setActive(e)}
+            onClick={() => switchTab(e)}
           >
             {labels[e] ?? e}
             <span className="ml-2 rounded-full bg-background/40 px-1.5 text-xs">
@@ -123,6 +175,44 @@ function TrashPage() {
             </span>
           </Button>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-primary"
+            checked={allSelected}
+            onChange={toggleAll}
+          />
+          전체 선택{selected.size > 0 ? ` (${selected.size}건 선택됨)` : ""}
+        </label>
+        {selected.size > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={bulkPurgeMut.isPending}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                선택 항목 영구 삭제 ({selected.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>선택한 {selected.size}건을 영구 삭제하시겠어요?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 되돌릴 수 없습니다. 데이터베이스에서 완전히 제거됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => bulkPurgeMut.mutate(Array.from(selected))}
+                >
+                  영구 삭제
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <Card className="p-4">
@@ -135,6 +225,12 @@ function TrashPage() {
             const id = pkOf(active, row);
             return (
               <li key={id} className="flex items-center justify-between gap-3 py-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 accent-primary"
+                  checked={selected.has(id)}
+                  onChange={() => toggleSelect(id)}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{displayOf(active, row)}</p>
                   <p className="text-xs text-muted-foreground">
