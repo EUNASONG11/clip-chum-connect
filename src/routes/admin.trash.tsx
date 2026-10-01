@@ -225,6 +225,12 @@ function TrashPage() {
             const id = pkOf(active, row);
             return (
               <li key={id} className="flex items-center justify-between gap-3 py-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 accent-primary"
+                  checked={selected.has(id)}
+                  onChange={() => toggleSelect(id)}
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{displayOf(active, row)}</p>
                   <p className="text-xs text-muted-foreground">
