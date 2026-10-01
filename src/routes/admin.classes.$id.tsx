@@ -1067,6 +1067,11 @@ function ClassDetailPage() {
         </div>
       </div>
 
+      <VideoStudentStatsDialog
+        classId={id}
+        video={statsVideo}
+        onClose={() => setStatsVideo(null)}
+      />
       <SendMessageDialog
         open={messageDialogOpen}
         onOpenChange={setMessageDialogOpen}
