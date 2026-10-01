@@ -143,14 +143,23 @@ function VideoStudentStatsDialog({
           <p className="py-6 text-sm text-muted-foreground">배정된 학생이 없습니다.</p>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground">
-              전체 {data.length}명 · 완료 {completed}명 · 미완료 {data.length - completed}명
+            <ClearableSearchInput
+              value={nameQuery}
+              onChange={setNameQuery}
+              placeholder="학생 이름 검색"
+              size="sm"
+              className="mt-2"
+            />
+            <p className="mt-2 text-xs text-muted-foreground">
+              {q ? `검색 결과 ${filtered.length}명 · ` : `전체 ${data.length}명 · `}완료 {completed}명 · 미완료 {filtered.length - completed}명
             </p>
-            {(() => {
+            {filtered.length === 0 ? (
+              <p className="py-6 text-sm text-muted-foreground">검색 결과가 없습니다.</p>
+            ) : (() => {
               // 교육원별 그룹화 (미지정은 맨 뒤)
               const order = ["상동", "청라", "송도"];
               const groups = new Map<string, any[]>();
-              for (const s of data) {
+              for (const s of filtered) {
                 const key = s.branch || "미지정";
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key)!.push(s);
