@@ -166,7 +166,7 @@ function VideoStudentStatsDialog({
                     return (
                       <section key={key}>
                         <p className="mb-1 flex items-center gap-2 text-xs font-medium">
-                          <span className="rounded bg-muted px-1.5 py-0.5">{key}</span>
+                          <BranchBadge branch={key} />
                           <span className="text-muted-foreground">
                             {rows.length}명 · 완료 {done}명 · 미완료 {rows.length - done}명
                           </span>
