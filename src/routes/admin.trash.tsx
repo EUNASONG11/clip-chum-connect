@@ -39,11 +39,17 @@ function TrashPage() {
   const counts = (countsQ.data?.counts ?? {}) as Record<string, number>;
 
   const [active, setActive] = useState<string>("videos");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const listQ = useQuery({
     queryKey: ["trash", "list", active],
     queryFn: () => getList({ data: { entity: active as any, limit: 100, offset: 0 } }),
     enabled: !!active,
   });
+
+  const switchTab = (e: string) => {
+    setActive(e);
+    setSelected(new Set());
+  };
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["trash"] });
@@ -68,6 +74,52 @@ function TrashPage() {
     },
     onError: (e: any) => toast.error(e?.message ?? "삭제 실패"),
   });
+
+  const bulkPurgeMut = useMutation({
+    mutationFn: async (ids: string[]) => {
+      let failed = 0;
+      for (const id of ids) {
+        try {
+          await purge({ data: { entity: active as any, id } });
+        } catch {
+          failed += 1;
+        }
+      }
+      return { total: ids.length, failed };
+    },
+    onSuccess: (r) => {
+      if (r.failed > 0) {
+        toast.warning(`${r.total - r.failed}건 삭제, ${r.failed}건 실패했습니다.`);
+      } else {
+        toast.success(`${r.total}건이 영구 삭제되었습니다.`);
+      }
+      setSelected(new Set());
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e?.message ?? "삭제 실패"),
+  });
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const rows = listQ.data?.rows ?? [];
+  const allIds = rows.map((row: any) =>
+    active === "class_students"
+      ? `${row.class_id}::${row.user_id}`
+      : active === "team_members"
+        ? `${row.team_id}::${row.user_id}`
+        : row.id,
+  );
+  const allSelected = allIds.length > 0 && allIds.every((id) => selected.has(id));
+  const toggleAll = () => {
+    setSelected(allSelected ? new Set() : new Set(allIds));
+  };
 
   const pkOf = (entity: string, row: any): string => {
     if (entity === "class_students") return `${row.class_id}::${row.user_id}`;
