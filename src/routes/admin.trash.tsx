@@ -167,7 +167,7 @@ function TrashPage() {
             key={e}
             size="sm"
             variant={active === e ? "default" : "outline"}
-            onClick={() => setActive(e)}
+            onClick={() => switchTab(e)}
           >
             {labels[e] ?? e}
             <span className="ml-2 rounded-full bg-background/40 px-1.5 text-xs">
@@ -175,6 +175,44 @@ function TrashPage() {
             </span>
           </Button>
         ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            className="h-4 w-4 accent-primary"
+            checked={allSelected}
+            onChange={toggleAll}
+          />
+          전체 선택{selected.size > 0 ? ` (${selected.size}건 선택됨)` : ""}
+        </label>
+        {selected.size > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="destructive" disabled={bulkPurgeMut.isPending}>
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                선택 항목 영구 삭제 ({selected.size})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>선택한 {selected.size}건을 영구 삭제하시겠어요?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  이 작업은 되돌릴 수 없습니다. 데이터베이스에서 완전히 제거됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => bulkPurgeMut.mutate(Array.from(selected))}
+                >
+                  영구 삭제
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       <Card className="p-4">
