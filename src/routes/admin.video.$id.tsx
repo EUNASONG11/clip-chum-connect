@@ -35,7 +35,7 @@ export const Route = createFileRoute("/admin/video/$id")({
     </div>
   ),
   errorComponent: ({ error }) => (
-    <div className="p-10 text-center text-destructive">{error.message}</div>
+    <div className="p-10 text-center text-destructive">{(error as Error).message}</div>
   ),
 });
 
