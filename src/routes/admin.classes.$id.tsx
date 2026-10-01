@@ -141,38 +141,74 @@ function VideoStudentStatsDialog({
             <p className="text-xs text-muted-foreground">
               전체 {data.length}명 · 완료 {completed}명 · 미완료 {data.length - completed}명
             </p>
-            <ul className="mt-2 divide-y rounded-md border">
-              {data.map((s: any) => (
-                <li key={s.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
-                  <span className="min-w-0 flex-1 truncate text-sm">
-                    {s.name}
-                    <span className="ml-2 text-xs text-muted-foreground">
-                      {[s.branch, s.school, s.grade].filter(Boolean).join(" · ")}
-                    </span>
-                  </span>
-                  {s.is_hidden && (
-                    <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      숨김
-                    </span>
-                  )}
-                  <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
-                    <div
-                      className={`h-full ${s.is_completed ? "bg-green-500" : "bg-primary"}`}
-                      style={{ width: `${Math.min(100, Math.ceil(s.watched_ratio * 100))}%` }}
-                    />
-                  </div>
-                  <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-                    {s.is_completed ? 100 : Math.min(99, Math.ceil(s.watched_ratio * 100))}%
-                  </span>
-                  <span className="w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
-                    {fmtDur(s.watched_seconds)}
-                  </span>
-                  <span className={`w-14 shrink-0 text-right text-xs ${s.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
-                    {s.is_completed ? "완료" : s.watched_ratio > 0 ? "시청 중" : "미시청"}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {(() => {
+              // 교육원별 그룹화 (미지정은 맨 뒤)
+              const order = ["상동", "청라", "송도"];
+              const groups = new Map<string, any[]>();
+              for (const s of data) {
+                const key = s.branch || "미지정";
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key)!.push(s);
+              }
+              const keys = [...groups.keys()].sort((a, b) => {
+                const ia = order.indexOf(a);
+                const ib = order.indexOf(b);
+                if (ia === -1 && ib === -1) return a.localeCompare(b, "ko");
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+              });
+              return (
+                <div className="mt-2 space-y-4">
+                  {keys.map((key) => {
+                    const rows = groups.get(key)!;
+                    const done = rows.filter((s: any) => s.is_completed).length;
+                    return (
+                      <section key={key}>
+                        <p className="mb-1 flex items-center gap-2 text-xs font-medium">
+                          <span className="rounded bg-muted px-1.5 py-0.5">{key}</span>
+                          <span className="text-muted-foreground">
+                            {rows.length}명 · 완료 {done}명 · 미완료 {rows.length - done}명
+                          </span>
+                        </p>
+                        <ul className="divide-y rounded-md border">
+                          {rows.map((s: any) => (
+                            <li key={s.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
+                              <span className="min-w-0 flex-1 truncate text-sm">
+                                {s.name}
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  {[s.school, s.grade].filter(Boolean).join(" · ")}
+                                </span>
+                              </span>
+                              {s.is_hidden && (
+                                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                  숨김
+                                </span>
+                              )}
+                              <div className="hidden h-2 w-28 overflow-hidden rounded-full bg-muted sm:block">
+                                <div
+                                  className={`h-full ${s.is_completed ? "bg-green-500" : "bg-primary"}`}
+                                  style={{ width: `${Math.min(100, Math.ceil(s.watched_ratio * 100))}%` }}
+                                />
+                              </div>
+                              <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+                                {s.is_completed ? 100 : Math.min(99, Math.ceil(s.watched_ratio * 100))}%
+                              </span>
+                              <span className="w-20 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                                {fmtDur(s.watched_seconds)}
+                              </span>
+                              <span className={`w-14 shrink-0 text-right text-xs ${s.is_completed ? "text-green-600" : "text-muted-foreground"}`}>
+                                {s.is_completed ? "완료" : s.watched_ratio > 0 ? "시청 중" : "미시청"}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </>
         )}
       </DialogContent>
