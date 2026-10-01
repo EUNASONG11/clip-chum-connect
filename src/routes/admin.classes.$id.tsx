@@ -177,7 +177,7 @@ function VideoStudentStatsDialog({
                               <span className="min-w-0 flex-1 truncate text-sm">
                                 {s.name}
                                 <span className="ml-2 text-xs text-muted-foreground">
-                                  {[s.school, s.grade].filter(Boolean).join(" · ")}
+                                  {s.school}
                                 </span>
                               </span>
                               {s.is_hidden && (
