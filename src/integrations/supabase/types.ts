@@ -227,6 +227,7 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           deleted_by: string | null
+          progress_start_at: string | null
           user_id: string
         }
         Insert: {
@@ -234,6 +235,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          progress_start_at?: string | null
           user_id: string
         }
         Update: {
@@ -241,6 +243,7 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           deleted_by?: string | null
+          progress_start_at?: string | null
           user_id?: string
         }
         Relationships: [
