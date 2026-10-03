@@ -723,14 +723,29 @@ export const listStudentUsers = createServerFn({ method: "GET" })
     const from = (data.page - 1) * data.pageSize;
     const pagedRows = sortedRows.slice(from, from + data.pageSize);
 
-    const ids = (rows ?? []).map((r: any) => r.auth_user_id as string);
-    const [{ data: csRows }, { data: roleRows }] = await Promise.all([
-      ids.length
-        ? supabaseAdmin.from("class_students").select("user_id").in("user_id", ids).is("deleted_at", null)
-        : Promise.resolve({ data: [] as any[] }),
-      ids.length
-        ? supabaseAdmin.from("user_roles").select("user_id, role").in("user_id", ids).is("deleted_at", null)
-        : Promise.resolve({ data: [] as any[] }),
+    // 학생 수가 많으면 .in(user_id, ...) URL이 너무 길어져 조용히 실패하므로
+    // 전체를 페이징 조회해 로컬에서 매칭한다.
+    const fetchAll = async <T,>(table: "class_students" | "user_roles", columns: string): Promise<T[]> => {
+      const out: T[] = [];
+      const size = 1000;
+      let from = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data: chunk, error: e } = await supabaseAdmin
+          .from(table)
+          .select(columns)
+          .is("deleted_at", null)
+          .range(from, from + size - 1);
+        if (e) throw new Error(e.message);
+        out.push(...((chunk ?? []) as T[]));
+        if ((chunk ?? []).length < size) break;
+        from += size;
+      }
+      return out;
+    };
+    const [csRows, roleRows] = await Promise.all([
+      fetchAll<{ user_id: string }>("class_students", "user_id"),
+      fetchAll<{ user_id: string; role: string }>("user_roles", "user_id, role"),
     ]);
     const classCount = new Map<string, number>();
     (csRows ?? []).forEach((r: any) => classCount.set(r.user_id, (classCount.get(r.user_id) ?? 0) + 1));
