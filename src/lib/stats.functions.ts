@@ -313,7 +313,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: videos }, { data: history }, { data: folders }] = await Promise.all([
+    const [{ data: videos }, { data: history }, { data: folders }, { data: enrollRow }] = await Promise.all([
       supabaseAdmin
         .from("videos")
         .select("id, title, duration, created_at, sort_order, folder_id")
@@ -332,6 +332,13 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         .eq("class_id", data.classId)
         .is("deleted_at", null)
         .order("sort_order", { ascending: true }),
+      supabaseAdmin
+        .from("class_students")
+        .select("progress_start_at")
+        .eq("class_id", data.classId)
+        .eq("user_id", data.userId)
+        .is("deleted_at", null)
+        .maybeSingle(),
     ]);
 
     const folderById = new Map<string, any>(((folders ?? []) as any[]).map((f: any) => [f.id, f]));
@@ -347,7 +354,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
       return parts.length > 0 ? parts.join(" / ") : null;
     };
 
-    const start = ((history ?? []) as any[]).reduce(
+    const start = ((enrollRow as any)?.progress_start_at as string | null) ?? ((history ?? []) as any[]).reduce(
       (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
       null as string | null,
     );
@@ -550,3 +557,41 @@ export const listStudentSeekEvents = createServerFn({ method: "GET" })
     return (rows ?? []) as any[];
   });
 
+
+
+// 학생별 "학습 현황 시작 영상" 설정 (videoId=null이면 배정 시점 기준으로 되돌림)
+export const setStudentProgressStart = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        userIds: z.array(z.string().uuid()).min(1).max(1000),
+        videoId: z.string().uuid().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    await assertOwnClassOrAdmin(context, data.classId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let startAt: string | null = null;
+    if (data.videoId) {
+      const { data: v, error } = await supabaseAdmin
+        .from("videos")
+        .select("created_at, class_id")
+        .eq("id", data.videoId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!v || v.class_id !== data.classId) throw new Error("이 수강반의 영상이 아닙니다.");
+      startAt = v.created_at;
+    }
+    const { error } = await supabaseAdmin
+      .from("class_students")
+      .update({ progress_start_at: startAt })
+      .eq("class_id", data.classId)
+      .in("user_id", data.userIds)
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    return { ok: true, count: data.userIds.length };
+  });
