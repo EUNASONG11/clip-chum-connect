@@ -1455,7 +1455,7 @@ function ClassDetailPage() {
                     {s.progress_start_at && (() => {
                       const sv = (videos as any[]).find((v) => v.created_at === s.progress_start_at);
                       return (
-                        <p className="truncate text-[11px] text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")}</p>
+                        <p className="break-words text-[11px] leading-snug text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")}</p>
                       );
                     })()}
                   </div>
