@@ -1429,7 +1429,7 @@ function ClassDetailPage() {
 
                 <div
                   key={s.user_id}
-                  className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3.5 py-2.5"
+                  className="flex items-center gap-1.5 rounded-md border bg-green-500/15 px-2 py-1.5"
                 >
                   {canWrite && (
                     <Checkbox
