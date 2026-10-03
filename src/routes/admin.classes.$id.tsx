@@ -1429,7 +1429,7 @@ function ClassDetailPage() {
 
                 <div
                   key={s.user_id}
-                  className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3 py-2"
+                  className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3.5 py-2.5"
                 >
                   {canWrite && (
                     <Checkbox
@@ -1442,15 +1442,15 @@ function ClassDetailPage() {
                     />
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-                      <span className="truncate">{s.name || s.email}</span>
+                    <p className="flex flex-wrap items-center gap-x-1.5 text-sm font-medium leading-snug">
+                      <span className="break-words">{s.name || s.email}</span>
                       <BranchBadge branch={s.branch} />
                     </p>
                     {s.phone && (
-                      <p className="truncate text-xs text-muted-foreground">{s.phone}</p>
+                      <p className="break-all text-xs text-muted-foreground">{s.phone}</p>
                     )}
                     {s.parent_phone && (
-                      <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
+                      <p className="break-all text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
                     {s.progress_start_at && (() => {
                       const sv = (videos as any[]).find((v) => v.created_at === s.progress_start_at);
