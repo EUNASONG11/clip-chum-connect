@@ -801,10 +801,10 @@ export const getStudentLearningDetail = createServerFn({ method: "GET" })
 
     const classIds = rows.map((r: any) => r.class_id as string);
 
-    const [{ data: videos, error: vErr }, { data: progress, error: pErr }] = await Promise.all([
+    const [{ data: videos, error: vErr }, { data: progress, error: pErr }, { data: folders, error: fErr }] = await Promise.all([
       supabaseAdmin
         .from("videos")
-        .select("id, title, class_id, duration, created_at, week_label")
+        .select("id, title, class_id, duration, created_at, week_label, folder_id")
         .in("class_id", classIds)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
@@ -812,9 +812,41 @@ export const getStudentLearningDetail = createServerFn({ method: "GET" })
         .from("video_progress")
         .select("video_id, watched_ratio, is_completed, completed_at, watched_seconds, seek_attempts, updated_at")
         .eq("user_id", data.userId),
+      supabaseAdmin
+        .from("class_folders")
+        .select("id, class_id, name, parent_folder_id, sort_order, is_required")
+        .in("class_id", classIds)
+        .is("deleted_at", null)
+        .order("sort_order", { ascending: true }),
     ]);
     if (vErr) throw new Error(vErr.message);
     if (pErr) throw new Error(pErr.message);
+    if (fErr) throw new Error(fErr.message);
+
+    const foldersByClass = new Map<string, any[]>();
+    (folders ?? []).forEach((f: any) => {
+      const arr = foldersByClass.get(f.class_id) ?? [];
+      arr.push(f);
+      foldersByClass.set(f.class_id, arr);
+    });
+    const folderPathFor = (classId: string, fid: string | null) => {
+      if (!fid) return null;
+      const list = foldersByClass.get(classId) ?? [];
+      const byId = new Map<string, any>(list.map((f: any) => [f.id, f]));
+      const parts: string[] = [];
+      let cur: any = byId.get(fid);
+      let guard = 0;
+      while (cur && guard++ < 20) {
+        parts.unshift(cur.name);
+        cur = cur.parent_folder_id ? byId.get(cur.parent_folder_id) : null;
+      }
+      return parts.length > 0 ? parts.join(" / ") : null;
+    };
+    const folderMetaFor = (classId: string, fid: string | null) => {
+      if (!fid) return null;
+      const list = foldersByClass.get(classId) ?? [];
+      return list.find((f: any) => f.id === fid) ?? null;
+    };
 
     const pMap = new Map<string, any>();
     (progress ?? []).forEach((p: any) => pMap.set(p.video_id, p));
@@ -822,15 +854,21 @@ export const getStudentLearningDetail = createServerFn({ method: "GET" })
     return {
       classes: rows
         .map((r: any) => {
-          const vids = (videos ?? []).filter((v: any) => v.class_id === r.class_id);
+          const classId = r.class_id as string;
+          const vids = (videos ?? []).filter((v: any) => v.class_id === classId);
           const items = vids.map((v: any) => {
             const p = pMap.get(v.id);
+            const meta = folderMetaFor(classId, v.folder_id ?? null);
             return {
               videoId: v.id as string,
               title: (v.title ?? "") as string,
               weekLabel: (v.week_label ?? null) as string | null,
               duration: (v.duration ?? null) as number | null,
               createdAt: (v.created_at ?? "") as string,
+              folderId: (v.folder_id ?? null) as string | null,
+              folderName: folderPathFor(classId, v.folder_id ?? null),
+              folderSort: meta ? Number(meta.sort_order ?? 9999) : 9999,
+              folderIsRequired: meta ? !!meta.is_required : null,
               watchedRatio: Number(p?.watched_ratio ?? 0),
               watchedSeconds: Number(p?.watched_seconds ?? 0),
               seekAttempts: Number(p?.seek_attempts ?? 0),
@@ -843,7 +881,7 @@ export const getStudentLearningDetail = createServerFn({ method: "GET" })
           const avgRatio =
             items.length > 0 ? items.reduce((s, i) => s + i.watchedRatio, 0) / items.length : 0;
           return {
-            classId: r.class_id as string,
+            classId,
             className: (r.classes?.name ?? "") as string,
             branch: (r.classes?.branch ?? null) as string | null,
             enrolledAt: (r.created_at ?? "") as string,
