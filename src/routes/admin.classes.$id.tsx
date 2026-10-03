@@ -63,7 +63,7 @@ import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-sea
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { getClassStudentStats, getStudentVideoDetail, getVideoStudentStats, listStudentSeekEvents, setStudentVideoProgress } from "@/lib/stats.functions";
+import { getClassStudentStats, getStudentVideoDetail, getVideoStudentStats, listStudentSeekEvents, setStudentVideoProgress, setStudentProgressStart } from "@/lib/stats.functions";
 import { setVideoExclusion } from "@/lib/video-exclusions.functions";
 
 function fmtDur(sec: number) {
@@ -787,6 +787,24 @@ function ClassDetailPage() {
       { user_id: string; name: string; phone: string; parent_phone: string; school: string; grade: string; branch: string; cohort?: string | null }[]
   >([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [startSel, setStartSel] = useState<Set<string>>(new Set());
+  const [startVideoId, setStartVideoId] = useState<string>("");
+  const [startSaving, setStartSaving] = useState(false);
+  const applyProgressStart = async (videoId: string | null) => {
+    if (startSel.size === 0) return;
+    setStartSaving(true);
+    try {
+      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], videoId } });
+      toast.success(videoId ? `${startSel.size}명의 학습 현황 시작 영상을 설정했습니다.` : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`);
+      setStartSel(new Set());
+      qc.invalidateQueries({ queryKey: ["admin", "class", id] });
+      qc.invalidateQueries();
+    } catch (e: any) {
+      toast.error(e?.message ?? "설정에 실패했습니다.");
+    } finally {
+      setStartSaving(false);
+    }
+  };
   const [searching, setSearching] = useState(false);
   const { data: branchList = [] } = useQuery({
     queryKey: ["student-branches"],
@@ -1363,6 +1381,44 @@ function ClassDetailPage() {
               className="w-full"
               showIcon={false}
             />
+          {canWrite && listed.length > 0 && (() => {
+            const sortedVideos = [...(videos as any[])].sort((a, b) => String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")));
+            const allSel = listed.every((s: any) => startSel.has(s.user_id));
+            return (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
+                <span className="text-xs font-semibold">학습 현황 시작 영상</span>
+                <label className="flex items-center gap-1 text-xs">
+                  <Checkbox
+                    checked={allSel}
+                    onCheckedChange={(c) => {
+                      const next = new Set(startSel);
+                      listed.forEach((s: any) => (c ? next.add(s.user_id) : next.delete(s.user_id)));
+                      setStartSel(next);
+                    }}
+                  />
+                  전체 선택 ({startSel.size}명 선택)
+                </label>
+                <Select value={startVideoId} onValueChange={setStartVideoId}>
+                  <SelectTrigger className="h-8 w-full sm:w-72">
+                    <SelectValue placeholder="시작할 영상 선택 (이 영상부터 포함)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortedVideos.map((v: any) => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {v.title}{v.week_label ? ` · ${v.week_label}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" disabled={startSaving || startSel.size === 0 || !startVideoId} onClick={() => applyProgressStart(startVideoId)}>
+                  적용
+                </Button>
+                <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart(null)}>
+                  배정 시점으로 되돌리기
+                </Button>
+              </div>
+            );
+          })()}
           {students.length === 0 ? (
             <p className="text-sm text-muted-foreground">아직 배정된 학생이 없습니다.</p>
           ) : listed.length === 0 ? (
@@ -1375,6 +1431,16 @@ function ClassDetailPage() {
                   key={s.user_id}
                   className="flex items-center gap-2 rounded-md border bg-green-500/15 px-3 py-2"
                 >
+                  {canWrite && (
+                    <Checkbox
+                      checked={startSel.has(s.user_id)}
+                      onCheckedChange={(c) => {
+                        const next = new Set(startSel);
+                        c ? next.add(s.user_id) : next.delete(s.user_id);
+                        setStartSel(next);
+                      }}
+                    />
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center gap-1.5 truncate text-sm font-medium">
                       <span className="truncate">{s.name || s.email}</span>
@@ -1386,6 +1452,12 @@ function ClassDetailPage() {
                     {s.parent_phone && (
                       <p className="truncate text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
+                    {s.progress_start_at && (() => {
+                      const sv = (videos as any[]).find((v) => v.created_at === s.progress_start_at);
+                      return (
+                        <p className="truncate text-[11px] text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")}</p>
+                      );
+                    })()}
                   </div>
                   {canWrite && (
                     <Button
