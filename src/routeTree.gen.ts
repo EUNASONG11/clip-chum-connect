@@ -9,48 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as ChangePasswordRouteImport } from './routes/change-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as NoticeRouteImport } from './routes/notice'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
-import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
-import { Route as AdminNoticesRouteImport } from './routes/admin.notices'
-import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
-import { Route as AdminTrashRouteImport } from './routes/admin.trash'
-import { Route as AdminUploadRouteImport } from './routes/admin.upload'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminVideosRouteImport } from './routes/admin.videos'
-import { Route as ClassIdRouteImport } from './routes/class.$id'
+import { Route as MypageRouteImport } from './routes/mypage'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ChangePasswordRouteImport } from './routes/change-password'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as NoticeIndexRouteImport } from './routes/notice.index'
-import { Route as NoticeNoticeIdRouteImport } from './routes/notice.$noticeId'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as VideoIdRouteImport } from './routes/video.$id'
+import { Route as NoticeNoticeIdRouteImport } from './routes/notice.$noticeId'
+import { Route as ClassIdRouteImport } from './routes/class.$id'
+import { Route as AdminVideosRouteImport } from './routes/admin.videos'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminUploadRouteImport } from './routes/admin.upload'
+import { Route as AdminTrashRouteImport } from './routes/admin.trash'
+import { Route as AdminTeamsRouteImport } from './routes/admin.teams'
+import { Route as AdminNoticesRouteImport } from './routes/admin.notices'
+import { Route as AdminInstructorsRouteImport } from './routes/admin.instructors'
+import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as AdminClassesIndexRouteImport } from './routes/admin.classes.index'
-import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as AdminVideoIdRouteImport } from './routes/admin.video.$id'
+import { Route as AdminClassesIdRouteImport } from './routes/admin.classes.$id'
 import { Route as ApiPublicWebhooksStudentsSyncRouteImport } from './routes/api/public/webhooks/students-sync'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ChangePasswordRoute = ChangePasswordRouteImport.update({
-  id: '/change-password',
-  path: '/change-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const NoticeRoute = NoticeRouteImport.update({
+  id: '/notice',
+  path: '/notice',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MypageRoute = MypageRouteImport.update({
@@ -58,59 +43,24 @@ const MypageRoute = MypageRouteImport.update({
   path: '/mypage',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NoticeRoute = NoticeRouteImport.update({
-  id: '/notice',
-  path: '/notice',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
+const ChangePasswordRoute = ChangePasswordRouteImport.update({
+  id: '/change-password',
+  path: '/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDashboardRoute = AdminDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminInstructorsRoute = AdminInstructorsRouteImport.update({
-  id: '/instructors',
-  path: '/instructors',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminNoticesRoute = AdminNoticesRouteImport.update({
-  id: '/notices',
-  path: '/notices',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTeamsRoute = AdminTeamsRouteImport.update({
-  id: '/teams',
-  path: '/teams',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTrashRoute = AdminTrashRouteImport.update({
-  id: '/trash',
-  path: '/trash',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUploadRoute = AdminUploadRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminVideosRoute = AdminVideosRouteImport.update({
-  id: '/videos',
-  path: '/videos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ClassIdRoute = ClassIdRouteImport.update({
-  id: '/class/$id',
-  path: '/class/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NoticeIndexRoute = NoticeIndexRouteImport.update({
@@ -118,29 +68,79 @@ const NoticeIndexRoute = NoticeIndexRouteImport.update({
   path: '/',
   getParentRoute: () => NoticeRoute,
 } as any)
-const NoticeNoticeIdRoute = NoticeNoticeIdRouteImport.update({
-  id: '/$noticeId',
-  path: '/$noticeId',
-  getParentRoute: () => NoticeRoute,
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const VideoIdRoute = VideoIdRouteImport.update({
   id: '/video/$id',
   path: '/video/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NoticeNoticeIdRoute = NoticeNoticeIdRouteImport.update({
+  id: '/$noticeId',
+  path: '/$noticeId',
+  getParentRoute: () => NoticeRoute,
+} as any)
+const ClassIdRoute = ClassIdRouteImport.update({
+  id: '/class/$id',
+  path: '/class/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminVideosRoute = AdminVideosRouteImport.update({
+  id: '/videos',
+  path: '/videos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUploadRoute = AdminUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTrashRoute = AdminTrashRouteImport.update({
+  id: '/trash',
+  path: '/trash',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminTeamsRoute = AdminTeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNoticesRoute = AdminNoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInstructorsRoute = AdminInstructorsRouteImport.update({
+  id: '/instructors',
+  path: '/instructors',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDashboardRoute = AdminDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminClassesIndexRoute = AdminClassesIndexRouteImport.update({
   id: '/classes/',
   path: '/classes/',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminClassesIdRoute = AdminClassesIdRouteImport.update({
-  id: '/classes/$id',
-  path: '/classes/$id',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminVideoIdRoute = AdminVideoIdRouteImport.update({
   id: '/video/$id',
   path: '/video/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminClassesIdRoute = AdminClassesIdRouteImport.update({
+  id: '/classes/$id',
+  path: '/classes/$id',
   getParentRoute: () => AdminRoute,
 } as any)
 const ApiPublicWebhooksStudentsSyncRoute =
@@ -314,32 +314,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/change-password': {
-      id: '/change-password'
-      path: '/change-password'
-      fullPath: '/change-password'
-      preLoaderRoute: typeof ChangePasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/notice': {
+      id: '/notice'
+      path: '/notice'
+      fullPath: '/notice'
+      preLoaderRoute: typeof NoticeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mypage': {
@@ -349,81 +328,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MypageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/notice': {
-      id: '/notice'
-      path: '/notice'
-      fullPath: '/notice'
-      preLoaderRoute: typeof NoticeRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
+    '/change-password': {
+      id: '/change-password'
+      path: '/change-password'
+      fullPath: '/change-password'
+      preLoaderRoute: typeof ChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
       path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/dashboard': {
-      id: '/admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AdminDashboardRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/instructors': {
-      id: '/admin/instructors'
-      path: '/instructors'
-      fullPath: '/admin/instructors'
-      preLoaderRoute: typeof AdminInstructorsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/notices': {
-      id: '/admin/notices'
-      path: '/notices'
-      fullPath: '/admin/notices'
-      preLoaderRoute: typeof AdminNoticesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/teams': {
-      id: '/admin/teams'
-      path: '/teams'
-      fullPath: '/admin/teams'
-      preLoaderRoute: typeof AdminTeamsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/trash': {
-      id: '/admin/trash'
-      path: '/trash'
-      fullPath: '/admin/trash'
-      preLoaderRoute: typeof AdminTrashRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/upload': {
-      id: '/admin/upload'
-      path: '/upload'
-      fullPath: '/admin/upload'
-      preLoaderRoute: typeof AdminUploadRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/videos': {
-      id: '/admin/videos'
-      path: '/videos'
-      fullPath: '/admin/videos'
-      preLoaderRoute: typeof AdminVideosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/class/$id': {
-      id: '/class/$id'
-      path: '/class/$id'
-      fullPath: '/class/$id'
-      preLoaderRoute: typeof ClassIdRouteImport
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notice/': {
@@ -433,12 +363,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NoticeIndexRouteImport
       parentRoute: typeof NoticeRoute
     }
-    '/notice/$noticeId': {
-      id: '/notice/$noticeId'
-      path: '/$noticeId'
-      fullPath: '/notice/$noticeId'
-      preLoaderRoute: typeof NoticeNoticeIdRouteImport
-      parentRoute: typeof NoticeRoute
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/video/$id': {
       id: '/video/$id'
@@ -447,6 +377,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VideoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notice/$noticeId': {
+      id: '/notice/$noticeId'
+      path: '/$noticeId'
+      fullPath: '/notice/$noticeId'
+      preLoaderRoute: typeof NoticeNoticeIdRouteImport
+      parentRoute: typeof NoticeRoute
+    }
+    '/class/$id': {
+      id: '/class/$id'
+      path: '/class/$id'
+      fullPath: '/class/$id'
+      preLoaderRoute: typeof ClassIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/videos': {
+      id: '/admin/videos'
+      path: '/videos'
+      fullPath: '/admin/videos'
+      preLoaderRoute: typeof AdminVideosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/upload': {
+      id: '/admin/upload'
+      path: '/upload'
+      fullPath: '/admin/upload'
+      preLoaderRoute: typeof AdminUploadRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/trash': {
+      id: '/admin/trash'
+      path: '/trash'
+      fullPath: '/admin/trash'
+      preLoaderRoute: typeof AdminTrashRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/teams': {
+      id: '/admin/teams'
+      path: '/teams'
+      fullPath: '/admin/teams'
+      preLoaderRoute: typeof AdminTeamsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/notices': {
+      id: '/admin/notices'
+      path: '/notices'
+      fullPath: '/admin/notices'
+      preLoaderRoute: typeof AdminNoticesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/instructors': {
+      id: '/admin/instructors'
+      path: '/instructors'
+      fullPath: '/admin/instructors'
+      preLoaderRoute: typeof AdminInstructorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/dashboard': {
+      id: '/admin/dashboard'
+      path: '/dashboard'
+      fullPath: '/admin/dashboard'
+      preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/classes/': {
       id: '/admin/classes/'
       path: '/classes'
@@ -454,18 +454,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminClassesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/classes/$id': {
-      id: '/admin/classes/$id'
-      path: '/classes/$id'
-      fullPath: '/admin/classes/$id'
-      preLoaderRoute: typeof AdminClassesIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/video/$id': {
       id: '/admin/video/$id'
       path: '/video/$id'
       fullPath: '/admin/video/$id'
       preLoaderRoute: typeof AdminVideoIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/classes/$id': {
+      id: '/admin/classes/$id'
+      path: '/classes/$id'
+      fullPath: '/admin/classes/$id'
+      preLoaderRoute: typeof AdminClassesIdRouteImport
       parentRoute: typeof AdminRoute
     }
     '/api/public/webhooks/students-sync': {
