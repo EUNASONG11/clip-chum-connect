@@ -59,7 +59,7 @@ export function StudentLearningDetail({ userId }: { userId: string }) {
             name: v.folderName ?? null,
             sort: v.folderSort ?? 9999,
             required: v.folderIsRequired ?? null,
-            videos: [],
+            videos: [] as any[],
           };
           g.videos.push(v);
           groupMap.set(key, g);
