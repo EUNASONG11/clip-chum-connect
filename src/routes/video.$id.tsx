@@ -367,13 +367,24 @@ function VideoPage() {
       .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);
 
-  // 조회되지 않는 경우: 진짜 없는 영상인지, 비공개라 숨겨진 영상인지 구분
-  const [unavailableReason, setUnavailableReason] = useState<"private" | "missing" | null>(null);
+  // 조회되지 않는 경우: 없는 영상 / 비공개 / 배정 이전이라 잠긴 영상 구분
+  const [unavailableReason, setUnavailableReason] = useState<"private" | "missing" | "locked" | null>(null);
   useEffect(() => {
     setUnavailableReason(null);
     if (video !== null) return;
     getVideoAvailability({ data: { videoId: id } })
-      .then((r) => setUnavailableReason(r.exists && !r.published ? "private" : "missing"))
+      .then(async (r) => {
+        if (r.exists && !r.published) return setUnavailableReason("private");
+        if (r.exists) {
+          try {
+            const lock = await getVideoLockStatus({ data: { videoId: id } });
+            if (lock.locked) return setUnavailableReason("locked");
+          } catch {
+            /* 로그인 전 등 확인 불가 시 기본 처리 */
+          }
+        }
+        setUnavailableReason("missing");
+      })
       .catch(() => setUnavailableReason("missing"));
   }, [video, id]);
 
