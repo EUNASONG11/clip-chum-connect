@@ -78,12 +78,14 @@ export function NaesinClassNamePicker({
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60_000,
   });
-  const schools: string[] = useMemo(() => {
+  const allSchools: string[] = useMemo(() => {
     const by = (opts as any)?.schoolsByBranch ?? {};
-    const list: string[] = branch ? (by[branch] ?? Object.entries(by).find(([k]) => k.includes(branch))?.[1] ?? []) : [];
+    return branch ? (by[branch] ?? Object.entries(by).find(([k]) => k.includes(branch))?.[1] ?? []) : [];
+  }, [opts, branch]);
+  const schools: string[] = useMemo(() => {
     const q = schoolQuery.replace(/\s+/g, "");
-    return q ? list.filter((s) => s.replace(/\s+/g, "").includes(q)) : list;
-  }, [opts, branch, schoolQuery]);
+    return q ? allSchools.filter((s) => s.replace(/\s+/g, "").includes(q)) : allSchools;
+  }, [allSchools, schoolQuery]);
 
   const name = buildNaesinClassName({ branch, cohort, target });
   useEffect(() => {
