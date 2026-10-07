@@ -556,6 +556,7 @@ function ClassDetailPage() {
   const [settingsAlways, setSettingsAlways] = useState(false);
   const [settingsCategory, setSettingsCategory] = useState("__none__");
   const [settingsBranch, setSettingsBranch] = useState("__all_branches__");
+  const [settingsClassType, setSettingsClassType] = useState("__none__");
   const [savingSettings, setSavingSettings] = useState(false);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [statsFilter, setStatsFilter] = useState<"all" | "completed" | "incomplete">("all");
@@ -604,6 +605,7 @@ function ClassDetailPage() {
       setSettingsTo(clsAny.active_to ?? "");
       setSettingsCategory(clsAny.category_id ?? "__none__");
       setSettingsBranch(clsAny.branch ?? "__all_branches__");
+      setSettingsClassType(clsAny.class_type ?? "__none__");
       setSettingsName(clsAny.name ?? "");
       setSettingsDesc(clsAny.description ?? "");
     }
@@ -612,6 +614,7 @@ function ClassDetailPage() {
     clsAny?.active_to,
     clsAny?.category_id,
     clsAny?.branch,
+    clsAny?.class_type,
     clsAny?.name,
     clsAny?.description,
   ]);
@@ -624,6 +627,7 @@ function ClassDetailPage() {
     if (settingsDesc !== (clsAny.description ?? "")) return true;
     if (settingsCategory !== (clsAny.category_id ?? "__none__")) return true;
     if (settingsBranch !== (clsAny.branch ?? "__all_branches__")) return true;
+    if (settingsClassType !== (clsAny.class_type ?? "__none__")) return true;
     if (!settingsAlways) {
       if (settingsFrom !== (clsAny.active_from ?? "")) return true;
       if (settingsTo !== (clsAny.active_to ?? "")) return true;
@@ -636,6 +640,7 @@ function ClassDetailPage() {
     settingsDesc,
     settingsCategory,
     settingsBranch,
+    settingsClassType,
     settingsFrom,
     settingsTo,
   ]);
@@ -657,6 +662,7 @@ function ClassDetailPage() {
           active_to: settingsAlways ? null : settingsTo,
           category_id: settingsCategory === "__none__" ? null : settingsCategory,
           branch: settingsBranch === "__all_branches__" ? null : settingsBranch,
+          class_type: settingsClassType === "__none__" ? null : (settingsClassType as "정규" | "내신"),
         },
       });
       toast.success("저장되었습니다.");
@@ -2383,7 +2389,20 @@ function ClassDetailPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <Label className="mb-2 block">수강반 유형</Label>
+                    <Select value={settingsClassType} onValueChange={setSettingsClassType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="유형 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미지정</SelectItem>
+                        <SelectItem value="정규">정규</SelectItem>
+                        <SelectItem value="내신">내신</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div>
                     <Label className="mb-2 block">카테고리</Label>
                     <Select value={settingsCategory} onValueChange={setSettingsCategory}>

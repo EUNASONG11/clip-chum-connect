@@ -15,6 +15,13 @@
       "when": 1790994796137,
       "tag": "0001_progress_start_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791354554375,
+      "tag": "0002_add_class_type",
+      "breakpoints": true
     }
   ]
 }
