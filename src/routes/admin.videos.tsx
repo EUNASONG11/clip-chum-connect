@@ -16,6 +16,8 @@ import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo, getVideoCreatorNames } from "@/lib/classes.functions";
 import { WeekPicker } from "@/components/admin/WeekPicker";
 import { formatWeekLabel } from "@/lib/week";
+import { isValidRegularVideoTitle } from "@/lib/naming";
+import { RegularVideoTitlePicker, FormatWarningBadge } from "@/components/admin/NamingPickers";
 import { restoreItem, purgeItem } from "@/lib/trash.functions";
 import { useAdminRole, RoleGate } from "@/components/AdminRole";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -212,6 +214,13 @@ function VideosPage() {
   const resolveCreatorNames = useServerFn(getVideoCreatorNames);
 
   const allowedIds = (classes as any[]).map((c) => c.id);
+  const regularClassIds = useMemo(
+    () => new Set((classes as any[]).filter((c) => c.class_type === "정규").map((c) => c.id as string)),
+    [classes],
+  );
+  const isUnformatted = (r: { class_id: string | null; title: string }) =>
+    !!r.class_id && regularClassIds.has(r.class_id) && !isValidRegularVideoTitle(r.title);
+  const [onlyUnformatted, setOnlyUnformatted] = useState(false);
 
   const buildQuery = (trash: boolean) => {
     let q = supabase
@@ -584,6 +593,10 @@ function VideosPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <label className="flex shrink-0 items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={onlyUnformatted} onChange={(e) => setOnlyUnformatted(e.target.checked)} />
+                  형식 미준수만
+                </label>
                 {isAdmin && (
                   <Select value={sourceFilter} onValueChange={setSourceFilter}>
                     <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
@@ -606,7 +619,7 @@ function VideosPage() {
               ) : (
 
                 <ul className="divide-y">
-                  {rows.map((r) => (
+                  {rows.filter((r) => !onlyUnformatted || isUnformatted(r)).map((r) => (
                     <li key={r.id} className="py-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                         <div className="h-14 w-24 shrink-0 overflow-hidden rounded bg-muted">
@@ -617,6 +630,7 @@ function VideosPage() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-medium">
                             {r.title}
+                            {isUnformatted(r) && <FormatWarningBadge className="ml-2 align-middle" />}
                             {r.week_label && (
                               <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-normal text-primary">
                                 {formatWeekLabel(r.week_label)}
@@ -714,12 +728,45 @@ function VideosPage() {
                           <div className="space-y-4">
                             <div>
                               <label className="text-xs text-muted-foreground">제목</label>
-                              <Input
-                                value={value(r, "title") as string}
-                                onChange={(e) => patch(r.id, { title: e.target.value })}
-                                placeholder="영상 제목"
-                                className="mt-1"
-                              />
+                              {(() => {
+                                const cid = value(r, "class_id") as string | null;
+                                if (cid && regularClassIds.has(cid)) {
+                                  return (
+                                    <div className="mt-1">
+                                      <RegularVideoTitlePicker
+                                        key={`${r.id}-${cid}`}
+                                        initialTitle={r.title}
+                                        initialWeekLabel={r.week_label}
+                                        onChange={(t, wl) => {
+                                          const p: Partial<Row> = {};
+                                          if (t && t !== r.title) p.title = t;
+                                          else if (!t || t === r.title) p.title = undefined as any;
+                                          if (wl && wl !== r.week_label) p.week_label = wl;
+                                          setEdits((prev) => {
+                                            const cur = { ...(prev[r.id] ?? {}), ...p };
+                                            if (cur.title === undefined) delete (cur as any).title;
+                                            if (Object.keys(cur).length === 0) {
+                                              if (!prev[r.id]) return prev;
+                                              const next = { ...prev };
+                                              delete next[r.id];
+                                              return next;
+                                            }
+                                            return { ...prev, [r.id]: cur };
+                                          });
+                                        }}
+                                      />
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <Input
+                                    value={value(r, "title") as string}
+                                    onChange={(e) => patch(r.id, { title: e.target.value })}
+                                    placeholder="영상 제목"
+                                    className="mt-1"
+                                  />
+                                );
+                              })()}
                             </div>
                             <WeekPicker
                               id={`week-${r.id}`}
