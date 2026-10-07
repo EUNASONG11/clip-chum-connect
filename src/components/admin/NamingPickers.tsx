@@ -68,6 +68,7 @@ export function NaesinClassNamePicker({
     setCohort(p?.cohort ?? "");
     setTarget(p?.target ?? "");
     setMode(p && PUBLISHER_OPTIONS.includes(p.target) ? "publisher" : "school");
+    setCustomPublisher(!!p?.target && !PUBLISHER_OPTIONS.includes(p.target));
   }, [initialName]);
 
   const { data: opts } = useQuery({
