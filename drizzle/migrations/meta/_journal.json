@@ -29,6 +29,13 @@
       "when": 1791362940816,
       "tag": "0003_student_video_start_at_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791363289258,
+      "tag": "0004_videos_student_policy_exclude_hidden",
+      "breakpoints": true
     }
   ]
 }
