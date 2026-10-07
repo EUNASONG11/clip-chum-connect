@@ -87,6 +87,14 @@ export function NaesinClassNamePicker({
     return q ? allSchools.filter((s) => s.replace(/\s+/g, "").includes(q)) : allSchools;
   }, [allSchools, schoolQuery]);
 
+  // 기존 이름의 학교가 목록에 없으면 자동으로 "직접 입력" 상태로 전환
+  useEffect(() => {
+    if (mode === "school" && branch && target && allSchools.length > 0 && !allSchools.includes(target)) {
+      setCustomSchool(true);
+    }
+  }, [allSchools, mode, branch, target]);
+
+
   const name = buildNaesinClassName({ branch, cohort, target });
   useEffect(() => {
     onChange(name, branch || null);
