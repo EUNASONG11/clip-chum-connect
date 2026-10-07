@@ -2452,7 +2452,7 @@ function ClassDetailPage() {
                   </div>
                 </div>
 
-                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings}>
+                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings || (settingsClassType === "내신" && !isValidNaesinClassName(settingsName))}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>
               </CardContent>
