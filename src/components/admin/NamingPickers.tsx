@@ -156,14 +156,24 @@ export function NaesinClassNamePicker({
           <div className="space-y-1.5">
             <Input className="h-8" placeholder="학교 검색" value={schoolQuery} onChange={(e) => setSchoolQuery(e.target.value)} />
             <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
-              {schools.length === 0 ? (
+              {schools.length === 0 && !customSchool ? (
                 <p className="text-xs text-muted-foreground">학교가 없습니다.</p>
               ) : (
                 schools.map((s) => (
-                  <Chip key={s} active={target === s} onClick={() => setTarget(s)}>{s}</Chip>
+                  <Chip key={s} active={!customSchool && target === s} onClick={() => { setCustomSchool(false); setTarget(s); }}>{s}</Chip>
                 ))
               )}
+              <Chip active={customSchool} onClick={() => { setCustomSchool(true); setTarget(""); setSchoolQuery(""); }}>직접 입력</Chip>
             </div>
+            {customSchool && (
+              <Input
+                className="h-8"
+                placeholder="학교 이름 직접 입력"
+                maxLength={30}
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[-[\]]/g, ""))}
+              />
+            )}
           </div>
         )}
       </div>
