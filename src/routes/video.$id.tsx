@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, Info, Maximize2, Menu, Minimize2, Pause, Play,
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { getVideoAvailability } from "@/lib/videos.functions";
+import { getVideoLockStatus } from "@/lib/video-lock.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
@@ -367,13 +368,24 @@ function VideoPage() {
       .then(({ data }) => setVideo((data as Video | null) ?? null));
   }, [id]);
 
-  // 조회되지 않는 경우: 진짜 없는 영상인지, 비공개라 숨겨진 영상인지 구분
-  const [unavailableReason, setUnavailableReason] = useState<"private" | "missing" | null>(null);
+  // 조회되지 않는 경우: 없는 영상 / 비공개 / 배정 이전이라 잠긴 영상 구분
+  const [unavailableReason, setUnavailableReason] = useState<"private" | "missing" | "locked" | null>(null);
   useEffect(() => {
     setUnavailableReason(null);
     if (video !== null) return;
     getVideoAvailability({ data: { videoId: id } })
-      .then((r) => setUnavailableReason(r.exists && !r.published ? "private" : "missing"))
+      .then(async (r) => {
+        if (r.exists && !r.published) return setUnavailableReason("private");
+        if (r.exists) {
+          try {
+            const lock = await getVideoLockStatus({ data: { videoId: id } });
+            if (lock.locked) return setUnavailableReason("locked");
+          } catch {
+            /* 로그인 전 등 확인 불가 시 기본 처리 */
+          }
+        }
+        setUnavailableReason("missing");
+      })
       .catch(() => setUnavailableReason("missing"));
   }, [video, id]);
 
@@ -933,6 +945,18 @@ function VideoPage() {
           <main className="mx-auto max-w-5xl px-4 py-10 text-center">
             <p className="text-foreground">비공개 설정된 영상입니다.</p>
             <p className="mt-2 text-sm text-muted-foreground">아직 게시되지 않았거나 관리자가 비공개로 전환한 영상이에요.</p>
+            <Link to="/" className="mt-4 inline-block text-primary underline">홈으로</Link>
+          </main>
+        </div>
+      );
+    }
+    if (unavailableReason === "locked") {
+      return (
+        <div className="min-h-screen bg-background">
+          <SiteHeader />
+          <main className="mx-auto max-w-5xl px-4 py-10 text-center">
+            <p className="text-foreground">시청할 수 없는 영상입니다.</p>
+            <p className="mt-2 text-sm text-muted-foreground">수강반에 배정되기 전에 올라온 영상이에요. 필요하면 담당 선생님께 문의해 주세요.</p>
             <Link to="/" className="mt-4 inline-block text-primary underline">홈으로</Link>
           </main>
         </div>

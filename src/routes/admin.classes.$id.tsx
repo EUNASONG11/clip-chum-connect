@@ -1424,6 +1424,9 @@ function ClassDetailPage() {
                 <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart(null)}>
                   배정 시점으로 되돌리기
                 </Button>
+                <p className="w-full text-xs text-muted-foreground">
+                  이 설정은 학생의 시청 가능 범위에도 적용됩니다. 시작 시점 이전 영상은 학생이 시청할 수 없습니다(이미 시청 기록이 있는 영상은 제외).
+                </p>
               </div>
             );
           })()}

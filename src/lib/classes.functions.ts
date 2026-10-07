@@ -874,10 +874,29 @@ export const listClassVideos = createServerFn({ method: "GET" })
         progressMap.set(p.video_id as string, p);
       }
     }
-    return visibleVideos.map((r: any) => ({
-      ...r,
-      progress: progressMap.get(r.id as string) ?? null,
-    }));
+    // 학생 전용: 수강반 배정(또는 학습 현황 시작 시점) 이전에 올라온 영상은 잠금
+    // 단, 이미 시청 기록이 있는 영상은 예외로 계속 시청 가능
+    let startAt: number | null = null;
+    const { data: roleRows } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .is("deleted_at", null);
+    const roles = new Set((roleRows ?? []).map((r: any) => r.role as string));
+    const isStaff = roles.has("admin") || roles.has("instructor") || roles.has("branch_admin");
+    if (roles.has("student") && !isStaff) {
+      const { data: s } = await supabaseAdmin.rpc("student_video_start_at", {
+        _user_id: context.userId,
+        _class_id: data.classId,
+      });
+      if (s) startAt = new Date(s as string).getTime();
+    }
+    return visibleVideos.map((r: any) => {
+      const progress = progressMap.get(r.id as string) ?? null;
+      const is_locked =
+        startAt !== null && !progress && new Date(r.created_at as string).getTime() < startAt;
+      return { ...r, progress, is_locked };
+    });
   });
 
 // 영상 수정 (관리자)

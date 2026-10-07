@@ -1208,6 +1208,10 @@ export type Database = {
           video_count: number
         }[]
       }
+      student_video_start_at: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
