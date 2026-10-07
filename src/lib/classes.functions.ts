@@ -906,6 +906,16 @@ export const updateVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.title !== undefined || data.class_id !== undefined) {
+      const { data: cur } = await supabaseAdmin.from("videos").select("title, class_id").eq("id", data.id).maybeSingle();
+      const effClass = data.class_id !== undefined ? data.class_id : (cur as any)?.class_id;
+      const effTitle = data.title !== undefined ? data.title : (cur as any)?.title;
+      // 제목을 바꾸는 경우에만 검사 (기존 미준수 데이터의 다른 설정 수정은 허용)
+      if (data.title !== undefined && data.title !== (cur as any)?.title) {
+        const { assertRegularVideoTitle } = await import("@/lib/naming.server");
+        await assertRegularVideoTitle(supabaseAdmin, effClass, effTitle);
+      }
+    }
     if (!admin) {
       // 강사: 영상이 속한 수강반의 담당(생성자 또는 배정 강사)만 수정 가능
       const { data: v, error: ve } = await supabaseAdmin

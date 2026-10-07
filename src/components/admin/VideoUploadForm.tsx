@@ -730,7 +730,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <WeekPicker id="yt-week" value={ytWeekLabel} onChange={setYtWeekLabel} />
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
-            <Button type="submit" disabled={ytSaving}>
+            <Button type="submit" disabled={ytSaving || (ytRegular && !isValidRegularVideoTitle(ytTitle))}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
           </form>
