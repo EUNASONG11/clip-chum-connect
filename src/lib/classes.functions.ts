@@ -212,7 +212,7 @@ export const listClasses = createServerFn({ method: "GET" })
     if (admin) {
       const { data, error } = await supabaseAdmin
         .from("classes")
-        .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
+        .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, class_type, created_at, created_by")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
@@ -270,7 +270,7 @@ export const listClasses = createServerFn({ method: "GET" })
     }
     const { data, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, class_type, created_at, created_by")
       .or(orParts.join(","))
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -304,7 +304,7 @@ export const getClass = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("classes")
-      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, created_at, created_by")
+      .select("id, name, description, thumbnail_url, active_from, active_to, category_id, branch, class_type, created_at, created_by")
       .eq("id", data.id)
       .is("deleted_at", null)
       .maybeSingle();
