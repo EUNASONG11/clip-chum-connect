@@ -60,6 +60,7 @@ export function NaesinClassNamePicker({
   const [customPublisher, setCustomPublisher] = useState(
     !!parsed?.target && !PUBLISHER_OPTIONS.includes(parsed.target),
   );
+  const [customSchool, setCustomSchool] = useState(false);
   const [schoolQuery, setSchoolQuery] = useState("");
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export function NaesinClassNamePicker({
     setTarget(p?.target ?? "");
     setMode(p && PUBLISHER_OPTIONS.includes(p.target) ? "publisher" : "school");
     setCustomPublisher(!!p?.target && !PUBLISHER_OPTIONS.includes(p.target));
+    setCustomSchool(false);
   }, [initialName]);
 
   const { data: opts } = useQuery({
@@ -76,12 +78,22 @@ export function NaesinClassNamePicker({
     queryFn: () => listStudentFilterOptions(),
     staleTime: 5 * 60_000,
   });
-  const schools: string[] = useMemo(() => {
+  const allSchools: string[] = useMemo(() => {
     const by = (opts as any)?.schoolsByBranch ?? {};
-    const list: string[] = branch ? (by[branch] ?? Object.entries(by).find(([k]) => k.includes(branch))?.[1] ?? []) : [];
+    return branch ? (by[branch] ?? Object.entries(by).find(([k]) => k.includes(branch))?.[1] ?? []) : [];
+  }, [opts, branch]);
+  const schools: string[] = useMemo(() => {
     const q = schoolQuery.replace(/\s+/g, "");
-    return q ? list.filter((s) => s.replace(/\s+/g, "").includes(q)) : list;
-  }, [opts, branch, schoolQuery]);
+    return q ? allSchools.filter((s) => s.replace(/\s+/g, "").includes(q)) : allSchools;
+  }, [allSchools, schoolQuery]);
+
+  // 기존 이름의 학교가 목록에 없으면 자동으로 "직접 입력" 상태로 전환
+  useEffect(() => {
+    if (mode === "school" && branch && target && allSchools.length > 0 && !allSchools.includes(target)) {
+      setCustomSchool(true);
+    }
+  }, [allSchools, mode, branch, target]);
+
 
   const name = buildNaesinClassName({ branch, cohort, target });
   useEffect(() => {
@@ -117,8 +129,8 @@ export function NaesinClassNamePicker({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">구분</p>
-          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); setCustomPublisher(false); }}>학교</Chip>
-          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); setCustomPublisher(false); }}>출판사</Chip>
+          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); setCustomPublisher(false); setCustomSchool(false); }}>학교</Chip>
+          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); setCustomPublisher(false); setCustomSchool(false); }}>출판사</Chip>
         </div>
         {mode === "publisher" ? (
           <div className="space-y-1.5">
@@ -144,14 +156,24 @@ export function NaesinClassNamePicker({
           <div className="space-y-1.5">
             <Input className="h-8" placeholder="학교 검색" value={schoolQuery} onChange={(e) => setSchoolQuery(e.target.value)} />
             <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
-              {schools.length === 0 ? (
+              {schools.length === 0 && !customSchool ? (
                 <p className="text-xs text-muted-foreground">학교가 없습니다.</p>
               ) : (
                 schools.map((s) => (
-                  <Chip key={s} active={target === s} onClick={() => setTarget(s)}>{s}</Chip>
+                  <Chip key={s} active={!customSchool && target === s} onClick={() => { setCustomSchool(false); setTarget(s); }}>{s}</Chip>
                 ))
               )}
+              <Chip active={customSchool} onClick={() => { setCustomSchool(true); setTarget(""); setSchoolQuery(""); }}>직접 입력</Chip>
             </div>
+            {customSchool && (
+              <Input
+                className="h-8"
+                placeholder="학교 이름 직접 입력"
+                maxLength={30}
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[-[\]]/g, ""))}
+              />
+            )}
           </div>
         )}
       </div>
