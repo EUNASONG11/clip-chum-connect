@@ -190,10 +190,19 @@ export function RegularVideoTitlePicker({
   initialTitle,
   initialWeekLabel,
   onChange,
+  externalSubject,
+  onSubjectPick,
+  subjectHint,
 }: {
   initialTitle?: string | null;
   initialWeekLabel?: string | null;
   onChange: (title: string | null, weekLabel: string | undefined) => void;
+  /** 외부(폴더 선택 등)에서 자동으로 지정한 과목 */
+  externalSubject?: { value: string; seq: number } | null;
+  /** 사용자가 과목 칩을 직접 클릭했을 때 */
+  onSubjectPick?: (subject: string) => void;
+  /** 과목 영역 아래 표시할 자동 선택 안내 */
+  subjectHint?: string | null;
 }) {
   const init = useMemo(() => parseRegularVideoTitle(initialTitle), [initialTitle]);
   const wk = initialWeekLabel ? parseWeekLabel(initialWeekLabel) : null;
@@ -202,6 +211,10 @@ export function RegularVideoTitlePicker({
   const [week, setWeek] = useState<number | null>(init?.kind === "general" ? init.week : wk?.week ?? null);
   const [content, setContent] = useState(init?.kind === "general" ? init.content : "");
   const [lecture, setLecture] = useState<number>(init?.kind === "vocab" ? init.lecture : 1);
+
+  useEffect(() => {
+    if (externalSubject?.value) setSubject(externalSubject.value);
+  }, [externalSubject?.seq, externalSubject?.value]);
 
   const isVocab = subject === VOCAB_SUBJECT;
   const parts: RegularTitleParts | null = !subject
@@ -233,9 +246,12 @@ export function RegularVideoTitlePicker({
         <p className="text-xs font-medium text-muted-foreground">과목</p>
         <div className="flex flex-wrap gap-1.5">
           {SUBJECT_OPTIONS.map((s) => (
-            <Chip key={s} active={subject === s} onClick={() => setSubject(s)}>{s}</Chip>
+            <Chip key={s} active={subject === s} onClick={() => { setSubject(s); onSubjectPick?.(s); }}>{s}</Chip>
           ))}
         </div>
+        {subjectHint && (
+          <p className="rounded bg-primary/10 px-2 py-1 text-xs text-primary">✓ {subjectHint}</p>
+        )}
       </div>
       {subject && !isVocab && (
         <>
