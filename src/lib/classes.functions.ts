@@ -328,7 +328,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         category_id: z.string().uuid().nullable().optional(),
         branch: z.string().trim().max(100).nullable().optional(),
-        class_type: z.enum(["정규", "내신"]).nullable().optional(),
+        class_type: z.enum(["정규", "내신"]),
       })
       .parse(i),
   )
@@ -344,7 +344,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_to: data.active_to ?? null,
         category_id: data.category_id ?? null,
         branch: data.branch ?? null,
-        class_type: data.class_type ?? null,
+        class_type: data.class_type,
         created_by: context.userId,
       })
       .select("*")
