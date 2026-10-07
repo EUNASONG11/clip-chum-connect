@@ -81,7 +81,7 @@ function ClassesPage() {
   const [categoryAuto, setCategoryAuto] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("__all__");
   const [branch, setBranch] = useState<string>("__all_branches__");
-  const [classType, setClassType] = useState<string>("__none__");
+  const [classType, setClassType] = useState<string>("정규");
 
   // 로그인한 강사의 기수에 맞는 카테고리 자동 선택
   const { data: myCohortData } = useQuery({
@@ -223,7 +223,7 @@ function ClassesPage() {
           active_to: alwaysActive ? null : activeTo,
           category_id: categoryId === "__none__" ? null : categoryId,
           branch: branch === "__all_branches__" ? null : branch,
-          class_type: classType === "__none__" ? null : (classType as "정규" | "내신"),
+          class_type: classType as "정규" | "내신",
         },
       });
       if (thumbFile && row?.id) {
@@ -551,7 +551,6 @@ function ClassesPage() {
                     <SelectValue placeholder="유형 선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">미지정</SelectItem>
                     <SelectItem value="정규">정규</SelectItem>
                     <SelectItem value="내신">내신</SelectItem>
                   </SelectContent>
