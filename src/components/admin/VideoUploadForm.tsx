@@ -651,7 +651,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             {upRegular ? (
               <RegularVideoTitlePicker
                 key={`up-title-${resetKey}-${classId}`}
-                initialWeekLabel={weekLabel}
+                weekLabel={weekLabel}
                 externalSubject={upExtSubject}
                 subjectHint={upSubjectHint}
                 onSubjectPick={(sub) => pickSubject(sub, folders, folderId, setFolderId, setUpFolderHint, setUpSubjectHint)}
@@ -779,7 +779,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               {ytRegular ? (
                 <RegularVideoTitlePicker
                   key={`yt-title-${resetKey}-${ytClassId}`}
-                  initialWeekLabel={ytWeekLabel}
+                  weekLabel={ytWeekLabel}
                   externalSubject={ytExtSubject}
                   subjectHint={ytSubjectHint}
                   onSubjectPick={(sub) => pickSubject(sub, ytFolders, ytFolderId, setYtFolderId, setYtFolderHint, setYtSubjectHint)}

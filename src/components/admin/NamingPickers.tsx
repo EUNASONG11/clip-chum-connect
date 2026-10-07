@@ -17,7 +17,7 @@ import {
   type RegularTitleParts,
 } from "@/lib/naming";
 import { listStudentFilterOptions } from "@/lib/classes.functions";
-import { parseWeekLabel, MONTH_NUMBERS, WEEK_NUMBERS } from "@/lib/week";
+import { parseWeekLabel, makeWeekLabel, MONTH_NUMBERS, WEEK_NUMBERS } from "@/lib/week";
 
 function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -185,17 +185,21 @@ export function NaesinClassNamePicker({
   );
 }
 
-/** 정규 영상 제목 선택기. 완성 시 onChange(제목, 주차라벨|undefined) — 어휘는 주차 라벨 undefined(변경 안 함) */
+/**
+ * 정규 영상 제목 선택기. 완성 시 onChange(제목, 주차라벨|undefined) — 어휘는 주차 라벨 undefined(변경 안 함)
+ * weekLabel(외부 WeekPicker 값)을 받아 월/주차를 양방향으로 맞춘다. 연도는 weekLabel의 연도를 유지한다.
+ */
 export function RegularVideoTitlePicker({
   initialTitle,
-  initialWeekLabel,
+  weekLabel: extWeekLabel,
   onChange,
   externalSubject,
   onSubjectPick,
   subjectHint,
 }: {
   initialTitle?: string | null;
-  initialWeekLabel?: string | null;
+  /** 외부 주차 값(controlled). null이면 주차 미지정 → 일반 제목은 미완성 */
+  weekLabel?: string | null;
   onChange: (title: string | null, weekLabel: string | undefined) => void;
   /** 외부(폴더 선택 등)에서 자동으로 지정한 과목 */
   externalSubject?: { value: string; seq: number } | null;
@@ -205,28 +209,39 @@ export function RegularVideoTitlePicker({
   subjectHint?: string | null;
 }) {
   const init = useMemo(() => parseRegularVideoTitle(initialTitle), [initialTitle]);
-  const wk = initialWeekLabel ? parseWeekLabel(initialWeekLabel) : null;
+  const wk = extWeekLabel ? parseWeekLabel(extWeekLabel) : null;
   const [subject, setSubject] = useState(init ? (init.kind === "vocab" ? VOCAB_SUBJECT : init.subject) : "");
-  const [month, setMonth] = useState<number | null>(init?.kind === "general" ? init.month : wk?.month ?? null);
-  const [week, setWeek] = useState<number | null>(init?.kind === "general" ? init.week : wk?.week ?? null);
+  const [month, setMonth] = useState<number | null>(wk?.month ?? (extWeekLabel === undefined && init?.kind === "general" ? init.month : null));
+  const [week, setWeek] = useState<number | null>(wk?.week ?? (extWeekLabel === undefined && init?.kind === "general" ? init.week : null));
   const [content, setContent] = useState(init?.kind === "general" ? init.content : "");
-  const [lecture, setLecture] = useState<number>(init?.kind === "vocab" ? init.lecture : 1);
+  const [lecture, setLecture] = useState<number | null>(init?.kind === "vocab" ? init.lecture : null);
 
   useEffect(() => {
     if (externalSubject?.value) setSubject(externalSubject.value);
   }, [externalSubject?.seq, externalSubject?.value]);
 
   const isVocab = subject === VOCAB_SUBJECT;
+
+  // 외부 주차(WeekPicker) 변경 → 월/주차 반영 (어휘는 연동 안 함)
+  useEffect(() => {
+    if (isVocab || extWeekLabel === undefined) return;
+    const p = extWeekLabel ? parseWeekLabel(extWeekLabel) : null;
+    setMonth(p?.month ?? null);
+    setWeek(p?.week ?? null);
+  }, [extWeekLabel, isVocab]);
+
   const parts: RegularTitleParts | null = !subject
     ? null
     : isVocab
-      ? { kind: "vocab", lecture }
+      ? lecture
+        ? { kind: "vocab", lecture }
+        : null
       : month && week
         ? { kind: "general", month, week, subject, content }
         : null;
   const title = buildRegularVideoTitle(parts);
-  const weekLabel =
-    !isVocab && month && week ? `${new Date().getFullYear()}-${String(month).padStart(2, "0")}-${week}` : undefined;
+  const baseYear = (extWeekLabel ? parseWeekLabel(extWeekLabel)?.year : null) ?? new Date().getFullYear();
+  const weekLabel = !isVocab && month && week ? makeWeekLabel(baseYear, month, week) : undefined;
 
   useEffect(() => {
     onChange(title, isVocab ? undefined : weekLabel);
@@ -281,17 +296,21 @@ export function RegularVideoTitlePicker({
         <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground">강 번호</p>
           <div className="flex items-center gap-2">
-            <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setLecture((n) => Math.max(1, n - 1))}>
+            <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setLecture((n) => Math.max(1, (n ?? 2) - 1))}>
               <Minus className="h-4 w-4" />
             </Button>
             <Input
               type="number"
               min={1}
               className="h-8 w-20 text-center"
-              value={lecture}
-              onChange={(e) => setLecture(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+              placeholder="-"
+              value={lecture ?? ""}
+              onChange={(e) => {
+                const n = Math.floor(Number(e.target.value));
+                setLecture(e.target.value === "" || !n ? null : Math.max(1, n));
+              }}
             />
-            <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setLecture((n) => n + 1)}>
+            <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setLecture((n) => (n ?? 0) + 1)}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
