@@ -330,6 +330,9 @@ export const createClass = createServerFn({ method: "POST" })
         branch: z.string().trim().max(100).nullable().optional(),
         class_type: z.enum(["정규", "내신"]),
       })
+      .refine((d) => d.class_type !== "내신" || isValidNaesinClassName(d.name), {
+        message: "내신 수강반 이름은 '[교육원] 기수 - 학교(또는 출판사) - 내신' 형식이어야 합니다.",
+      })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -375,6 +378,14 @@ export const updateClass = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.name !== undefined || data.class_type !== undefined) {
+      const { data: cur } = await supabaseAdmin.from("classes").select("name, class_type").eq("id", data.id).maybeSingle();
+      const effType = data.class_type !== undefined ? data.class_type : (cur as any)?.class_type;
+      const effName = data.name !== undefined ? data.name : (cur as any)?.name;
+      if (effType === "내신" && !isValidNaesinClassName(effName)) {
+        throw new Error("내신 수강반 이름은 '[교육원] 기수 - 학교(또는 출판사) - 내신' 형식이어야 합니다.");
+      }
+    }
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
