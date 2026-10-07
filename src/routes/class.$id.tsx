@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoThumb } from "@/components/VideoThumb";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
-import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff } from "lucide-react";
+import { ArrowLeft, Play, Film, CheckCircle2, Folder, EyeOff, Lock } from "lucide-react";
 import { getClass, listClassVideos, listClassFolders } from "@/lib/classes.functions";
 import { prefetchSignedThumbUrls, extractStoragePath } from "@/lib/signed-url-cache";
 
@@ -113,6 +113,39 @@ function ClassPage() {
           {(() => {
             const renderVideoItem = (v: any) => {
               const isUnpublished = v.is_published === false;
+              const isLocked = v.is_locked === true;
+              if (isLocked) {
+                return (
+                  <div
+                    key={v.id}
+                    className="flex cursor-not-allowed items-center gap-4 rounded-xl border bg-muted/60 p-3 opacity-80"
+                  >
+                    <div className="relative w-28 shrink-0 overflow-hidden rounded-lg aspect-video bg-muted">
+                      {v.thumbnail_url ? (
+                        <VideoThumb src={v.thumbnail_url} alt={v.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Film className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50">
+                        <Lock className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col justify-center">
+                      <h3 className="line-clamp-1 flex items-center gap-2 font-semibold">
+                        <span className="truncate">{v.title}</span>
+                        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                          배정 이전 영상
+                        </span>
+                      </h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        수강반 배정 전에 올라온 영상이라 시청할 수 없어요.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <Link
                   key={v.id}
@@ -120,6 +153,7 @@ function ClassPage() {
                   params={{ id: v.id }}
                   className={`group flex items-center gap-4 rounded-xl border bg-card p-3 transition hover:bg-accent/50 ${isUnpublished ? "bg-muted/60 opacity-80" : ""}`}
                 >
+
                   <div className="relative w-28 shrink-0 overflow-hidden rounded-lg aspect-video bg-muted">
                     {v.thumbnail_url ? (
                       <VideoThumb
