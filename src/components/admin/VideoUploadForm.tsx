@@ -16,6 +16,13 @@ import { weekLabelFromDate } from "@/lib/week";
 import { isValidRegularVideoTitle } from "@/lib/naming";
 import { RegularVideoTitlePicker } from "@/components/admin/NamingPickers";
 
+import { SUBJECT_OPTIONS } from "@/lib/subject";
+
+function folderSubjects(name: string): string[] {
+  const parts = name.split(/[\/·,|&]/).map((x) => x.replace(/\s+/g, "").trim());
+  return (SUBJECT_OPTIONS as readonly string[]).filter((s) => parts.includes(s) || name.replace(/\s+/g, "") === s);
+}
+
 type FolderNode = { id: string; name: string; depth: number };
 
 function buildFolderTree(list: any[]): FolderNode[] {
@@ -302,6 +309,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [description, setDescription] = useState("");
   const [classId, setClassId] = useState<string>(NO_CLASS);
   const [folderId, setFolderId] = useState<string>(NO_FOLDER);
+  const [upExtSubject, setUpExtSubject] = useState<{ value: string; seq: number } | null>(null);
+  const [upFolderHint, setUpFolderHint] = useState<string | null>(null);
+  const [upSubjectHint, setUpSubjectHint] = useState<string | null>(null);
   const [isPublished, setIsPublished] = useState(true);
   const [sortOrder, setSortOrder] = useState<number>(0);
   const [file, setFile] = useState<File | null>(null);
@@ -319,6 +329,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytDesc, setYtDesc] = useState("");
   const [ytClassId, setYtClassId] = useState<string>(NO_CLASS);
   const [ytFolderId, setYtFolderId] = useState<string>(NO_FOLDER);
+  const [ytExtSubject, setYtExtSubject] = useState<{ value: string; seq: number } | null>(null);
+  const [ytFolderHint, setYtFolderHint] = useState<string | null>(null);
+  const [ytSubjectHint, setYtSubjectHint] = useState<string | null>(null);
   const [ytPublished, setYtPublished] = useState(true);
   const [ytSort, setYtSort] = useState<number>(0);
   const [ytSaving, setYtSaving] = useState(false);
@@ -420,7 +433,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setTitle("");
       setDescription("");
       setClassId(NO_CLASS);
-      setFolderId(NO_FOLDER);
+      setFolderId(NO_FOLDER); setUpFolderHint(null); setUpSubjectHint(null);
       setIsPublished(false);
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
@@ -472,7 +485,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtTitle("");
       setYtDesc("");
       setYtClassId(NO_CLASS);
-      setYtFolderId(NO_FOLDER);
+      setYtFolderId(NO_FOLDER); setYtFolderHint(null); setYtSubjectHint(null);
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
@@ -500,6 +513,59 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       </SelectContent>
     </Select>
   );
+
+  const pickFolder = (
+    id: string,
+    list: any[],
+    setId: (v: string) => void,
+    setExt: (v: { value: string; seq: number } | null) => void,
+    setFolderHint: (v: string | null) => void,
+    setSubjectHint: (v: string | null) => void,
+  ) => {
+    setId(id);
+    setFolderHint(null);
+    const f = list.find((x: any) => x.id === id);
+    const subs = f ? folderSubjects(f.name) : [];
+    if (subs.length === 1) {
+      setExt({ value: subs[0], seq: Date.now() });
+      setSubjectHint(`폴더 "${f.name}"에 맞춰 과목 "${subs[0]}"이(가) 자동 선택됐어요`);
+    } else {
+      setSubjectHint(null);
+    }
+  };
+
+  const pickSubject = (
+    subject: string,
+    list: any[],
+    currentId: string,
+    setId: (v: string) => void,
+    setFolderHint: (v: string | null) => void,
+    setSubjectHint: (v: string | null) => void,
+  ) => {
+    setSubjectHint(null);
+    const cur = list.find((x: any) => x.id === currentId);
+    if (cur && folderSubjects(cur.name).includes(subject)) {
+      setFolderHint(null);
+      return;
+    }
+    const tree = buildFolderTree(list);
+    const matches = tree.filter((f) => folderSubjects(f.name).includes(subject));
+    if (matches.length === 0) {
+      setFolderHint(null);
+      return;
+    }
+    const full = (n: FolderNode) => {
+      const idx = tree.indexOf(n);
+      for (let i = idx - 1; i >= 0; i--) if (tree[i].depth < n.depth) return `${tree[i].name} > ${n.name}`;
+      return n.name;
+    };
+    setId(matches[0].id);
+    setFolderHint(
+      matches.length === 1
+        ? `과목 "${subject}"에 맞춰 폴더 "${full(matches[0])}"이(가) 자동 선택됐어요`
+        : `과목 "${subject}"에 맞춰 폴더 "${full(matches[0])}"이(가) 자동 선택됐어요 (같은 이름 폴더 ${matches.length}개 — 다르면 직접 바꿔주세요)`,
+    );
+  };
 
   const folderSelect = (
     value: string,
@@ -562,12 +628,13 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Label>수강반</Label>
               {classSelect(classId, (v) => {
                 setClassId(v);
-                setFolderId(NO_FOLDER);
+                setFolderId(NO_FOLDER); setUpFolderHint(null); setUpSubjectHint(null);
               })}
             </div>
             <div>
               <Label>폴더</Label>
-              {folderSelect(folderId, setFolderId, folders, classId === NO_CLASS)}
+              {folderSelect(folderId, (v) => pickFolder(v, folders, setFolderId, setUpExtSubject, setUpFolderHint, setUpSubjectHint), folders, classId === NO_CLASS)}
+              {upFolderHint && <p className="mt-1 rounded bg-primary/10 px-2 py-1 text-xs text-primary">✓ {upFolderHint}</p>}
             </div>
             <div>
               <Label htmlFor="order">노출 순서</Label>
@@ -585,6 +652,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <RegularVideoTitlePicker
                 key={`up-title-${resetKey}-${classId}`}
                 initialWeekLabel={weekLabel}
+                externalSubject={upExtSubject}
+                subjectHint={upSubjectHint}
+                onSubjectPick={(sub) => pickSubject(sub, folders, folderId, setFolderId, setUpFolderHint, setUpSubjectHint)}
                 onChange={(t, wl) => {
                   setTitle(t ?? "");
                   if (wl) setWeekLabel(wl);
@@ -686,12 +756,13 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 <Label>수강반</Label>
                 {classSelect(ytClassId, (v) => {
                   setYtClassId(v);
-                  setYtFolderId(NO_FOLDER);
+                  setYtFolderId(NO_FOLDER); setYtFolderHint(null); setYtSubjectHint(null);
                 })}
               </div>
               <div>
                 <Label>폴더</Label>
-                {folderSelect(ytFolderId, setYtFolderId, ytFolders, ytClassId === NO_CLASS)}
+                {folderSelect(ytFolderId, (v) => pickFolder(v, ytFolders, setYtFolderId, setYtExtSubject, setYtFolderHint, setYtSubjectHint), ytFolders, ytClassId === NO_CLASS)}
+                {ytFolderHint && <p className="mt-1 rounded bg-primary/10 px-2 py-1 text-xs text-primary">✓ {ytFolderHint}</p>}
               </div>
               <div>
                 <Label htmlFor="yt-order">노출 순서</Label>
@@ -709,6 +780,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 <RegularVideoTitlePicker
                   key={`yt-title-${resetKey}-${ytClassId}`}
                   initialWeekLabel={ytWeekLabel}
+                  externalSubject={ytExtSubject}
+                  subjectHint={ytSubjectHint}
+                  onSubjectPick={(sub) => pickSubject(sub, ytFolders, ytFolderId, setYtFolderId, setYtFolderHint, setYtSubjectHint)}
                   onChange={(t, wl) => {
                     setYtTitle(t ?? "");
                     if (wl) setYtWeekLabel(wl);
