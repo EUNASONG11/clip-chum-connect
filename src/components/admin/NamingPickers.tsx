@@ -70,6 +70,7 @@ export function NaesinClassNamePicker({
     setTarget(p?.target ?? "");
     setMode(p && PUBLISHER_OPTIONS.includes(p.target) ? "publisher" : "school");
     setCustomPublisher(!!p?.target && !PUBLISHER_OPTIONS.includes(p.target));
+    setCustomSchool(false);
   }, [initialName]);
 
   const { data: opts } = useQuery({
