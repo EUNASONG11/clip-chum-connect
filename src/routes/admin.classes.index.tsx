@@ -1,5 +1,7 @@
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { BranchBadge } from "@/components/BranchBadge";
+import { isValidNaesinClassName } from "@/lib/naming";
+import { NaesinClassNamePicker, FormatWarningBadge } from "@/components/admin/NamingPickers";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

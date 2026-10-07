@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isValidNaesinClassName } from "@/lib/naming";
 import { CANONICAL_BRANCHES, canonicalBranch } from "@/lib/branch";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
