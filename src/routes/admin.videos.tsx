@@ -415,12 +415,16 @@ function VideosPage() {
     setEdits((prev) => ({ ...prev, [id]: { ...(prev[id] ?? {}), ...p } }));
 
   const value = <K extends keyof Row>(r: Row, k: K): Row[K] =>
-    (edits[r.id]?.[k] as Row[K]) ?? r[k];
+    edits[r.id] && k in edits[r.id]! && edits[r.id]![k] !== undefined ? (edits[r.id]![k] as Row[K]) : r[k];
 
 
   const save = async (r: Row) => {
     const e = edits[r.id];
     if (!e) return;
+    if (e.title !== undefined && !e.title.trim()) {
+      toast.error("제목이 완성되지 않았습니다. 월/주차·내용을 확인하세요.");
+      return;
+    }
     try {
       await updateVideo({
         data: {
@@ -736,12 +740,13 @@ function VideosPage() {
                                       <RegularVideoTitlePicker
                                         key={`${r.id}-${cid}`}
                                         initialTitle={r.title}
-                                        initialWeekLabel={r.week_label}
+                                        weekLabel={(value(r, "week_label") as string | null) ?? null}
                                         onChange={(t, wl) => {
                                           const p: Partial<Row> = {};
                                           if (t && t !== r.title) p.title = t;
-                                          else if (!t || t === r.title) p.title = undefined as any;
-                                          if (wl && wl !== r.week_label) p.week_label = wl;
+                                          else if (!t && isValidRegularVideoTitle(r.title)) p.title = ""; // 미완성 → 저장 불가
+                                          else p.title = undefined as any;
+                                          if (wl && wl !== (value(r, "week_label") as string | null)) p.week_label = wl;
                                           setEdits((prev) => {
                                             const cur = { ...(prev[r.id] ?? {}), ...p };
                                             if (cur.title === undefined) delete (cur as any).title;
