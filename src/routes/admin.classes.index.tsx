@@ -178,6 +178,8 @@ function ClassesPage() {
   const [catColor, setCatColor] = useState("#22c55e");
   const [catCohort, setCatCohort] = useState<string>("__none__");
   const [catSaving, setCatSaving] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [onlyUnformatted, setOnlyUnformatted] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
   const [editingCatColor, setEditingCatColor] = useState("#22c55e");
@@ -208,7 +210,8 @@ function ClassesPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return toast.error("수강반 이름을 입력하세요.");
+    if (!name.trim()) return toast.error(classType === "내신" ? "교육원·기수·학교(출판사)를 모두 선택하세요." : "수강반 이름을 입력하세요.");
+    if (classType === "내신" && !isValidNaesinClassName(name)) return toast.error("내신 수강반 이름 형식이 올바르지 않습니다.");
     if (!alwaysActive) {
       if (!activeFrom || !activeTo) return toast.error("활성 시작일과 종료일을 입력하거나 상시 활성을 체크하세요.");
       if (activeFrom > activeTo) return toast.error("종료일은 시작일보다 이후여야 합니다.");
@@ -264,6 +267,7 @@ function ClassesPage() {
 
 
       setName("");
+      setFormResetKey((k) => k + 1);
       setDesc("");
       setAlwaysActive(false);
       setActiveFrom("");
@@ -516,8 +520,30 @@ function ClassesPage() {
           <CardContent>
             <form onSubmit={submit} className="space-y-4">
               <div>
+                <Label>수강반 유형</Label>
+                <Select value={classType} onValueChange={(v) => { setClassType(v); setName(""); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="유형 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="정규">정규</SelectItem>
+                    <SelectItem value="내신">내신</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label htmlFor="name">이름</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                {classType === "내신" ? (
+                  <NaesinClassNamePicker
+                    key={`create-${formResetKey}`}
+                    onChange={(n, b) => {
+                      setName(n ?? "");
+                      if (b) setBranch(b);
+                    }}
+                  />
+                ) : (
+                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                )}
               </div>
               <div>
                 <Label htmlFor="desc">설명</Label>
@@ -543,18 +569,6 @@ function ClassesPage() {
                     카테고리가 없습니다. "카테고리" 탭에서 먼저 추가하세요.
                   </p>
                 )}
-              </div>
-              <div>
-                <Label>수강반 유형</Label>
-                <Select value={classType} onValueChange={setClassType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="유형 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="정규">정규</SelectItem>
-                    <SelectItem value="내신">내신</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div>
                 <Label>공개 교육원</Label>
