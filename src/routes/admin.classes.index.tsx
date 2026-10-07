@@ -189,6 +189,7 @@ function ClassesPage() {
     (categories as any[]).map((c) => [c.id as string, c]),
   );
   const filteredClasses = (classes as any[]).filter((c) => {
+    if (onlyUnformatted && !(c.class_type === "내신" && !isValidNaesinClassName(c.name))) return false;
     if (filterCategory === "__all__") return true;
     if (filterCategory === "__none__") return !c.category_id;
     return c.category_id === filterCategory;
@@ -427,6 +428,7 @@ function ClassesPage() {
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-medium">{c.name}</p>
+                        {c.class_type === "내신" && !isValidNaesinClassName(c.name) && <FormatWarningBadge />}
                         {(() => {
                           const today = new Date().toISOString().slice(0, 10);
                           if (!c.active_from && !c.active_to) {
@@ -802,7 +804,7 @@ function ClassesPage() {
                 </p>
               </div>
 
-              <Button type="submit" disabled={saving}>
+              <Button type="submit" disabled={saving || (classType === "내신" && !isValidNaesinClassName(name))}>
                 {saving ? "생성 중..." : "생성"}
               </Button>
 
