@@ -389,6 +389,10 @@ function ClassesPage() {
         <Card>
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>수강반 목록 ({filteredClasses.length}/{classes.length})</CardTitle>
+            <label className="flex shrink-0 items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={onlyUnformatted} onChange={(e) => setOnlyUnformatted(e.target.checked)} />
+              형식 미준수만
+            </label>
             <div className="w-full sm:w-56">
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger>
