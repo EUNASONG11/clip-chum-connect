@@ -328,6 +328,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         category_id: z.string().uuid().nullable().optional(),
         branch: z.string().trim().max(100).nullable().optional(),
+        class_type: z.enum(["정규", "내신"]).nullable().optional(),
       })
       .parse(i),
   )
@@ -343,6 +344,7 @@ export const createClass = createServerFn({ method: "POST" })
         active_to: data.active_to ?? null,
         category_id: data.category_id ?? null,
         branch: data.branch ?? null,
+        class_type: data.class_type ?? null,
         created_by: context.userId,
       })
       .select("*")
@@ -366,6 +368,7 @@ export const updateClass = createServerFn({ method: "POST" })
         active_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
         category_id: z.string().uuid().nullable().optional(),
         branch: z.string().trim().max(100).nullable().optional(),
+        class_type: z.enum(["정규", "내신"]).nullable().optional(),
       })
       .parse(i),
   )
@@ -380,6 +383,7 @@ export const updateClass = createServerFn({ method: "POST" })
     if (data.active_to !== undefined) patch.active_to = data.active_to;
     if (data.category_id !== undefined) patch.category_id = data.category_id;
     if (data.branch !== undefined) patch.branch = (data.branch || null);
+    if (data.class_type !== undefined) patch.class_type = data.class_type ?? null;
 
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
