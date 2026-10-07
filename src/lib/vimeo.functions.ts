@@ -145,6 +145,11 @@ export const finalizeVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     await assertOwnClassOrAdmin(context, data.class_id);
+    {
+      const { supabaseAdmin: __sa } = await import("@/integrations/supabase/client.server");
+      const { assertRegularVideoTitle } = await import("@/lib/naming.server");
+      await assertRegularVideoTitle(__sa, data.class_id, data.title);
+    }
     const videoId = data.uri.split("/").pop()!;
 
     // Vimeo 에서 메타 재조회
@@ -1093,6 +1098,11 @@ export const addYoutubeVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdminOrInstructor(context);
     await assertOwnClassOrAdmin(context, data.class_id);
+    {
+      const { supabaseAdmin: __sa } = await import("@/integrations/supabase/client.server");
+      const { assertRegularVideoTitle } = await import("@/lib/naming.server");
+      await assertRegularVideoTitle(__sa, data.class_id, data.title);
+    }
     const ytId = parseYoutubeId(data.url);
     if (!ytId) throw new Error("유효한 YouTube 링크가 아닙니다.");
 

@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isValidNaesinClassName } from "@/lib/naming";
 import { CANONICAL_BRANCHES, canonicalBranch } from "@/lib/branch";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
@@ -330,6 +331,9 @@ export const createClass = createServerFn({ method: "POST" })
         branch: z.string().trim().max(100).nullable().optional(),
         class_type: z.enum(["정규", "내신"]),
       })
+      .refine((d) => d.class_type !== "내신" || isValidNaesinClassName(d.name), {
+        message: "내신 수강반 이름은 '[교육원] 기수 - 학교(또는 출판사) - 내신' 형식이어야 합니다.",
+      })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
@@ -375,6 +379,14 @@ export const updateClass = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.id);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.name !== undefined || data.class_type !== undefined) {
+      const { data: cur } = await supabaseAdmin.from("classes").select("name, class_type").eq("id", data.id).maybeSingle();
+      const effType = data.class_type !== undefined ? data.class_type : (cur as any)?.class_type;
+      const effName = data.name !== undefined ? data.name : (cur as any)?.name;
+      if (effType === "내신" && !isValidNaesinClassName(effName)) {
+        throw new Error("내신 수강반 이름은 '[교육원] 기수 - 학교(또는 출판사) - 내신' 형식이어야 합니다.");
+      }
+    }
     const patch: Record<string, unknown> = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.description !== undefined) patch.description = data.description ?? null;
@@ -895,6 +907,16 @@ export const updateVideo = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const admin = await isAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    if (data.title !== undefined || data.class_id !== undefined) {
+      const { data: cur } = await supabaseAdmin.from("videos").select("title, class_id").eq("id", data.id).maybeSingle();
+      const effClass = data.class_id !== undefined ? data.class_id : (cur as any)?.class_id;
+      const effTitle = data.title !== undefined ? data.title : (cur as any)?.title;
+      // 제목을 바꾸는 경우에만 검사 (기존 미준수 데이터의 다른 설정 수정은 허용)
+      if (data.title !== undefined && data.title !== (cur as any)?.title) {
+        const { assertRegularVideoTitle } = await import("@/lib/naming.server");
+        await assertRegularVideoTitle(supabaseAdmin, effClass, effTitle);
+      }
+    }
     if (!admin) {
       // 강사: 영상이 속한 수강반의 담당(생성자 또는 배정 강사)만 수정 가능
       const { data: v, error: ve } = await supabaseAdmin

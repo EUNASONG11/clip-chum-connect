@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { Upload as UploadIcon, Youtube, ImagePlus, Folder, FolderOpen, X } from "lucide-react";
 import { WeekPicker } from "@/components/admin/WeekPicker";
 import { weekLabelFromDate } from "@/lib/week";
+import { isValidRegularVideoTitle } from "@/lib/naming";
+import { RegularVideoTitlePicker } from "@/components/admin/NamingPickers";
 
 type FolderNode = { id: string; name: string; depth: number };
 
@@ -322,6 +324,9 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
   const [ytSaving, setYtSaving] = useState(false);
   const [ytPlayback, setYtPlayback] = useState<Playback>(DEFAULT_PLAYBACK);
   const [ytWeekLabel, setYtWeekLabel] = useState<string | null>(weekLabelFromDate());
+  const isRegular = (id: string) => (classes as any[]).find((c) => c.id === id)?.class_type === "정규";
+  const upRegular = isRegular(classId);
+  const ytRegular = isRegular(ytClassId);
 
   const { data: folders = [] } = useQuery({
     queryKey: ["admin", "class-folders", classId],
@@ -338,6 +343,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     e.preventDefault();
     if (!file) return toast.error("파일을 선택하세요.");
     if (!title.trim()) return toast.error("제목을 입력하세요.");
+    if (upRegular && !isValidRegularVideoTitle(title)) return toast.error("정규 수강반 영상 제목 형식을 완성하세요.");
 
     setUploading(true);
     setProgress(0);
@@ -438,6 +444,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
     e.preventDefault();
     if (!ytUrl.trim()) return toast.error("YouTube 링크를 입력하세요.");
     if (!ytTitle.trim()) return toast.error("제목을 입력하세요.");
+    if (ytRegular && !isValidRegularVideoTitle(ytTitle)) return toast.error("정규 수강반 영상 제목 형식을 완성하세요.");
     setYtSaving(true);
     try {
       const row: any = await addYoutubeVideo({
@@ -552,7 +559,19 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
         <form onSubmit={upload} className="space-y-4">
           <div>
             <Label htmlFor="title">제목</Label>
-            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            {upRegular ? (
+              <RegularVideoTitlePicker
+                key={`up-title-${resetKey}-${classId}`}
+                initialWeekLabel={weekLabel}
+                onChange={(t, wl) => {
+                  setTitle(t ?? "");
+                  if (wl) setWeekLabel(wl);
+                }}
+              />
+            ) : (
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
           </div>
           <div>
             <Label htmlFor="desc">설명</Label>
@@ -640,7 +659,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             </div>
           )}
           {file && (
-            <Button type="submit" disabled={uploading}>
+            <Button type="submit" disabled={uploading || (upRegular && !isValidRegularVideoTitle(title))}>
               {uploading ? "업로드 중..." : "업로드"}
             </Button>
           )}
@@ -664,7 +683,19 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             </div>
             <div>
               <Label htmlFor="yt-title">제목</Label>
-              <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
+              {ytRegular ? (
+                <RegularVideoTitlePicker
+                  key={`yt-title-${resetKey}-${ytClassId}`}
+                  initialWeekLabel={ytWeekLabel}
+                  onChange={(t, wl) => {
+                    setYtTitle(t ?? "");
+                    if (wl) setYtWeekLabel(wl);
+                  }}
+                />
+              ) : (
+                <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
+              )}
+              <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
             </div>
             <div>
               <Label htmlFor="yt-desc">설명</Label>
@@ -699,7 +730,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
             <WeekPicker id="yt-week" value={ytWeekLabel} onChange={setYtWeekLabel} />
             <PlaybackSettings id="yt" value={ytPlayback} onChange={setYtPlayback} />
             <ThumbnailPicker key={`yt-${resetKey}`} id="yt" file={ytThumbFile} onChange={setYtThumbFile} />
-            <Button type="submit" disabled={ytSaving}>
+            <Button type="submit" disabled={ytSaving || (ytRegular && !isValidRegularVideoTitle(ytTitle))}>
               {ytSaving ? "추가 중..." : "추가"}
             </Button>
           </form>

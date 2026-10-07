@@ -1,3 +1,5 @@
+import { isValidNaesinClassName } from "@/lib/naming";
+import { NaesinClassNamePicker } from "@/components/admin/NamingPickers";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -2341,12 +2343,23 @@ function ClassDetailPage() {
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="s_name" className="mb-2 block">수강반 이름</Label>
+                    {settingsClassType === "내신" ? (
+                      <NaesinClassNamePicker
+                        initialName={clsAny?.name ?? ""}
+                        onChange={(n, b) => {
+                          if (n) setSettingsName(n);
+                          else if (isValidNaesinClassName(settingsName)) setSettingsName("");
+                          if (b) setSettingsBranch(b);
+                        }}
+                      />
+                    ) : (
                     <Input
                       id="s_name"
                       value={settingsName}
                       onChange={(e) => setSettingsName(e.target.value)}
                       placeholder="예: 19기 정규반"
                     />
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="s_desc" className="mb-2 block">설명</Label>
@@ -2439,7 +2452,7 @@ function ClassDetailPage() {
                   </div>
                 </div>
 
-                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings}>
+                <Button onClick={saveSettings} disabled={!isSettingsDirty || savingSettings || (settingsClassType === "내신" && !isValidNaesinClassName(settingsName))}>
                   {savingSettings ? "저장 중..." : "저장"}
                 </Button>
               </CardContent>
