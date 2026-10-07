@@ -81,6 +81,7 @@ function ClassesPage() {
   const [categoryAuto, setCategoryAuto] = useState(false);
   const [filterCategory, setFilterCategory] = useState<string>("__all__");
   const [branch, setBranch] = useState<string>("__all_branches__");
+  const [classType, setClassType] = useState<string>("__none__");
 
   // 로그인한 강사의 기수에 맞는 카테고리 자동 선택
   const { data: myCohortData } = useQuery({
@@ -222,6 +223,7 @@ function ClassesPage() {
           active_to: alwaysActive ? null : activeTo,
           category_id: categoryId === "__none__" ? null : categoryId,
           branch: branch === "__all_branches__" ? null : branch,
+          class_type: classType === "__none__" ? null : (classType as "정규" | "내신"),
         },
       });
       if (thumbFile && row?.id) {
@@ -434,6 +436,11 @@ function ClassesPage() {
                           }
                           return <span className="rounded bg-green-500/15 px-1.5 py-0.5 text-[10px] text-green-700">진행중</span>;
                         })()}
+                        {c.class_type && (
+                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${c.class_type === "정규" ? "bg-violet-500/15 text-violet-700" : "bg-orange-500/15 text-orange-700"}`}>
+                            {c.class_type}
+                          </span>
+                        )}
                         {c.branch ? (
                           <BranchBadge branch={c.branch} />
                         ) : (
@@ -536,6 +543,19 @@ function ClassesPage() {
                     카테고리가 없습니다. "카테고리" 탭에서 먼저 추가하세요.
                   </p>
                 )}
+              </div>
+              <div>
+                <Label>수강반 유형</Label>
+                <Select value={classType} onValueChange={setClassType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="유형 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">미지정</SelectItem>
+                    <SelectItem value="정규">정규</SelectItem>
+                    <SelectItem value="내신">내신</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>공개 교육원</Label>
