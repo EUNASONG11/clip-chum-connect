@@ -129,8 +129,8 @@ export function NaesinClassNamePicker({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">구분</p>
-          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); setCustomPublisher(false); }}>학교</Chip>
-          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); setCustomPublisher(false); }}>출판사</Chip>
+          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); setCustomPublisher(false); setCustomSchool(false); }}>학교</Chip>
+          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); setCustomPublisher(false); setCustomSchool(false); }}>출판사</Chip>
         </div>
         {mode === "publisher" ? (
           <div className="space-y-1.5">
