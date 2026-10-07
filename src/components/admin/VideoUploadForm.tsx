@@ -557,26 +557,6 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
 
       <TabsContent value="vimeo" className="pt-4">
         <form onSubmit={upload} className="space-y-4">
-          <div>
-            <Label htmlFor="title">제목</Label>
-            {upRegular ? (
-              <RegularVideoTitlePicker
-                key={`up-title-${resetKey}-${classId}`}
-                initialWeekLabel={weekLabel}
-                onChange={(t, wl) => {
-                  setTitle(t ?? "");
-                  if (wl) setWeekLabel(wl);
-                }}
-              />
-            ) : (
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            )}
-            <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
-          </div>
-          <div>
-            <Label htmlFor="desc">설명</Label>
-            <Textarea id="desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <Label>수강반</Label>
@@ -598,6 +578,26 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 onChange={(e) => setSortOrder(Number(e.target.value))}
               />
             </div>
+          </div>
+          <div>
+            <Label htmlFor="title">제목</Label>
+            {upRegular ? (
+              <RegularVideoTitlePicker
+                key={`up-title-${resetKey}-${classId}`}
+                initialWeekLabel={weekLabel}
+                onChange={(t, wl) => {
+                  setTitle(t ?? "");
+                  if (wl) setWeekLabel(wl);
+                }}
+              />
+            ) : (
+              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            )}
+            <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
+          </div>
+          <div>
+            <Label htmlFor="desc">설명</Label>
+            <Textarea id="desc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="flex items-center gap-2">
             <Switch id="pub" checked={isPublished} onCheckedChange={setIsPublished} />
@@ -681,26 +681,6 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 youtube.com/watch, youtu.be, /embed, /shorts 링크 지원
               </p>
             </div>
-            <div>
-              <Label htmlFor="yt-title">제목</Label>
-              {ytRegular ? (
-                <RegularVideoTitlePicker
-                  key={`yt-title-${resetKey}-${ytClassId}`}
-                  initialWeekLabel={ytWeekLabel}
-                  onChange={(t, wl) => {
-                    setYtTitle(t ?? "");
-                    if (wl) setYtWeekLabel(wl);
-                  }}
-                />
-              ) : (
-                <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
-              )}
-              <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
-            </div>
-            <div>
-              <Label htmlFor="yt-desc">설명</Label>
-              <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
-            </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <Label>수강반</Label>
@@ -722,6 +702,26 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                   onChange={(e) => setYtSort(Number(e.target.value))}
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="yt-title">제목</Label>
+              {ytRegular ? (
+                <RegularVideoTitlePicker
+                  key={`yt-title-${resetKey}-${ytClassId}`}
+                  initialWeekLabel={ytWeekLabel}
+                  onChange={(t, wl) => {
+                    setYtTitle(t ?? "");
+                    if (wl) setYtWeekLabel(wl);
+                  }}
+                />
+              ) : (
+                <Input id="yt-title" value={ytTitle} onChange={(e) => setYtTitle(e.target.value)} required />
+              )}
+              <p className="mt-1 text-xs text-muted-foreground">정규 수강반을 고르면 제목을 클릭으로 만듭니다.</p>
+            </div>
+            <div>
+              <Label htmlFor="yt-desc">설명</Label>
+              <Textarea id="yt-desc" rows={3} value={ytDesc} onChange={(e) => setYtDesc(e.target.value)} />
             </div>
             <div className="flex items-center gap-2">
               <Switch id="yt-pub" checked={ytPublished} onCheckedChange={setYtPublished} />
