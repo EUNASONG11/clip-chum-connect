@@ -950,6 +950,18 @@ function VideoPage() {
         </div>
       );
     }
+    if (unavailableReason === "locked") {
+      return (
+        <div className="min-h-screen bg-background">
+          <SiteHeader />
+          <main className="mx-auto max-w-5xl px-4 py-10 text-center">
+            <p className="text-foreground">시청할 수 없는 영상입니다.</p>
+            <p className="mt-2 text-sm text-muted-foreground">수강반에 배정되기 전에 올라온 영상이에요. 필요하면 담당 선생님께 문의해 주세요.</p>
+            <Link to="/" className="mt-4 inline-block text-primary underline">홈으로</Link>
+          </main>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
