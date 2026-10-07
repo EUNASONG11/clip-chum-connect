@@ -433,7 +433,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setTitle("");
       setDescription("");
       setClassId(NO_CLASS);
-      setFolderId(NO_FOLDER);
+      setFolderId(NO_FOLDER); setUpFolderHint(null); setUpSubjectHint(null);
       setIsPublished(false);
       setSortOrder(0);
       setPlayback(DEFAULT_PLAYBACK);
@@ -485,7 +485,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
       setYtTitle("");
       setYtDesc("");
       setYtClassId(NO_CLASS);
-      setYtFolderId(NO_FOLDER);
+      setYtFolderId(NO_FOLDER); setYtFolderHint(null); setYtSubjectHint(null);
       setYtPublished(false);
       setYtSort(0);
       setYtPlayback(DEFAULT_PLAYBACK);
@@ -628,7 +628,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
               <Label>수강반</Label>
               {classSelect(classId, (v) => {
                 setClassId(v);
-                setFolderId(NO_FOLDER);
+                setFolderId(NO_FOLDER); setUpFolderHint(null); setUpSubjectHint(null);
               })}
             </div>
             <div>
@@ -756,7 +756,7 @@ export function VideoUploadForm({ onUploaded }: { onUploaded?: () => void }) {
                 <Label>수강반</Label>
                 {classSelect(ytClassId, (v) => {
                   setYtClassId(v);
-                  setYtFolderId(NO_FOLDER);
+                  setYtFolderId(NO_FOLDER); setYtFolderHint(null); setYtSubjectHint(null);
                 })}
               </div>
               <div>
