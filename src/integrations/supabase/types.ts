@@ -262,6 +262,7 @@ export type Database = {
           active_to: string | null
           branch: string | null
           category_id: string | null
+          class_type: string | null
           created_at: string
           created_by: string
           deleted_at: string | null
@@ -277,6 +278,7 @@ export type Database = {
           active_to?: string | null
           branch?: string | null
           category_id?: string | null
+          class_type?: string | null
           created_at?: string
           created_by: string
           deleted_at?: string | null
@@ -292,6 +294,7 @@ export type Database = {
           active_to?: string | null
           branch?: string | null
           category_id?: string | null
+          class_type?: string | null
           created_at?: string
           created_by?: string
           deleted_at?: string | null
