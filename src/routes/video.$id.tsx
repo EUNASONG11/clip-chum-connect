@@ -9,6 +9,7 @@ import { ArrowLeft, CheckCircle2, Info, Maximize2, Menu, Minimize2, Pause, Play,
 import { Progress } from "@/components/ui/progress";
 import { getMyProgress, upsertMyProgress, listRecentlyWatched, logSeekAttempt } from "@/lib/progress.functions";
 import { getVideoAvailability } from "@/lib/videos.functions";
+import { getVideoLockStatus } from "@/lib/video-lock.functions";
 import { CommentsSection } from "@/components/CommentsSection";
 import { BookmarksPanel } from "@/components/BookmarksPanel";
 import { VideoThumb } from "@/components/VideoThumb";
