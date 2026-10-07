@@ -57,6 +57,9 @@ export function NaesinClassNamePicker({
     parsed && PUBLISHER_OPTIONS.includes(parsed.target) ? "publisher" : "school",
   );
   const [target, setTarget] = useState(parsed?.target ?? "");
+  const [customPublisher, setCustomPublisher] = useState(
+    !!parsed?.target && !PUBLISHER_OPTIONS.includes(parsed.target),
+  );
   const [schoolQuery, setSchoolQuery] = useState("");
 
   useEffect(() => {
