@@ -57,6 +57,9 @@ export function NaesinClassNamePicker({
     parsed && PUBLISHER_OPTIONS.includes(parsed.target) ? "publisher" : "school",
   );
   const [target, setTarget] = useState(parsed?.target ?? "");
+  const [customPublisher, setCustomPublisher] = useState(
+    !!parsed?.target && !PUBLISHER_OPTIONS.includes(parsed.target),
+  );
   const [schoolQuery, setSchoolQuery] = useState("");
 
   useEffect(() => {
@@ -65,6 +68,7 @@ export function NaesinClassNamePicker({
     setCohort(p?.cohort ?? "");
     setTarget(p?.target ?? "");
     setMode(p && PUBLISHER_OPTIONS.includes(p.target) ? "publisher" : "school");
+    setCustomPublisher(!!p?.target && !PUBLISHER_OPTIONS.includes(p.target));
   }, [initialName]);
 
   const { data: opts } = useQuery({
@@ -113,14 +117,26 @@ export function NaesinClassNamePicker({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <p className="text-xs font-medium text-muted-foreground">구분</p>
-          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); }}>학교</Chip>
-          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); }}>출판사</Chip>
+          <Chip active={mode === "school"} onClick={() => { setMode("school"); setTarget(""); setCustomPublisher(false); }}>학교</Chip>
+          <Chip active={mode === "publisher"} onClick={() => { setMode("publisher"); setTarget(""); setCustomPublisher(false); }}>출판사</Chip>
         </div>
         {mode === "publisher" ? (
-          <div className="flex flex-wrap gap-1.5">
-            {PUBLISHER_OPTIONS.map((p) => (
-              <Chip key={p} active={target === p} onClick={() => setTarget(p)}>{p}</Chip>
-            ))}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap gap-1.5">
+              {PUBLISHER_OPTIONS.map((p) => (
+                <Chip key={p} active={!customPublisher && target === p} onClick={() => { setCustomPublisher(false); setTarget(p); }}>{p}</Chip>
+              ))}
+              <Chip active={customPublisher} onClick={() => { setCustomPublisher(true); setTarget(""); }}>직접 입력</Chip>
+            </div>
+            {customPublisher && (
+              <Input
+                className="h-8"
+                placeholder="출판사 이름 직접 입력"
+                maxLength={30}
+                value={target}
+                onChange={(e) => setTarget(e.target.value.replace(/[-[\]]/g, ""))}
+              />
+            )}
           </div>
         ) : !branch ? (
           <p className="text-xs text-muted-foreground">교육원을 먼저 선택하세요.</p>
