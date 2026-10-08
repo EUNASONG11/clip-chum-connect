@@ -36,6 +36,13 @@
       "when": 1791363289258,
       "tag": "0004_videos_student_policy_exclude_hidden",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791418408031,
+      "tag": "0005_fix_videos_policy_recursion",
+      "breakpoints": true
     }
   ]
 }

@@ -1198,6 +1198,10 @@ export type Database = {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
       }
+      is_video_excluded_for: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
+      }
       overview_stats_agg: {
         Args: { _class_ids: string[] }
         Returns: {
