@@ -50,6 +50,13 @@
       "when": 1791418631229,
       "tag": "0006_fix_videos_policy_recursion_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791425607707,
+      "tag": "0007_secure_video_helper_functions",
+      "breakpoints": true
     }
   ]
 }
