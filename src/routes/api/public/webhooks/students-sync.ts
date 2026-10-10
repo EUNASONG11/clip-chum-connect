@@ -95,8 +95,8 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
           return new Response("Missing id or name", { status: 400 });
         }
 
-        const phone = normalizePhone(rec.phone);
-        const parentPhone = normalizePhone(rec.parent_phone);
+        const masterPhone = normalizePhone(rec.phone);
+        const masterParentPhone = normalizePhone(rec.parent_phone);
         const emailRaw = str(rec.email);
         const school = str(rec.school);
         const grade = str(rec.grade);
