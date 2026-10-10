@@ -725,7 +725,7 @@ function VideosPage() {
                         }}
                       >
                         <DialogContent className="max-h-[90dvh] max-w-3xl overflow-x-hidden overflow-y-auto">
-                          <DialogHeader>
+                          <DialogHeader className="min-w-0">
                             <DialogTitle className="truncate">{r.title}</DialogTitle>
                             <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
                           </DialogHeader>
