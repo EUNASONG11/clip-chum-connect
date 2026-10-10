@@ -114,7 +114,7 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         // Check if we already have this student mirrored.
         const { data: existing } = await supabaseAdmin
           .from("external_students")
-          .select("id, auth_user_id, name, phone, parent_phone")
+          .select("id, auth_user_id, name, phone, parent_phone, phone_manually_set")
           .eq("external_id", externalId)
           .maybeSingle();
 

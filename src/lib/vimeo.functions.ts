@@ -1831,7 +1831,7 @@ export const updateStudentPhone = createServerFn({ method: "POST" })
 
     const { error: upErr } = await supabaseAdmin
       .from("external_students")
-      .update({ phone, parent_phone: parentPhone })
+      .update({ phone, parent_phone: parentPhone, phone_manually_set: true })
       .eq("id", student.id);
     if (upErr) throw new Error(upErr.message);
 
