@@ -116,7 +116,7 @@ function VideoExclusionManager({ videoId }: { videoId: string }) {
   const hiddenSet = new Set(hiddenIds as string[]);
 
   return (
-    <div className="rounded-md border p-3">
+    <div className="min-w-0 rounded-md border p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
         <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
         학생별 숨기기
@@ -724,12 +724,12 @@ function VideosPage() {
                           }
                         }}
                       >
-                        <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
+                        <DialogContent className="max-h-[90dvh] max-w-3xl overflow-x-hidden overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle className="truncate">{r.title}</DialogTitle>
                             <DialogDescription>영상 설정을 편집합니다.</DialogDescription>
                           </DialogHeader>
-                          <div className="space-y-4">
+                          <div className="min-w-0 space-y-4">
                             <div>
                               <label className="text-xs text-muted-foreground">제목</label>
                               {(() => {
