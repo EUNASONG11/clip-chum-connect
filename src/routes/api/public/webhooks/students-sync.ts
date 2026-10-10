@@ -108,8 +108,6 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         const cohortMatch = cohortRaw ? /(\d+)/.exec(cohortRaw) : null;
         const cohort = cohortMatch ? `${cohortMatch[1]}기` : null;
         const isDeletedFromMaster = rec.is_deleted === true;
-        // 학생 본인 전화번호가 없으면 학부모 전화번호를 로그인용 기본값으로 사용.
-        const loginPhone = phone ?? parentPhone;
 
         // Check if we already have this student mirrored.
         const { data: existing } = await supabaseAdmin
@@ -117,6 +115,13 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
           .select("id, auth_user_id, name, phone, parent_phone, phone_manually_set")
           .eq("external_id", externalId)
           .maybeSingle();
+
+        // 관리자가 앱에서 직접 번호를 수정한 학생은 마스터 값으로 덮어쓰지 않는다.
+        const phoneLocked = existing?.phone_manually_set === true;
+        const phone = phoneLocked ? (existing?.phone ?? null) : masterPhone;
+        const parentPhone = phoneLocked ? (existing?.parent_phone ?? null) : masterParentPhone;
+        // 학생 본인 전화번호가 없으면 학부모 전화번호를 로그인용 기본값으로 사용.
+        const loginPhone = phone ?? parentPhone;
 
         let authUserId: string | null = existing?.auth_user_id ?? null;
 
