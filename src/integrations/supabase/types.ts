@@ -510,6 +510,7 @@ export type Database = {
           name: string
           parent_phone: string | null
           phone: string | null
+          phone_manually_set: boolean
           school: string | null
           synced_at: string
           temp_password: string | null
@@ -530,6 +531,7 @@ export type Database = {
           name: string
           parent_phone?: string | null
           phone?: string | null
+          phone_manually_set?: boolean
           school?: string | null
           synced_at?: string
           temp_password?: string | null
@@ -550,6 +552,7 @@ export type Database = {
           name?: string
           parent_phone?: string | null
           phone?: string | null
+          phone_manually_set?: boolean
           school?: string | null
           synced_at?: string
           temp_password?: string | null
