@@ -176,3 +176,14 @@ export async function autoPushWeekAssignment(params: {
 
   if (await upsertOne(baseExternalId, null, baseLink)) await resyncOnce();
 }
+
+/** 업로드/저장 응답이 외부 시스템 지연에 묶이지 않도록 최대 ms까지만 기다린다. 남은 작업은 계속 진행된다. */
+export async function autoPushWeekAssignmentBounded(
+  params: Parameters<typeof autoPushWeekAssignment>[0],
+  ms = 8000,
+): Promise<void> {
+  const work = autoPushWeekAssignment(params).catch((e) =>
+    console.error("[external-assignment] auto push error", e),
+  );
+  await Promise.race([work, new Promise<void>((r) => setTimeout(r, ms))]);
+}
