@@ -984,7 +984,7 @@ export const updateVideo = createServerFn({ method: "POST" })
             .maybeSingle();
           targetClassId = (cur?.class_id ?? null) as string | null;
         }
-        const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+        const { autoPushWeekAssignmentBounded: autoPushWeekAssignment } = await import("./external-assignment-auto.server");
         await autoPushWeekAssignment({
           classId: targetClassId,
           weekLabel: data.week_label,

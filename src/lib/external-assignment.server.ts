@@ -43,6 +43,7 @@ async function post(path: string, body: unknown): Promise<{ ok: boolean; status:
       "x-api-key": apiKey,
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(15000),
   });
   const text = await res.text();
   let json: any = null;
