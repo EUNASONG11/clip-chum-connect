@@ -118,7 +118,7 @@ export const listVideoClassStudents = createServerFn({ method: "GET" })
 
     const { data: externals, error: eErr } = await supabaseAdmin
       .from("external_students")
-      .select("auth_user_id, name, school, grade, branch")
+      .select("auth_user_id, name, school, grade, branch, phone, parent_phone")
       .in("auth_user_id", userIds)
       .eq("is_deleted", false);
     if (eErr) throw new Error(eErr.message);
@@ -134,6 +134,8 @@ export const listVideoClassStudents = createServerFn({ method: "GET" })
         school: (e?.school ?? "") as string,
         grade: (e?.grade ?? "") as string,
         branch: (e?.branch ?? "") as string,
+        phone: (e?.phone ?? "") as string,
+        parent_phone: (e?.parent_phone ?? "") as string,
       };
     });
     list.sort((a, b) => a.name.localeCompare(b.name, "ko"));

@@ -15,6 +15,7 @@ import { listVideoClassStudents, listVideoExclusions, setVideoExclusion } from "
 import { deleteVideo, refreshVideoStatus } from "@/lib/vimeo.functions";
 import { listClasses, updateVideo, getVideoCreatorNames } from "@/lib/classes.functions";
 import { WeekPicker } from "@/components/admin/WeekPicker";
+import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { formatWeekLabel } from "@/lib/week";
 import { isValidRegularVideoTitle } from "@/lib/naming";
 import { RegularVideoTitlePicker, FormatWarningBadge } from "@/components/admin/NamingPickers";
@@ -115,6 +116,37 @@ function VideoExclusionManager({ videoId }: { videoId: string }) {
 
   const hiddenSet = new Set(hiddenIds as string[]);
 
+  const [query, setQuery] = useState("");
+  const isSearching = query.trim().length > 0;
+
+  // 띄어쓰기로 구분된 여러 검색어를 OR로 매칭 (이름·학교·학년·교육원·연락처)
+  const listed = useMemo(() => {
+    const all = students as any[];
+    const tokens = query.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return all;
+    return all.filter((s) =>
+      tokens.some((t) => {
+        const norm = t.replace(/\s+/g, "").toLowerCase();
+        const digits = t.replace(/[^0-9]/g, "");
+        const name = (s.name || "").replace(/\s+/g, "").toLowerCase();
+        const school = (s.school || "").replace(/\s+/g, "").toLowerCase();
+        const grade = String(s.grade || "").replace(/\s+/g, "").toLowerCase();
+        const branch = String(s.branch || "").replace(/\s+/g, "").toLowerCase();
+        const phone = String(s.phone || "").replace(/[^0-9]/g, "");
+        const parentPhone = String(s.parent_phone || "").replace(/[^0-9]/g, "");
+        return (
+          (norm.length > 0 &&
+            (name.includes(norm) ||
+              school.includes(norm) ||
+              grade.includes(norm) ||
+              branch.includes(norm))) ||
+          (digits.length > 0 &&
+            (phone.includes(digits) || parentPhone.includes(digits)))
+        );
+      }),
+    );
+  }, [students, query]);
+
   return (
     <div className="min-w-0 rounded-md border p-3">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-medium">
@@ -133,27 +165,48 @@ function VideoExclusionManager({ videoId }: { videoId: string }) {
       ) : (students as any[]).length === 0 ? (
         <p className="text-xs text-muted-foreground">수강반에 배정된 학생이 없습니다.</p>
       ) : (
-        <div className="max-h-48 space-y-1 overflow-y-auto">
-          {(students as any[]).map((s) => (
-            <label
-              key={s.user_id}
-              className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-muted"
-            >
-              <Checkbox
-                checked={hiddenSet.has(s.user_id)}
-                disabled={toggle.isPending}
-                onCheckedChange={(c) =>
-                  toggle.mutate({ userId: s.user_id, hidden: c === true })
-                }
-              />
-              <span className="truncate">
-                {s.name || "(이름 없음)"}
-                <span className="ml-1 text-xs text-muted-foreground">
-                  {[s.school, s.grade, s.branch].filter(Boolean).join(" · ")}
-                </span>
-              </span>
-            </label>
-          ))}
+        <div className="min-w-0 space-y-2">
+          <ClearableSearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="이름·학교·학년·교육원·전화번호 검색 (띄어쓰기로 여러 명)"
+            className="w-full"
+            size="sm"
+            showIcon={false}
+          />
+          {isSearching && (
+            <p className="text-[11px] text-muted-foreground">
+              {`일치하는 학생 ${listed.length}명 / 전체 ${(students as any[]).length}명`}
+            </p>
+          )}
+          {listed.length === 0 ? (
+            <p className="py-1 text-xs text-muted-foreground">
+              {`"${query.trim()}"에 해당하는 학생이 없습니다.`}
+            </p>
+          ) : (
+            <div className="max-h-48 space-y-1 overflow-y-auto">
+              {listed.map((s) => (
+                <label
+                  key={s.user_id}
+                  className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-muted"
+                >
+                  <Checkbox
+                    checked={hiddenSet.has(s.user_id)}
+                    disabled={toggle.isPending}
+                    onCheckedChange={(c) =>
+                      toggle.mutate({ userId: s.user_id, hidden: c === true })
+                    }
+                  />
+                  <span className="truncate">
+                    {s.name || "(이름 없음)"}
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      {[s.school, s.grade, s.branch].filter(Boolean).join(" · ")}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
       <p className="mt-2 text-[11px] text-muted-foreground">
