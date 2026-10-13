@@ -1393,7 +1393,7 @@ function ClassDetailPage() {
             <ClearableSearchInput
               value={assignedQuery}
               onChange={setAssignedQuery}
-              placeholder="배정된 학생 이름·전화번호·학교 검색"
+              placeholder="배정된 학생 이름·전화번호·학교 검색 (띄어쓰기로 여러 명)"
               className="w-full"
               showIcon={false}
             />
