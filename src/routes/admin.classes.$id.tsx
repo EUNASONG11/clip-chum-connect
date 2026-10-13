@@ -1355,16 +1355,24 @@ function ClassDetailPage() {
           )}
 
           {(() => {
-            const q = assignedQuery.replace(/\s+/g, "").toLowerCase();
+            // 띄어쓰기로 구분된 여러 검색어를 OR로 매칭 (이름·학교·기수·연락처)
+            const tokens = assignedQuery.split(/\s+/).filter(Boolean);
             const listed = (students as any[]).filter((s) => {
               const branchOk = listBranch === "__all__" || matchesBranch(listBranch, s.branch);
-              if (!q) return branchOk;
-              const nameMatch = (s.name || "").replace(/\s+/g, "").toLowerCase().includes(q);
-              const phoneMatch = (s.phone || "").replace(/[^0-9]/g, "").includes(q);
-              const parentPhoneMatch = (s.parent_phone || "").replace(/[^0-9]/g, "").includes(q);
-              const schoolMatch = (s.school || "").replace(/\s+/g, "").toLowerCase().includes(q);
-              const cohortMatch = String(s.cohort || "").includes(q);
-              return branchOk && (nameMatch || phoneMatch || parentPhoneMatch || schoolMatch || cohortMatch);
+              if (tokens.length === 0) return branchOk;
+              const name = (s.name || "").replace(/\s+/g, "").toLowerCase();
+              const school = (s.school || "").replace(/\s+/g, "").toLowerCase();
+              const phone = (s.phone || "").replace(/[^0-9]/g, "");
+              const parentPhone = (s.parent_phone || "").replace(/[^0-9]/g, "");
+              const cohort = String(s.cohort || "");
+              return branchOk && tokens.some((t) => {
+                const norm = t.replace(/\s+/g, "").toLowerCase();
+                const digits = t.replace(/[^0-9]/g, "");
+                return (
+                  (norm.length > 0 && (name.includes(norm) || school.includes(norm) || cohort.includes(norm))) ||
+                  (digits.length > 0 && (phone.includes(digits) || parentPhone.includes(digits)))
+                );
+              });
             });
             return (
           <div className="space-y-2">
