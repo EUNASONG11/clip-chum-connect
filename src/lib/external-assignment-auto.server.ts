@@ -22,8 +22,10 @@ export async function autoPushWeekAssignment(params: {
   classId: string | null | undefined;
   weekLabel: string | null | undefined;
   userId: string;
+  /** 완료 재통보(보정)는 오래 걸릴 수 있어 이 시간까지만 기다린다. 과제 생성 자체는 끝까지 기다린다. */
+  resyncWaitMs?: number;
 }): Promise<void> {
-  const { classId, weekLabel, userId } = params;
+  const { classId, weekLabel, userId, resyncWaitMs } = params;
   if (!classId || !isWeekLabel(weekLabel)) return;
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -152,6 +154,11 @@ export async function autoPushWeekAssignment(params: {
 
   /** 과제 생성/갱신이 성공하면, 이미 다 본 학생에게 완료 통보를 한 번 보정한다. */
   async function resyncOnce(): Promise<void> {
+    const work = resyncInner();
+    if (resyncWaitMs == null) return work;
+    await Promise.race([work, new Promise<void>((r) => setTimeout(r, resyncWaitMs))]);
+  }
+  async function resyncInner(): Promise<void> {
     try {
       const { resyncWeekCompletions } = await import("./external-assignment-resync.server");
       await resyncWeekCompletions({ classId: classId!, weekLabel: weekLabel as string });
@@ -177,13 +184,18 @@ export async function autoPushWeekAssignment(params: {
   if (await upsertOne(baseExternalId, null, baseLink)) await resyncOnce();
 }
 
-/** 업로드/저장 응답이 외부 시스템 지연에 묶이지 않도록 최대 ms까지만 기다린다. 남은 작업은 계속 진행된다. */
+/**
+ * 저장 응답용: 외부 과제 생성/갱신은 끝까지 기다리고(외부 호출당 최대 15초),
+ * 시간이 오래 걸리는 완료 재통보만 짧게 기다린다.
+ * (응답 후 남은 작업은 서버에서 중단될 수 있어, 과제 생성은 반드시 응답 전에 끝낸다.)
+ */
 export async function autoPushWeekAssignmentBounded(
-  params: Parameters<typeof autoPushWeekAssignment>[0],
-  ms = 8000,
+  params: Omit<Parameters<typeof autoPushWeekAssignment>[0], "resyncWaitMs">,
+  ms = 3000,
 ): Promise<void> {
-  const work = autoPushWeekAssignment(params).catch((e) =>
-    console.error("[external-assignment] auto push error", e),
-  );
-  await Promise.race([work, new Promise<void>((r) => setTimeout(r, ms))]);
+  try {
+    await autoPushWeekAssignment({ ...params, resyncWaitMs: ms });
+  } catch (e) {
+    console.error("[external-assignment] auto push error", e);
+  }
 }
