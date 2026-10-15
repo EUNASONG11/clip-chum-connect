@@ -425,12 +425,15 @@ export type Database = {
           id: string
           last_error: string | null
           last_synced_at: string | null
+          needs_resync: boolean
           period_end: string | null
           period_start: string | null
           remote_assignment_type_id: string | null
           scope: string
           source: string
           student_count: number
+          students_hash: string | null
+          sync_status: string | null
           updated_at: string
           video_id: string | null
           week_label: string | null
@@ -446,12 +449,15 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_synced_at?: string | null
+          needs_resync?: boolean
           period_end?: string | null
           period_start?: string | null
           remote_assignment_type_id?: string | null
           scope?: string
           source?: string
           student_count?: number
+          students_hash?: string | null
+          sync_status?: string | null
           updated_at?: string
           video_id?: string | null
           week_label?: string | null
@@ -467,12 +473,15 @@ export type Database = {
           id?: string
           last_error?: string | null
           last_synced_at?: string | null
+          needs_resync?: boolean
           period_end?: string | null
           period_start?: string | null
           remote_assignment_type_id?: string | null
           scope?: string
           source?: string
           student_count?: number
+          students_hash?: string | null
+          sync_status?: string | null
           updated_at?: string
           video_id?: string | null
           week_label?: string | null

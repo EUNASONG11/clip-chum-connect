@@ -64,6 +64,13 @@
       "when": 1791605324912,
       "tag": "0008_external_students_phone_manual_override",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792028428749,
+      "tag": "0009_external_links_sync_state",
+      "breakpoints": true
     }
   ]
 }
