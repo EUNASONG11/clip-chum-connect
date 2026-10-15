@@ -60,16 +60,30 @@ export async function resyncWeekBatch(params: {
   const links = (linkRows ?? []) as Link[];
   if (videoIds.length === 0 || links.length === 0) return summary;
 
-  // 진도 (완료만)
-  const prog = await fetchAll<any>((f, t) => {
-    let q = supabaseAdmin
-      .from("video_progress")
-      .select("user_id, video_id, completed_at, updated_at")
-      .in("video_id", videoIds)
-      .eq("is_completed", true);
-    if (userIds && userIds.length > 0) q = q.in("user_id", userIds.slice(0, 200));
-    return q.order("user_id").order("video_id").range(f, t) as any;
-  });
+  // 진도 (완료만) — userIds 가 200명을 넘어도 잘리지 않도록 200개씩 나눠 조회
+  const prog =
+    userIds && userIds.length > 0
+      ? await fetchAllIn<any>(userIds, (ids, f, t) =>
+          supabaseAdmin
+            .from("video_progress")
+            .select("user_id, video_id, completed_at, updated_at")
+            .in("video_id", videoIds)
+            .in("user_id", ids)
+            .eq("is_completed", true)
+            .order("user_id")
+            .order("video_id")
+            .range(f, t) as any,
+        )
+      : await fetchAll<any>((f, t) =>
+          supabaseAdmin
+            .from("video_progress")
+            .select("user_id, video_id, completed_at, updated_at")
+            .in("video_id", videoIds)
+            .eq("is_completed", true)
+            .order("user_id")
+            .order("video_id")
+            .range(f, t) as any,
+        );
   summary.progressRows = prog.length;
 
   const byUser = new Map<string, { videos: Set<string>; latestVideo: string; at: string }>();
