@@ -162,7 +162,7 @@ export const pushVideoAssignmentsToExternal = createServerFn({ method: "POST" })
     if (!videos || videos.length === 0) throw new Error("선택한 영상을 찾을 수 없습니다.");
 
     const enrolled = await fetchAll<any>((f_, t_) =>
-      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
     );
     const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
@@ -279,7 +279,7 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
 
     // 배정된 학생 → 외부 식별자(마스터 students.id)로 변환
     const enrolled = await fetchAll<any>((f_, t_) =>
-      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
     );
     const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
@@ -407,7 +407,7 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     if (videoIds.length === 0) return [] as any[];
 
     const rows = await fetchAllIn<any>(videoIds, (ids_, f_, t_) =>
-      supabaseAdmin.from("video_progress").select("id, user_id, video_id, completed_at, updated_at").in("video_id", ids_).eq("is_completed", true).order("id").range(f_, t_) as any,
+      supabaseAdmin.from("video_progress").select("user_id, video_id, completed_at, updated_at").in("video_id", ids_).eq("is_completed", true).order("user_id").order("video_id").range(f_, t_) as any,
     );
 
 
@@ -618,7 +618,7 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
     const enrolled = await fetchAll<any>((f_, t_) =>
-      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
     );
     const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
@@ -851,10 +851,11 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
     const enrolled = await fetchAllIn<any>(classIds, (ids, f, t) =>
       supabaseAdmin
         .from("class_students")
-        .select("id, class_id")
+        .select("class_id, user_id")
         .in("class_id", ids)
         .is("deleted_at", null)
-        .order("id")
+        .order("class_id")
+        .order("user_id")
         .range(f, t) as any,
     );
     const countById = new Map<string, number>();

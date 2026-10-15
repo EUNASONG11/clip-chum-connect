@@ -64,11 +64,11 @@ export async function resyncWeekBatch(params: {
   const prog = await fetchAll<any>((f, t) => {
     let q = supabaseAdmin
       .from("video_progress")
-      .select("id, user_id, video_id, completed_at, updated_at")
+      .select("user_id, video_id, completed_at, updated_at")
       .in("video_id", videoIds)
       .eq("is_completed", true);
     if (userIds && userIds.length > 0) q = q.in("user_id", userIds.slice(0, 200));
-    return q.order("id").range(f, t) as any;
+    return q.order("user_id").order("video_id").range(f, t) as any;
   });
   summary.progressRows = prog.length;
 
