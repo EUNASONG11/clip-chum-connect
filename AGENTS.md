@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- External week-assignment saves only create/update the assignment and set needs_resync; completion resync runs via the "연동 점검" flow one [class, week] per request in 50-student batches — why: long resyncs after a response get cut off and exceed Worker subrequest limits.

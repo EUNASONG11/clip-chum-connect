@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertExternalAssignmentStaff } from "./external-assignment-auth.server";
 
+const isTimeoutMsg = (m: string) => m.startsWith("외부 응답 지연");
+
 /** 연동 설정 여부 + 수강반별 내보낸 과제 목록 */
 export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -15,7 +17,7 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
 
     let query = context.supabase
       .from("external_assignment_links")
-      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, class_id, video_id, week_label, created_at")
+      .select("id, external_id, assignment_type, scope, period_start, period_end, remote_assignment_type_id, student_count, last_synced_at, last_error, sync_status, needs_resync, class_id, video_id, week_label, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -720,7 +722,9 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
             remote_assignment_type_id: remoteAssignmentTypeId,
             student_count: externalStudentIds.length,
             last_synced_at: lastError ? null : new Date().toISOString(),
-            last_error: lastError,
+            last_error: lastError && !isTimeoutMsg(lastError) ? lastError : null,
+            sync_status: lastError ? (isTimeoutMsg(lastError) ? "timeout" : "failed") : "ok",
+            ...(lastError && !isTimeoutMsg(lastError) ? {} : { needs_resync: true }),
             created_by: context.userId,
             deleted_at: null,
             deleted_by: null,
@@ -774,44 +778,134 @@ export const listClassStudentBranches = createServerFn({ method: "GET" })
       .sort((a, b) => a.branch.localeCompare(b.branch));
   });
 
-/** 주차가 지정됐는데 외부 과제가 없거나 실패한 수강반·주차를 찾아 다시 만든다. */
-export const syncMissingWeekAssignments = createServerFn({ method: "POST" })
+async function staffClassScope(context: any): Promise<Set<string> | null> {
+  const role = await assertExternalAssignmentStaff(context);
+  if (role === "admin") return null;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("class_instructors")
+    .select("class_id")
+    .eq("instructor_user_id", context.userId)
+    .is("deleted_at", null);
+  return new Set((data ?? []).map((r: any) => r.class_id as string));
+}
+
+export type SyncCheckReason = "missing" | "failed" | "resync" | "timeout";
+
+/** 연동 점검 대상: 주차 영상이 있는데 과제 미생성/실패/재통보 필요(/응답 지연) 인 [수강반, 주차] */
+export const listSyncCheckTargets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    await assertExternalAssignmentStaff(context as any);
+  .inputValidator((i) => z.object({ includeTimeout: z.boolean().optional() }).parse(i ?? {}))
+  .handler(async ({ data, context }) => {
+    const scope = await staffClassScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
 
     const { data: vids, error } = await supabaseAdmin
       .from("videos")
       .select("class_id, week_label")
       .not("week_label", "is", null)
       .not("class_id", "is", null)
-      .is("deleted_at", null);
+      .is("deleted_at", null)
+      .limit(100000);
     if (error) throw new Error(error.message);
     const { data: links } = await supabaseAdmin
       .from("external_assignment_links")
-      .select("class_id, week_label, last_error, deleted_at")
+      .select("class_id, week_label, external_id, last_error, deleted_at, needs_resync, sync_status")
       .eq("source", "elearning")
-      .not("week_label", "is", null);
+      .not("week_label", "is", null)
+      .limit(100000);
 
-    const ok = new Set<string>();
+    const keys = new Set<string>();
+    for (const v of vids ?? []) {
+      if (scope && !scope.has(v.class_id as string)) continue;
+      keys.add(`${v.class_id}|${v.week_label}`);
+    }
+    const linksByKey = new Map<string, any[]>();
     for (const l of links ?? []) {
-      if (l.deleted_at || !l.last_error) ok.add(`${l.class_id}|${l.week_label}`);
+      const k = `${l.class_id}|${l.week_label}`;
+      const arr = linksByKey.get(k) ?? [];
+      arr.push(l);
+      linksByKey.set(k, arr);
     }
-    const todo = Array.from(
-      new Set((vids ?? []).map((v) => `${v.class_id}|${v.week_label}`)),
-    ).filter((k) => !ok.has(k));
 
-    let done = 0;
-    for (const k of todo) {
-      const [classId, weekLabel] = k.split("|");
-      try {
-        await autoPushWeekAssignment({ classId, weekLabel, userId: context.userId, resyncWaitMs: 5000 });
-        done++;
-      } catch (e) {
-        console.error("[external-assignment] backfill failed", k, e);
+    const rows: { classId: string; weekLabel: string; reasons: SyncCheckReason[]; lastError: string | null }[] = [];
+    for (const k of keys) {
+      const [classId, weekLabel] = k.split("|") as [string, string];
+      const all = linksByKey.get(k) ?? [];
+      const active = all.filter((l) => !l.deleted_at);
+      const base = `class-${classId}-week-${weekLabel}`;
+      const reasons: SyncCheckReason[] = [];
+      if (active.length === 0) {
+        // 관리자가 지운 주차 과제는 대상 아님
+        if (all.some((l) => l.external_id === base && l.deleted_at)) continue;
+        reasons.push("missing");
+      } else {
+        if (active.some((l) => l.last_error)) reasons.push("failed");
+        if (active.some((l) => l.sync_status === "timeout")) reasons.push("timeout");
+        if (active.some((l) => l.needs_resync)) reasons.push("resync");
       }
+      const effective = reasons.filter((r) => r !== "timeout" || data.includeTimeout);
+      if (effective.length === 0) continue;
+      rows.push({
+        classId,
+        weekLabel,
+        reasons: effective,
+        lastError: active.find((l) => l.last_error)?.last_error ?? null,
+      });
     }
-    return { total: todo.length, done };
+    if (rows.length === 0) return [];
+
+    const classIds = Array.from(new Set(rows.map((r) => r.classId)));
+    const { data: classes } = await supabaseAdmin
+      .from("classes")
+      .select("id, name")
+      .in("id", classIds)
+      .is("deleted_at", null);
+    const nameById = new Map((classes ?? []).map((c: any) => [c.id as string, c.name as string]));
+    const { data: enrolled } = await supabaseAdmin
+      .from("class_students")
+      .select("class_id")
+      .in("class_id", classIds)
+      .is("deleted_at", null)
+      .limit(100000);
+    const countById = new Map<string, number>();
+    for (const e of enrolled ?? []) countById.set(e.class_id as string, (countById.get(e.class_id as string) ?? 0) + 1);
+
+    return rows
+      .filter((r) => nameById.has(r.classId))
+      .map((r) => ({ ...r, className: nameById.get(r.classId)!, studentCount: countById.get(r.classId) ?? 0 }))
+      .sort((a, b) => a.className.localeCompare(b.className) || a.weekLabel.localeCompare(b.weekLabel));
+  });
+
+/** 연동 점검 1건 처리: 과제 생성/갱신 → 성공하면 재통보(최대 50명) */
+export const syncOneWeekAssignment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        classId: z.string().uuid(),
+        weekLabel: z.string().regex(/^\d{4}-\d{2}-[1-5]$/),
+        force: z.boolean().optional(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const scope = await staffClassScope(context);
+    if (scope && !scope.has(data.classId)) throw new Error("담당 수강반만 처리할 수 있습니다.");
+    const t0 = Date.now();
+    const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+    const { resyncWeekBatch, markResyncDone } = await import("./external-assignment-resync.server");
+
+    const push = await autoPushWeekAssignment({
+      classId: data.classId,
+      weekLabel: data.weekLabel,
+      userId: context.userId,
+      force: !!data.force,
+    });
+    if (push.outcome === "failed" || push.outcome === "none") {
+      return { push: push.outcome, error: push.error ?? (push.outcome === "none" ? "대상 학생이 없습니다." : null), sent: 0, failed: 0, remaining: 0, ms: Date.now() - t0 };
+    }
+    const r = await resyncWeekBatch({ classId: data.classId, weekLabel: data.weekLabel, batchSize: 50 });
+    if ((r.remaining ?? 0) === 0 && r.failed === 0) await markResyncDone(data.classId, data.weekLabel);
+    return { push: push.outcome, error: null, sent: r.sent, failed: r.failed, remaining: r.remaining ?? 0, ms: Date.now() - t0 };
   });

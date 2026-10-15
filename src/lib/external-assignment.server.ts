@@ -70,8 +70,30 @@ export type SyncPayload = {
 
 
 /** 과제 정의 생성/갱신 (upsert) */
+export class ExternalTimeoutError extends Error {
+  constructor() {
+    super("외부 응답 지연 - 생성됐을 가능성 높음");
+    this.name = "ExternalTimeoutError";
+  }
+}
+
+export function isTimeoutError(e: unknown): boolean {
+  if (e instanceof ExternalTimeoutError) return true;
+  const n = (e as any)?.name;
+  return n === "AbortError" || n === "TimeoutError";
+}
+
 export async function pushAssignmentSync(payload: SyncPayload) {
-  const result = await post("external-assignment-sync", { source: EXTERNAL_SOURCE, ...payload });
+  const t0 = Date.now();
+  let result: Awaited<ReturnType<typeof post>>;
+  try {
+    result = await post("external-assignment-sync", { source: EXTERNAL_SOURCE, ...payload });
+  } catch (e) {
+    console.log(`[external-assignment] sync ${payload.external_id} students=${payload.students.length} ms=${Date.now() - t0} error=${(e as any)?.name}`);
+    if (isTimeoutError(e)) throw new ExternalTimeoutError();
+    throw e;
+  }
+  console.log(`[external-assignment] sync ${payload.external_id} students=${payload.students.length} ms=${Date.now() - t0} status=${result.status}`);
   if (!result.ok) {
     throw new Error(`외부 과제 생성 실패 (${result.status}): ${result.text.slice(0, 300)}`);
   }
