@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { BranchBadge } from "@/components/BranchBadge";
+import { SyncCheckDialog } from "@/components/admin/SyncCheckDialog";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -241,6 +242,9 @@ export function ExternalAssignmentPanel({
 
   return (
     <div className="space-y-4">
+      <div className="flex justify-end">
+        <SyncCheckDialog />
+      </div>
       <Alert>
         <Info className="h-4 w-4" />
         <AlertTitle>외부 과제 연동은 2단계로 동작합니다</AlertTitle>
@@ -481,7 +485,9 @@ export function ExternalAssignmentPanel({
                     ) : (
                       <Badge variant="outline">수강반 단위</Badge>
                     )}
-                    {l.last_error ? (
+                    {l.sync_status === "timeout" && !l.last_error ? (
+                      <Badge className="bg-warning text-warning-foreground hover:bg-warning">응답 지연(확인 필요)</Badge>
+                    ) : l.last_error ? (
                       <Badge variant="destructive">전송 실패</Badge>
                     ) : (
                       <Badge variant="secondary">전송 완료</Badge>
@@ -526,6 +532,9 @@ export function ExternalAssignmentPanel({
                   <div className="mt-1 text-xs text-muted-foreground">
                     기간 {l.period_start} ~ {l.period_end}
                   </div>
+                  {l.sync_status === "timeout" && !l.last_error && (
+                    <div className="mt-1 text-xs text-muted-foreground">외부 응답 지연 - 생성됐을 가능성 높음</div>
+                  )}
                   {l.last_error && (
                     <div className="mt-1 break-all text-xs text-destructive">{l.last_error}</div>
                   )}
