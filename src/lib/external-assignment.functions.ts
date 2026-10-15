@@ -773,3 +773,45 @@ export const listClassStudentBranches = createServerFn({ method: "GET" })
       .map(([branch, count]) => ({ branch, count }))
       .sort((a, b) => a.branch.localeCompare(b.branch));
   });
+
+/** 주차가 지정됐는데 외부 과제가 없거나 실패한 수강반·주차를 찾아 다시 만든다. */
+export const syncMissingWeekAssignments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertExternalAssignmentStaff(context as any);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+
+    const { data: vids, error } = await supabaseAdmin
+      .from("videos")
+      .select("class_id, week_label")
+      .not("week_label", "is", null)
+      .not("class_id", "is", null)
+      .is("deleted_at", null);
+    if (error) throw new Error(error.message);
+    const { data: links } = await supabaseAdmin
+      .from("external_assignment_links")
+      .select("class_id, week_label, last_error, deleted_at")
+      .eq("source", "elearning")
+      .not("week_label", "is", null);
+
+    const ok = new Set<string>();
+    for (const l of links ?? []) {
+      if (l.deleted_at || !l.last_error) ok.add(`${l.class_id}|${l.week_label}`);
+    }
+    const todo = Array.from(
+      new Set((vids ?? []).map((v) => `${v.class_id}|${v.week_label}`)),
+    ).filter((k) => !ok.has(k));
+
+    let done = 0;
+    for (const k of todo) {
+      const [classId, weekLabel] = k.split("|");
+      try {
+        await autoPushWeekAssignment({ classId, weekLabel, userId: context.userId, resyncWaitMs: 5000 });
+        done++;
+      } catch (e) {
+        console.error("[external-assignment] backfill failed", k, e);
+      }
+    }
+    return { total: todo.length, done };
+  });
