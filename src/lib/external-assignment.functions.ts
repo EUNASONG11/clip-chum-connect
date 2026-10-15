@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fetchAll, fetchAllIn } from "./fetch-all";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertExternalAssignmentStaff } from "./external-assignment-auth.server";
@@ -37,22 +38,18 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
     > = {};
 
     if (linkIds.length > 0) {
-      const { data: comps, error: compErr } = await context.supabase
-        .from("external_assignment_completions")
-        .select("link_id, user_id, status, remote_status, occurred_at")
-        .in("link_id", linkIds)
-        .order("occurred_at", { ascending: false });
-      if (compErr) throw new Error(compErr.message);
+      const comps = await fetchAllIn<any>(linkIds, (ids_, f_, t_) =>
+        context.supabase.from("external_assignment_completions").select("id, link_id, user_id, status, remote_status, occurred_at").in("link_id", ids_).order("occurred_at", { ascending: false }).order("id").range(f_, t_) as any,
+      );
 
       const rows = comps ?? [];
       const userIds = Array.from(new Set(rows.map((c: any) => c.user_id as string)));
       const nameById = new Map<string, string>();
       if (userIds.length > 0) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: students } = await supabaseAdmin
-          .from("external_students")
-          .select("auth_user_id, name")
-          .in("auth_user_id", userIds);
+        const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+          supabaseAdmin.from("external_students").select("id, auth_user_id, name").in("auth_user_id", ids_).order("id").range(f_, t_) as any,
+        );
         for (const s of students ?? []) {
           if (s.auth_user_id) nameById.set(s.auth_user_id, s.name);
         }
@@ -164,21 +161,18 @@ export const pushVideoAssignmentsToExternal = createServerFn({ method: "POST" })
     if (vidErr) throw new Error(vidErr.message);
     if (!videos || videos.length === 0) throw new Error("선택한 영상을 찾을 수 없습니다.");
 
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const externalStudentIds = Array.from(
       new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
@@ -284,22 +278,19 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
     // 배정된 학생 → 외부 식별자(마스터 students.id)로 변환
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
 
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const externalStudentIds = Array.from(
       new Set(
@@ -415,11 +406,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
 
-    const { data: rows } = await supabaseAdmin
-      .from("video_progress")
-      .select("user_id, video_id, completed_at, updated_at")
-      .in("video_id", videoIds)
-      .eq("is_completed", true);
+    const rows = await fetchAllIn<any>(videoIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("video_progress").select("user_id, video_id, completed_at, updated_at").in("video_id", ids_).eq("is_completed", true).order("user_id").order("video_id").range(f_, t_) as any,
+    );
 
 
     const byUser = new Map<string, { completed: number; last: string | null }>();
@@ -434,10 +423,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const userIds = Array.from(byUser.keys());
     if (userIds.length === 0) return [] as any[];
 
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, external_id, branch")
-      .in("auth_user_id", userIds);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, auth_user_id, name, external_id, branch").in("auth_user_id", ids_).order("id").range(f_, t_) as any,
+    );
     const nameById = new Map<
       string,
       { name: string; identified: boolean; branch: string | null }
@@ -471,11 +459,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const linkIds = (links ?? []).map((l) => l.id as string);
     const statusByUser = new Map<string, { status: string; error: string | null }>();
     if (linkIds.length > 0) {
-      const { data: comps } = await supabaseAdmin
-        .from("external_assignment_completions")
-        .select("user_id, status, remote_status, error_message, updated_at")
-        .in("link_id", linkIds)
-        .order("updated_at", { ascending: false });
+      const comps = await fetchAllIn<any>(linkIds, (ids_, f_, t_) =>
+        supabaseAdmin.from("external_assignment_completions").select("id, user_id, status, remote_status, error_message, updated_at").in("link_id", ids_).order("updated_at", { ascending: false }).order("id").range(f_, t_) as any,
+      );
       for (const c of comps ?? []) {
         const u = c.user_id as string;
         if (statusByUser.has(u)) continue;
@@ -631,21 +617,18 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     if (classErr) throw new Error(classErr.message);
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("user_id").eq("class_id", data.classId).is("deleted_at", null).order("user_id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: allStudents } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id, branch")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const allStudents = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id, branch").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const students = data.branch
       ? (allStudents ?? []).filter((s: any) =>
@@ -761,11 +744,9 @@ export const listClassStudentBranches = createServerFn({ method: "GET" })
     if (userIds.length === 0) return [] as { branch: string; count: number }[];
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("branch, external_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, branch, external_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const counts = new Map<string, number>();
     for (const s of students ?? []) {
@@ -800,20 +781,25 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
     const scope = await staffClassScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: vids, error } = await supabaseAdmin
-      .from("videos")
-      .select("class_id, week_label")
-      .not("week_label", "is", null)
-      .not("class_id", "is", null)
-      .is("deleted_at", null)
-      .limit(100000);
-    if (error) throw new Error(error.message);
-    const { data: links } = await supabaseAdmin
-      .from("external_assignment_links")
-      .select("class_id, week_label, external_id, last_error, deleted_at, needs_resync, sync_status")
-      .eq("source", "elearning")
-      .not("week_label", "is", null)
-      .limit(100000);
+    const vids = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("videos")
+        .select("id, class_id, week_label")
+        .not("week_label", "is", null)
+        .not("class_id", "is", null)
+        .is("deleted_at", null)
+        .order("id")
+        .range(f, t) as any,
+    );
+    const links = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("external_assignment_links")
+        .select("id, class_id, week_label, external_id, last_error, deleted_at, needs_resync, sync_status")
+        .eq("source", "elearning")
+        .not("week_label", "is", null)
+        .order("id")
+        .range(f, t) as any,
+    );
 
     const keys = new Set<string>();
     for (const v of vids ?? []) {
@@ -862,12 +848,16 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
       .in("id", classIds)
       .is("deleted_at", null);
     const nameById = new Map((classes ?? []).map((c: any) => [c.id as string, c.name as string]));
-    const { data: enrolled } = await supabaseAdmin
-      .from("class_students")
-      .select("class_id")
-      .in("class_id", classIds)
-      .is("deleted_at", null)
-      .limit(100000);
+    const enrolled = await fetchAllIn<any>(classIds, (ids, f, t) =>
+      supabaseAdmin
+        .from("class_students")
+        .select("class_id, user_id")
+        .in("class_id", ids)
+        .is("deleted_at", null)
+        .order("class_id")
+        .order("user_id")
+        .range(f, t) as any,
+    );
     const countById = new Map<string, number>();
     for (const e of enrolled ?? []) countById.set(e.class_id as string, (countById.get(e.class_id as string) ?? 0) + 1);
 
@@ -893,7 +883,7 @@ export const syncOneWeekAssignment = createServerFn({ method: "POST" })
     const scope = await staffClassScope(context);
     if (scope && !scope.has(data.classId)) throw new Error("담당 수강반만 처리할 수 있습니다.");
     const t0 = Date.now();
-    const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+    const { autoPushWeekAssignment, isSkipReason } = await import("./external-assignment-auto.server");
     const { resyncWeekBatch, markResyncDone } = await import("./external-assignment-resync.server");
 
     const push = await autoPushWeekAssignment({
@@ -902,10 +892,22 @@ export const syncOneWeekAssignment = createServerFn({ method: "POST" })
       userId: context.userId,
       force: !!data.force,
     });
-    if (push.outcome === "failed" || push.outcome === "none") {
-      return { push: push.outcome, error: push.error ?? (push.outcome === "none" ? "대상 학생이 없습니다." : null), sent: 0, failed: 0, remaining: 0, ms: Date.now() - t0 };
+    const empty = { sent: 0, failed: 0, remaining: 0, progressRows: 0, fullCount: 0, notComplete: 0 };
+    if (push.outcome === "failed" || isSkipReason(push.outcome)) {
+      return { push: push.outcome as string, error: push.error ?? null, ...empty, ms: Date.now() - t0 };
     }
     const r = await resyncWeekBatch({ classId: data.classId, weekLabel: data.weekLabel, batchSize: 50 });
     if ((r.remaining ?? 0) === 0 && r.failed === 0) await markResyncDone(data.classId, data.weekLabel);
-    return { push: push.outcome, error: null, sent: r.sent, failed: r.failed, remaining: r.remaining ?? 0, ms: Date.now() - t0 };
+    console.log(`[external-assignment] syncOne ${data.classId} ${data.weekLabel} push=${push.outcome} progressRows=${r.progressRows} full=${r.fullCount} sent=${r.sent} already=${r.alreadySent} remaining=${r.remaining}`);
+    return {
+      push: push.outcome as string,
+      error: null,
+      sent: r.sent,
+      failed: r.failed,
+      remaining: r.remaining ?? 0,
+      progressRows: r.progressRows ?? 0,
+      fullCount: r.fullCount ?? 0,
+      notComplete: r.notComplete,
+      ms: Date.now() - t0,
+    };
   });

@@ -26,7 +26,7 @@ type Row = {
 };
 type Result =
   | { state: "running" }
-  | { state: "ok" | "fail"; sent: number; failed: number; remaining: number; ms: number; push: string; error?: string | null };
+  | { state: "ok" | "fail" | "skip"; sent: number; failed: number; remaining: number; ms: number; push: string; error?: string | null };
 
 const REASON: Record<string, string> = {
   missing: "미생성",
@@ -39,8 +39,14 @@ const PUSH: Record<string, string> = {
   skipped: "변경 없음",
   timeout: "응답 지연",
   failed: "과제 실패",
-  none: "대상 없음",
+  no_enrolled: "건너뜀: 배정 학생 없음",
+  no_external_ids: "건너뜀: 외부 ID 연결된 학생 없음(명부 동기화 필요)",
+  no_branch_students: "건너뜀: 해당 교육원 학생 없음",
+  class_deleted: "건너뜀: 삭제된 수강반",
+  link_deleted: "건너뜀: 관리자가 삭제한 주차 과제",
+  invalid: "건너뜀: 수강반/주차 정보 없음",
 };
+const isSkip = (p: string) => !["sent", "skipped", "timeout", "failed"].includes(p);
 
 export function SyncCheckDialog() {
   const fetchTargets = useServerFn(listSyncCheckTargets);
@@ -68,7 +74,7 @@ export function SyncCheckDialog() {
     }
   }
 
-  async function runOne(r: Row): Promise<boolean> {
+  async function runOne(r: Row): Promise<string> {
     const k = key(r);
     setResults((p) => ({ ...p, [k]: { state: "running" } }));
     let sent = 0;
@@ -89,15 +95,16 @@ export function SyncCheckDialog() {
         if (i === 0) push = res.push;
         remaining = res.remaining;
         error = res.error ?? null;
-        if (res.push === "failed" || res.push === "none" || remaining === 0 || res.sent === 0) break;
+        if (res.push === "failed" || isSkip(res.push) || remaining === 0 || res.sent === 0) break;
       }
     } catch (e) {
       error = e instanceof Error ? e.message : String(e);
       push = "failed";
     }
-    const ok = push !== "failed" && push !== "none" && failed === 0 && remaining === 0;
-    setResults((p) => ({ ...p, [k]: { state: ok ? "ok" : "fail", sent, failed, remaining, ms, push, error } }));
-    return ok;
+    const skipped = isSkip(push);
+    const ok = push !== "failed" && !skipped && failed === 0 && remaining === 0;
+    setResults((p) => ({ ...p, [k]: { state: skipped ? "skip" : ok ? "ok" : "fail", sent, failed, remaining, ms, push, error } }));
+    return skipped ? "skip" : push === "failed" || failed > 0 ? "fail" : push === "timeout" ? "timeout" : ok ? "ok" : "fail";
   }
 
   async function runAll(only?: Row[]) {
@@ -105,13 +112,16 @@ export function SyncCheckDialog() {
     if (list.length === 0) return;
     setRunning(true);
     setProgress({ done: 0, total: list.length });
-    let okCount = 0;
+    const cnt: Record<string, number> = { ok: 0, timeout: 0, fail: 0, skip: 0 };
     for (let i = 0; i < list.length; i++) {
-      if (await runOne(list[i]!)) okCount++;
+      const st = await runOne(list[i]!);
+      cnt[st] = (cnt[st] ?? 0) + 1;
       setProgress({ done: i + 1, total: list.length });
     }
     setRunning(false);
-    toast.success(`연동 점검 완료: ${okCount}/${list.length}건 성공`);
+    toast.success(
+      `연동 점검 완료(${list.length}건): 성공 ${cnt.ok} · 응답 지연 ${cnt.timeout} · 실패 ${cnt.fail} · 건너뜀 ${cnt.skip}`,
+    );
   }
 
   const failedRows = (rows ?? []).filter((r) => results[key(r)]?.state === "fail");
@@ -218,8 +228,8 @@ export function SyncCheckDialog() {
                             <span className="text-muted-foreground">처리 중...</span>
                           ) : (
                             <div className="space-y-0.5">
-                              <Badge variant={res.state === "ok" ? "secondary" : "destructive"}>
-                                {res.state === "ok" ? "성공" : "실패"}
+                              <Badge variant={res.state === "ok" ? "secondary" : res.state === "skip" ? "outline" : "destructive"}>
+                                {res.state === "ok" ? "성공" : res.state === "skip" ? "건너뜀" : "실패"}
                               </Badge>
                               <div>
                                 {PUSH[res.push] ?? res.push} · 통보 {res.sent}명

@@ -7,6 +7,7 @@
  */
 import { pushAssignmentComplete } from "./external-assignment.server";
 import { formatWeekLabel, weekRangeForExternal } from "./week";
+import { fetchAll, fetchAllIn } from "./fetch-all";
 
 export type ResyncSummary = {
   sent: number;
@@ -16,6 +17,10 @@ export type ResyncSummary = {
   total: number;
   /** 이번 호출에서 처리하지 못하고 남은 인원 */
   remaining?: number;
+  /** 진도(완료) 조회 행 수 */
+  progressRows?: number;
+  /** 주차 영상 전부 완료한 인원 */
+  fullCount?: number;
 };
 
 const COMPLETED_STATUS = "review_completed";
@@ -56,18 +61,19 @@ export async function resyncWeekBatch(params: {
   if (videoIds.length === 0 || links.length === 0) return summary;
 
   // 진도 (완료만)
-  let progQuery = supabaseAdmin
-    .from("video_progress")
-    .select("user_id, video_id, completed_at, updated_at")
-    .in("video_id", videoIds)
-    .eq("is_completed", true)
-    .limit(100000);
-  if (userIds && userIds.length > 0) progQuery = progQuery.in("user_id", userIds);
-  const { data: prog, error: progErr } = await progQuery;
-  if (progErr) throw new Error(progErr.message);
+  const prog = await fetchAll<any>((f, t) => {
+    let q = supabaseAdmin
+      .from("video_progress")
+      .select("user_id, video_id, completed_at, updated_at")
+      .in("video_id", videoIds)
+      .eq("is_completed", true);
+    if (userIds && userIds.length > 0) q = q.in("user_id", userIds.slice(0, 200));
+    return q.order("user_id").order("video_id").range(f, t) as any;
+  });
+  summary.progressRows = prog.length;
 
   const byUser = new Map<string, { videos: Set<string>; latestVideo: string; at: string }>();
-  for (const r of prog ?? []) {
+  for (const r of prog) {
     const u = r.user_id as string;
     const at = ((r.completed_at ?? r.updated_at) as string | null) ?? "";
     const cur = byUser.get(u) ?? { videos: new Set<string>(), latestVideo: r.video_id as string, at: "" };
@@ -85,14 +91,19 @@ export async function resyncWeekBatch(params: {
     if (info.videos.size >= videoIds.length) fullUsers.push(u);
     else summary.notComplete += 1;
   }
+  summary.fullCount = fullUsers.length;
   if (fullUsers.length === 0) return summary;
 
-  const { data: studs } = await supabaseAdmin
-    .from("external_students")
-    .select("auth_user_id, external_id, branch")
-    .in("auth_user_id", fullUsers);
+  const studs = await fetchAllIn<any>(fullUsers, (ids, f, t) =>
+    supabaseAdmin
+      .from("external_students")
+      .select("id, auth_user_id, external_id, branch")
+      .in("auth_user_id", ids)
+      .order("id")
+      .range(f, t) as any,
+  );
   const studentByUser = new Map<string, { external_id: string; branch: string | null }>();
-  for (const s of studs ?? []) {
+  for (const s of studs) {
     if (s.auth_user_id && s.external_id) {
       studentByUser.set(s.auth_user_id as string, {
         external_id: s.external_id as string,
@@ -108,14 +119,19 @@ export async function resyncWeekBatch(params: {
     return b ?? generalLink ?? null;
   };
 
-  const { data: comps } = await supabaseAdmin
-    .from("external_assignment_completions")
-    .select("id, link_id, user_id, status")
-    .in("link_id", links.map((l) => l.id))
-    .in("user_id", fullUsers);
+  const linkIds = links.map((l) => l.id);
+  const comps = await fetchAllIn<any>(fullUsers, (ids, f, t) =>
+    supabaseAdmin
+      .from("external_assignment_completions")
+      .select("id, link_id, user_id, status")
+      .in("link_id", linkIds)
+      .in("user_id", ids)
+      .order("id")
+      .range(f, t) as any,
+  );
   const compKey = (linkId: string, userId: string) => `${linkId}|${userId}`;
   const compMap = new Map<string, { id: string; status: string }>();
-  for (const c of comps ?? []) compMap.set(compKey(c.link_id as string, c.user_id as string), c as any);
+  for (const c of comps) compMap.set(compKey(c.link_id as string, c.user_id as string), c as any);
 
   const { start, end } = weekRangeForExternal(weekLabel);
   const s = new Date(`${start}T00:00:00+09:00`).getTime();
