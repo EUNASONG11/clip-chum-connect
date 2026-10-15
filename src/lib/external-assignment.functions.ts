@@ -3,6 +3,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertExternalAssignmentStaff } from "./external-assignment-auth.server";
 
+const isTimeoutMsg = (m: string) => m.startsWith("외부 응답 지연");
+
 /** 연동 설정 여부 + 수강반별 내보낸 과제 목록 */
 export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -720,7 +722,9 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
             remote_assignment_type_id: remoteAssignmentTypeId,
             student_count: externalStudentIds.length,
             last_synced_at: lastError ? null : new Date().toISOString(),
-            last_error: lastError,
+            last_error: lastError && !isTimeoutMsg(lastError) ? lastError : null,
+            sync_status: lastError ? (isTimeoutMsg(lastError) ? "timeout" : "failed") : "ok",
+            ...(lastError && !isTimeoutMsg(lastError) ? {} : { needs_resync: true }),
             created_by: context.userId,
             deleted_at: null,
             deleted_by: null,
