@@ -13,6 +13,7 @@
  */
 import { formatWeekLabel, isWeekLabel, weekRangeForExternal } from "./week";
 import { EXTERNAL_SOURCE, isTimeoutError, pushAssignmentSync } from "./external-assignment.server";
+import { fetchAll, fetchAllIn } from "./fetch-all.server";
 
 type ExistingLink = {
   external_id: string;
@@ -25,7 +26,17 @@ type ExistingLink = {
   students_hash: string | null;
 } | null;
 
-export type PushOutcome = "sent" | "skipped" | "timeout" | "failed" | "none";
+/** 건너뜀 사유 */
+export type PushSkipReason =
+  | "no_enrolled" // 배정 학생 0명
+  | "no_external_ids" // 외부 ID 연결된 학생 0명 (명부 동기화 필요)
+  | "no_branch_students" // 교육원별 과제인데 해당 교육원 학생 0명
+  | "class_deleted"
+  | "link_deleted"
+  | "invalid"; // 수강반/주차 없음
+export type PushOutcome = "sent" | "skipped" | "timeout" | "failed" | PushSkipReason;
+export const isSkipReason = (o: PushOutcome): o is PushSkipReason =>
+  o !== "sent" && o !== "skipped" && o !== "timeout" && o !== "failed";
 
 async function sha(text: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -40,7 +51,7 @@ export async function autoPushWeekAssignment(params: {
   force?: boolean;
 }): Promise<{ outcome: PushOutcome; error?: string }> {
   const { classId, weekLabel, userId, force } = params;
-  if (!classId || !isWeekLabel(weekLabel)) return { outcome: "none" };
+  if (!classId || !isWeekLabel(weekLabel)) return { outcome: "invalid" };
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -50,7 +61,7 @@ export async function autoPushWeekAssignment(params: {
     .eq("id", classId)
     .is("deleted_at", null)
     .maybeSingle();
-  if (!klass) return { outcome: "none" };
+  if (!klass) return { outcome: "class_deleted" };
 
   const baseExternalId = `class-${classId}-week-${weekLabel}`;
 
@@ -67,25 +78,35 @@ export async function autoPushWeekAssignment(params: {
     (l) => l.external_id.startsWith(`${baseExternalId}-`) && !l.deleted_at,
   );
 
-  const { data: enrolled } = await supabaseAdmin
-    .from("class_students")
-    .select("user_id")
-    .eq("class_id", classId)
-    .is("deleted_at", null);
-  const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
-  if (userIds.length === 0) return { outcome: "none" };
+  const enrolled = await fetchAll<{ user_id: string }>((f, t) =>
+    supabaseAdmin
+      .from("class_students")
+      .select("user_id")
+      .eq("class_id", classId)
+      .is("deleted_at", null)
+      .order("user_id")
+      .range(f, t) as any,
+  );
+  const userIds = Array.from(new Set(enrolled.map((r) => r.user_id)));
+  if (userIds.length === 0) return { outcome: "no_enrolled" };
 
-  const { data: students } = await supabaseAdmin
-    .from("external_students")
-    .select("external_id, auth_user_id, branch")
-    .in("auth_user_id", userIds)
-    .eq("is_deleted", false);
+  const students = await fetchAllIn<{ external_id: string | null; auth_user_id: string; branch: string | null }>(
+    userIds,
+    (ids, f, t) =>
+      supabaseAdmin
+        .from("external_students")
+        .select("external_id, auth_user_id, branch")
+        .in("auth_user_id", ids)
+        .eq("is_deleted", false)
+        .order("auth_user_id")
+        .range(f, t) as any,
+  );
 
   const roster = (students ?? []).filter((s: any) => !!s.external_id) as {
     external_id: string;
     branch: string | null;
   }[];
-  if (roster.length === 0) return { outcome: "none" };
+  if (roster.length === 0) return { outcome: "no_external_ids" };
 
   const classBranch = ((klass as any).branch ?? null) as string | null;
   const className = (klass as any).name as string;
@@ -103,10 +124,20 @@ export async function autoPushWeekAssignment(params: {
       : roster;
 
     const externalStudentIds = Array.from(new Set(targets.map((s) => s.external_id))).sort();
-    if (externalStudentIds.length === 0) return { outcome: "none" };
+    if (externalStudentIds.length === 0) {
+      return { outcome: branchFilter ? "no_branch_students" : "no_external_ids" };
+    }
 
+    const branchById = new Map<string, string | null>();
+    for (const s of targets) branchById.set(s.external_id, s.branch ?? null);
+    // 정렬된 id 순서로 만든다 (DB 반환 순서와 무관하게 해시가 같도록)
     const studentBranches: Record<string, string | null> = {};
-    for (const s of targets) studentBranches[s.external_id] = s.branch ?? null;
+    const branchPairs: [string, string | null][] = [];
+    for (const id of externalStudentIds) {
+      const b = branchById.get(id) ?? null;
+      studentBranches[id] = b;
+      branchPairs.push([id, b]);
+    }
 
     const assignmentType = (
       existing?.assignment_type ?? `${className} ${formatWeekLabel(weekLabel)} 영상 과제`
@@ -117,18 +148,33 @@ export async function autoPushWeekAssignment(params: {
       branchFilter && branchFilter !== "미지정" ? branchFilter : classBranch;
 
     const hash = await sha(
-      JSON.stringify([assignmentType, periodStart, periodEnd, externalStudentIds, studentBranches]),
+      JSON.stringify(["v2", assignmentType, periodStart, periodEnd, branchPairs]),
     );
 
     // 지난 전송과 같으면 외부 호출 생략 (실패 건은 재시도)
-    if (
-      !force &&
-      existing &&
-      !existing.deleted_at &&
-      !existing.last_error &&
-      existing.students_hash === hash
-    ) {
+    const unchangedBase = !force && existing && !existing.deleted_at && !existing.last_error;
+    if (unchangedBase && existing!.students_hash === hash) {
       return { outcome: "skipped" };
+    }
+    // 이전 방식(v1) 해시와 같으면 다시 보내지 않고 저장값만 새 방식으로 바꾼다.
+    if (unchangedBase && existing!.students_hash) {
+      const legacyCandidates: Record<string, string | null>[] = [studentBranches];
+      const dbOrder: Record<string, string | null> = {};
+      for (const s of targets) dbOrder[s.external_id] = s.branch ?? null;
+      legacyCandidates.push(dbOrder);
+      for (const sb of legacyCandidates) {
+        const legacy = await sha(
+          JSON.stringify([assignmentType, periodStart, periodEnd, externalStudentIds, sb]),
+        );
+        if (legacy === existing!.students_hash) {
+          await supabaseAdmin
+            .from("external_assignment_links")
+            .update({ students_hash: hash })
+            .eq("source", EXTERNAL_SOURCE)
+            .eq("external_id", externalId);
+          return { outcome: "skipped" };
+        }
+      }
     }
 
     let remoteAssignmentTypeId: string | null = null;
@@ -189,19 +235,20 @@ export async function autoPushWeekAssignment(params: {
     return { outcome: timedOut ? "timeout" : "sent" };
   }
 
-  const rank: Record<PushOutcome, number> = { failed: 4, timeout: 3, sent: 2, skipped: 1, none: 0 };
+  const rank = (o: PushOutcome) =>
+    o === "failed" ? 4 : o === "timeout" ? 3 : o === "sent" ? 2 : o === "skipped" ? 1 : 0;
 
   if (branchLinks.length > 0) {
-    let worst: { outcome: PushOutcome; error?: string } = { outcome: "none" };
+    let worst: { outcome: PushOutcome; error?: string } | null = null;
     for (const link of branchLinks) {
       const branchFilter = link.external_id.slice(baseExternalId.length + 1) || null;
       const r = await upsertOne(link.external_id, branchFilter, link);
-      if (rank[r.outcome] > rank[worst.outcome]) worst = r;
+      if (!worst || rank(r.outcome) > rank(worst.outcome)) worst = r;
     }
-    return worst;
+    return worst!;
   }
 
-  if (baseLink?.deleted_at) return { outcome: "none" };
+  if (baseLink?.deleted_at) return { outcome: "link_deleted" };
   return upsertOne(baseExternalId, null, baseLink);
 }
 
