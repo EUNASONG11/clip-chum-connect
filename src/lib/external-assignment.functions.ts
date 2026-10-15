@@ -800,20 +800,26 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
     const scope = await staffClassScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { data: vids, error } = await supabaseAdmin
-      .from("videos")
-      .select("class_id, week_label")
-      .not("week_label", "is", null)
-      .not("class_id", "is", null)
-      .is("deleted_at", null)
-      .limit(100000);
-    if (error) throw new Error(error.message);
-    const { data: links } = await supabaseAdmin
-      .from("external_assignment_links")
-      .select("class_id, week_label, external_id, last_error, deleted_at, needs_resync, sync_status")
-      .eq("source", "elearning")
-      .not("week_label", "is", null)
-      .limit(100000);
+    const { fetchAll, fetchAllIn } = await import("./fetch-all.server");
+    const vids = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("videos")
+        .select("id, class_id, week_label")
+        .not("week_label", "is", null)
+        .not("class_id", "is", null)
+        .is("deleted_at", null)
+        .order("id")
+        .range(f, t) as any,
+    );
+    const links = await fetchAll<any>((f, t) =>
+      supabaseAdmin
+        .from("external_assignment_links")
+        .select("id, class_id, week_label, external_id, last_error, deleted_at, needs_resync, sync_status")
+        .eq("source", "elearning")
+        .not("week_label", "is", null)
+        .order("id")
+        .range(f, t) as any,
+    );
 
     const keys = new Set<string>();
     for (const v of vids ?? []) {
@@ -862,12 +868,15 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
       .in("id", classIds)
       .is("deleted_at", null);
     const nameById = new Map((classes ?? []).map((c: any) => [c.id as string, c.name as string]));
-    const { data: enrolled } = await supabaseAdmin
-      .from("class_students")
-      .select("class_id")
-      .in("class_id", classIds)
-      .is("deleted_at", null)
-      .limit(100000);
+    const enrolled = await fetchAllIn<any>(classIds, (ids, f, t) =>
+      supabaseAdmin
+        .from("class_students")
+        .select("id, class_id")
+        .in("class_id", ids)
+        .is("deleted_at", null)
+        .order("id")
+        .range(f, t) as any,
+    );
     const countById = new Map<string, number>();
     for (const e of enrolled ?? []) countById.set(e.class_id as string, (countById.get(e.class_id as string) ?? 0) + 1);
 
@@ -893,7 +902,7 @@ export const syncOneWeekAssignment = createServerFn({ method: "POST" })
     const scope = await staffClassScope(context);
     if (scope && !scope.has(data.classId)) throw new Error("담당 수강반만 처리할 수 있습니다.");
     const t0 = Date.now();
-    const { autoPushWeekAssignment } = await import("./external-assignment-auto.server");
+    const { autoPushWeekAssignment, isSkipReason } = await import("./external-assignment-auto.server");
     const { resyncWeekBatch, markResyncDone } = await import("./external-assignment-resync.server");
 
     const push = await autoPushWeekAssignment({
@@ -902,10 +911,22 @@ export const syncOneWeekAssignment = createServerFn({ method: "POST" })
       userId: context.userId,
       force: !!data.force,
     });
-    if (push.outcome === "failed" || push.outcome === "none") {
-      return { push: push.outcome, error: push.error ?? (push.outcome === "none" ? "대상 학생이 없습니다." : null), sent: 0, failed: 0, remaining: 0, ms: Date.now() - t0 };
+    const empty = { sent: 0, failed: 0, remaining: 0, progressRows: 0, fullCount: 0, notComplete: 0 };
+    if (push.outcome === "failed" || isSkipReason(push.outcome)) {
+      return { push: push.outcome as string, error: push.error ?? null, ...empty, ms: Date.now() - t0 };
     }
     const r = await resyncWeekBatch({ classId: data.classId, weekLabel: data.weekLabel, batchSize: 50 });
     if ((r.remaining ?? 0) === 0 && r.failed === 0) await markResyncDone(data.classId, data.weekLabel);
-    return { push: push.outcome, error: null, sent: r.sent, failed: r.failed, remaining: r.remaining ?? 0, ms: Date.now() - t0 };
+    console.log(`[external-assignment] syncOne ${data.classId} ${data.weekLabel} push=${push.outcome} progressRows=${r.progressRows} full=${r.fullCount} sent=${r.sent} already=${r.alreadySent} remaining=${r.remaining}`);
+    return {
+      push: push.outcome as string,
+      error: null,
+      sent: r.sent,
+      failed: r.failed,
+      remaining: r.remaining ?? 0,
+      progressRows: r.progressRows ?? 0,
+      fullCount: r.fullCount ?? 0,
+      notComplete: r.notComplete,
+      ms: Date.now() - t0,
+    };
   });
