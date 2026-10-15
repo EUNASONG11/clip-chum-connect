@@ -74,7 +74,7 @@ export function SyncCheckDialog() {
     }
   }
 
-  async function runOne(r: Row): Promise<boolean> {
+  async function runOne(r: Row): Promise<string> {
     const k = key(r);
     setResults((p) => ({ ...p, [k]: { state: "running" } }));
     let sent = 0;
@@ -104,7 +104,7 @@ export function SyncCheckDialog() {
     const skipped = isSkip(push);
     const ok = push !== "failed" && !skipped && failed === 0 && remaining === 0;
     setResults((p) => ({ ...p, [k]: { state: skipped ? "skip" : ok ? "ok" : "fail", sent, failed, remaining, ms, push, error } }));
-    return ok;
+    return skipped ? "skip" : push === "failed" || failed > 0 ? "fail" : push === "timeout" ? "timeout" : ok ? "ok" : "fail";
   }
 
   async function runAll(only?: Row[]) {
@@ -112,13 +112,16 @@ export function SyncCheckDialog() {
     if (list.length === 0) return;
     setRunning(true);
     setProgress({ done: 0, total: list.length });
-    let okCount = 0;
+    const cnt: Record<string, number> = { ok: 0, timeout: 0, fail: 0, skip: 0 };
     for (let i = 0; i < list.length; i++) {
-      if (await runOne(list[i]!)) okCount++;
+      const st = await runOne(list[i]!);
+      cnt[st] = (cnt[st] ?? 0) + 1;
       setProgress({ done: i + 1, total: list.length });
     }
     setRunning(false);
-    toast.success(`연동 점검 완료: ${okCount}/${list.length}건 성공`);
+    toast.success(
+      `연동 점검 완료(${list.length}건): 성공 ${cnt.ok} · 응답 지연 ${cnt.timeout} · 실패 ${cnt.fail} · 건너뜀 ${cnt.skip}`,
+    );
   }
 
   const failedRows = (rows ?? []).filter((r) => results[key(r)]?.state === "fail");
