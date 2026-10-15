@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { fetchAll, fetchAllIn } from "./fetch-all";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { assertExternalAssignmentStaff } from "./external-assignment-auth.server";
@@ -37,22 +38,18 @@ export const getExternalAssignmentStatus = createServerFn({ method: "GET" })
     > = {};
 
     if (linkIds.length > 0) {
-      const { data: comps, error: compErr } = await context.supabase
-        .from("external_assignment_completions")
-        .select("link_id, user_id, status, remote_status, occurred_at")
-        .in("link_id", linkIds)
-        .order("occurred_at", { ascending: false });
-      if (compErr) throw new Error(compErr.message);
+      const comps = await fetchAllIn<any>(linkIds, (ids_, f_, t_) =>
+        context.supabase.from("external_assignment_completions").select("id, link_id, user_id, status, remote_status, occurred_at").in("link_id", ids_).order("occurred_at", { ascending: false }).order("id").range(f_, t_) as any,
+      );
 
       const rows = comps ?? [];
       const userIds = Array.from(new Set(rows.map((c: any) => c.user_id as string)));
       const nameById = new Map<string, string>();
       if (userIds.length > 0) {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: students } = await supabaseAdmin
-          .from("external_students")
-          .select("auth_user_id, name")
-          .in("auth_user_id", userIds);
+        const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+          supabaseAdmin.from("external_students").select("id, auth_user_id, name").in("auth_user_id", ids_).order("id").range(f_, t_) as any,
+        );
         for (const s of students ?? []) {
           if (s.auth_user_id) nameById.set(s.auth_user_id, s.name);
         }
@@ -164,21 +161,18 @@ export const pushVideoAssignmentsToExternal = createServerFn({ method: "POST" })
     if (vidErr) throw new Error(vidErr.message);
     if (!videos || videos.length === 0) throw new Error("선택한 영상을 찾을 수 없습니다.");
 
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const externalStudentIds = Array.from(
       new Set((students ?? []).map((s) => s.external_id).filter((v): v is string => !!v)),
@@ -284,22 +278,19 @@ export const pushClassAssignmentToExternal = createServerFn({ method: "POST" })
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
     // 배정된 학생 → 외부 식별자(마스터 students.id)로 변환
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
 
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const externalStudentIds = Array.from(
       new Set(
@@ -415,11 +406,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const videoIds = (videos ?? []).map((v) => v.id as string);
     if (videoIds.length === 0) return [] as any[];
 
-    const { data: rows } = await supabaseAdmin
-      .from("video_progress")
-      .select("user_id, video_id, completed_at, updated_at")
-      .in("video_id", videoIds)
-      .eq("is_completed", true);
+    const rows = await fetchAllIn<any>(videoIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("video_progress").select("id, user_id, video_id, completed_at, updated_at").in("video_id", ids_).eq("is_completed", true).order("id").range(f_, t_) as any,
+    );
 
 
     const byUser = new Map<string, { completed: number; last: string | null }>();
@@ -434,10 +423,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const userIds = Array.from(byUser.keys());
     if (userIds.length === 0) return [] as any[];
 
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, external_id, branch")
-      .in("auth_user_id", userIds);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, auth_user_id, name, external_id, branch").in("auth_user_id", ids_).order("id").range(f_, t_) as any,
+    );
     const nameById = new Map<
       string,
       { name: string; identified: boolean; branch: string | null }
@@ -471,11 +459,9 @@ export const listResyncTargets = createServerFn({ method: "GET" })
     const linkIds = (links ?? []).map((l) => l.id as string);
     const statusByUser = new Map<string, { status: string; error: string | null }>();
     if (linkIds.length > 0) {
-      const { data: comps } = await supabaseAdmin
-        .from("external_assignment_completions")
-        .select("user_id, status, remote_status, error_message, updated_at")
-        .in("link_id", linkIds)
-        .order("updated_at", { ascending: false });
+      const comps = await fetchAllIn<any>(linkIds, (ids_, f_, t_) =>
+        supabaseAdmin.from("external_assignment_completions").select("id, user_id, status, remote_status, error_message, updated_at").in("link_id", ids_).order("updated_at", { ascending: false }).order("id").range(f_, t_) as any,
+      );
       for (const c of comps ?? []) {
         const u = c.user_id as string;
         if (statusByUser.has(u)) continue;
@@ -631,21 +617,18 @@ export const pushWeekAssignmentsToExternal = createServerFn({ method: "POST" })
     if (classErr) throw new Error(classErr.message);
     if (!klass) throw new Error("수강반을 찾을 수 없거나 권한이 없습니다.");
 
-    const { data: enrolled, error: enrollErr } = await context.supabase
-      .from("class_students")
-      .select("user_id")
-      .eq("class_id", data.classId)
-      .is("deleted_at", null);
+    const enrolled = await fetchAll<any>((f_, t_) =>
+      context.supabase.from("class_students").select("id, user_id").eq("class_id", data.classId).is("deleted_at", null).order("id").range(f_, t_) as any,
+    );
+    const enrollErr = null as { message: string } | null;
     if (enrollErr) throw new Error(enrollErr.message);
     const userIds = (enrolled ?? []).map((r: any) => r.user_id as string);
     if (userIds.length === 0) throw new Error("이 수강반에 배정된 학생이 없습니다.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: allStudents } = await supabaseAdmin
-      .from("external_students")
-      .select("external_id, auth_user_id, branch")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const allStudents = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, external_id, auth_user_id, branch").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const students = data.branch
       ? (allStudents ?? []).filter((s: any) =>
@@ -761,11 +744,9 @@ export const listClassStudentBranches = createServerFn({ method: "GET" })
     if (userIds.length === 0) return [] as { branch: string; count: number }[];
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: students } = await supabaseAdmin
-      .from("external_students")
-      .select("branch, external_id")
-      .in("auth_user_id", userIds)
-      .eq("is_deleted", false);
+    const students = await fetchAllIn<any>(userIds, (ids_, f_, t_) =>
+      supabaseAdmin.from("external_students").select("id, branch, external_id").in("auth_user_id", ids_).eq("is_deleted", false).order("id").range(f_, t_) as any,
+    );
 
     const counts = new Map<string, number>();
     for (const s of students ?? []) {
@@ -800,7 +781,6 @@ export const listSyncCheckTargets = createServerFn({ method: "GET" })
     const scope = await staffClassScope(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const { fetchAll, fetchAllIn } = await import("./fetch-all.server");
     const vids = await fetchAll<any>((f, t) =>
       supabaseAdmin
         .from("videos")

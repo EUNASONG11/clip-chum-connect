@@ -13,7 +13,7 @@
  */
 import { formatWeekLabel, isWeekLabel, weekRangeForExternal } from "./week";
 import { EXTERNAL_SOURCE, isTimeoutError, pushAssignmentSync } from "./external-assignment.server";
-import { fetchAll, fetchAllIn } from "./fetch-all.server";
+import { fetchAll, fetchAllIn } from "./fetch-all";
 
 type ExistingLink = {
   external_id: string;

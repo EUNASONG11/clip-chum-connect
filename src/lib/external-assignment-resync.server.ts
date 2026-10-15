@@ -7,7 +7,7 @@
  */
 import { pushAssignmentComplete } from "./external-assignment.server";
 import { formatWeekLabel, weekRangeForExternal } from "./week";
-import { fetchAll, fetchAllIn } from "./fetch-all.server";
+import { fetchAll, fetchAllIn } from "./fetch-all";
 
 export type ResyncSummary = {
   sent: number;
