@@ -191,7 +191,6 @@ function ClassesPage() {
     (categories as any[]).map((c) => [c.id as string, c]),
   );
   const filteredClasses = (classes as any[]).filter((c) => {
-    if (onlyUnformatted && !(c.class_type === "내신" && !isValidNaesinClassName(c.name))) return false;
     if (!showEnded) {
       const today = new Date().toISOString().slice(0, 10);
       if (c.active_to && today > c.active_to) return false;
