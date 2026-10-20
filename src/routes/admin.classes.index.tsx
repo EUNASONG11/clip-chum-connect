@@ -398,6 +398,10 @@ function ClassesPage() {
               <input type="checkbox" checked={onlyUnformatted} onChange={(e) => setOnlyUnformatted(e.target.checked)} />
               형식 미준수만
             </label>
+            <label className="flex shrink-0 items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} />
+              종료된 반 보기
+            </label>
             <div className="w-full sm:w-56">
               <Select value={filterCategory} onValueChange={setFilterCategory}>
                 <SelectTrigger>
