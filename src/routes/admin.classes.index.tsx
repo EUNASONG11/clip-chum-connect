@@ -190,11 +190,13 @@ function ClassesPage() {
   const categoryMap = new Map<string, any>(
     (categories as any[]).map((c) => [c.id as string, c]),
   );
-  const filteredClasses = (classes as any[]).filter((c) => {
-    if (!showEnded) {
-      const today = new Date().toISOString().slice(0, 10);
-      if (c.active_to && today > c.active_to) return false;
-    }
+  const today = new Date().toISOString().slice(0, 10);
+  const isEndedClass = (c: any) => !!c.active_to && today > c.active_to;
+  // 종료된 반은 목록 개수 계산에서도 제외 (체크박스 켤 때만 포함)
+  const scopedClasses = showEnded
+    ? (classes as any[])
+    : (classes as any[]).filter((c) => !isEndedClass(c));
+  const filteredClasses = scopedClasses.filter((c) => {
     if (filterCategory === "__all__") return true;
     if (filterCategory === "__none__") return !c.category_id;
     return c.category_id === filterCategory;
