@@ -181,7 +181,6 @@ function ClassesPage() {
   const [catCohort, setCatCohort] = useState<string>("__none__");
   const [catSaving, setCatSaving] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
-  const [onlyUnformatted, setOnlyUnformatted] = useState(false);
   const [showEnded, setShowEnded] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
