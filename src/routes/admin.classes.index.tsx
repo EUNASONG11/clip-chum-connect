@@ -182,6 +182,7 @@ function ClassesPage() {
   const [catSaving, setCatSaving] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [onlyUnformatted, setOnlyUnformatted] = useState(false);
+  const [showEnded, setShowEnded] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
   const [editingCatColor, setEditingCatColor] = useState("#22c55e");
@@ -192,6 +193,10 @@ function ClassesPage() {
   );
   const filteredClasses = (classes as any[]).filter((c) => {
     if (onlyUnformatted && !(c.class_type === "내신" && !isValidNaesinClassName(c.name))) return false;
+    if (!showEnded) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (c.active_to && today > c.active_to) return false;
+    }
     if (filterCategory === "__all__") return true;
     if (filterCategory === "__none__") return !c.category_id;
     return c.category_id === filterCategory;
