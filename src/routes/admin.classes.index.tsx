@@ -394,29 +394,27 @@ function ClassesPage() {
         <Card>
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>수강반 목록 ({filteredClasses.length}/{classes.length})</CardTitle>
-            <label className="flex shrink-0 items-center gap-1.5 text-xs">
-              <input type="checkbox" checked={onlyUnformatted} onChange={(e) => setOnlyUnformatted(e.target.checked)} />
-              형식 미준수만
-            </label>
-            <label className="flex shrink-0 items-center gap-1.5 text-xs">
-              <input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} />
-              종료된 반 보기
-            </label>
-            <div className="w-full sm:w-56">
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="카테고리 필터" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">전체 카테고리</SelectItem>
-                  <SelectItem value="__none__">미지정</SelectItem>
-                  {(categories as any[]).map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-3">
+              <label className="flex shrink-0 items-center gap-1.5 text-xs">
+                <input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} />
+                종료된 반 보기
+              </label>
+              <div className="w-full sm:w-56">
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="카테고리 필터" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">전체 카테고리</SelectItem>
+                    <SelectItem value="__none__">미지정</SelectItem>
+                    {(categories as any[]).map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
