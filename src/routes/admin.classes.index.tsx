@@ -393,7 +393,7 @@ function ClassesPage() {
       <TabsContent value="list">
         <Card>
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>수강반 목록 ({filteredClasses.length}/{classes.length})</CardTitle>
+            <CardTitle>수강반 목록 ({filteredClasses.length}/{scopedClasses.length})</CardTitle>
             <div className="flex items-center gap-3">
               <label className="flex shrink-0 items-center gap-1.5 text-xs">
                 <input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} />
