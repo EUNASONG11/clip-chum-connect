@@ -182,6 +182,7 @@ function ClassesPage() {
   const [catSaving, setCatSaving] = useState(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [onlyUnformatted, setOnlyUnformatted] = useState(false);
+  const [showEnded, setShowEnded] = useState(false);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingCatName, setEditingCatName] = useState("");
   const [editingCatColor, setEditingCatColor] = useState("#22c55e");
@@ -192,6 +193,10 @@ function ClassesPage() {
   );
   const filteredClasses = (classes as any[]).filter((c) => {
     if (onlyUnformatted && !(c.class_type === "내신" && !isValidNaesinClassName(c.name))) return false;
+    if (!showEnded) {
+      const today = new Date().toISOString().slice(0, 10);
+      if (c.active_to && today > c.active_to) return false;
+    }
     if (filterCategory === "__all__") return true;
     if (filterCategory === "__none__") return !c.category_id;
     return c.category_id === filterCategory;
@@ -392,6 +397,10 @@ function ClassesPage() {
             <label className="flex shrink-0 items-center gap-1.5 text-xs">
               <input type="checkbox" checked={onlyUnformatted} onChange={(e) => setOnlyUnformatted(e.target.checked)} />
               형식 미준수만
+            </label>
+            <label className="flex shrink-0 items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={showEnded} onChange={(e) => setShowEnded(e.target.checked)} />
+              종료된 반 보기
             </label>
             <div className="w-full sm:w-56">
               <Select value={filterCategory} onValueChange={setFilterCategory}>
