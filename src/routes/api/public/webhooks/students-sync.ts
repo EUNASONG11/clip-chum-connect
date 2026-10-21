@@ -1,4 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createClient } from "@supabase/supabase-js";
+import { resolveStudentCohort } from "@/lib/cohort";
+
+// 마스터 teachers 표에서 담당 강사 이메일 조회 (기수 계산용). 접속 정보가 없거나 실패하면 null.
+async function fetchMasterTeacherEmail(teacherId: string | null): Promise<string | null> {
+  const url = process.env.MASTER_SUPABASE_URL;
+  const key = process.env.MASTER_SUPABASE_SERVICE_ROLE_KEY;
+  if (!teacherId || !url || !key) return null;
+  try {
+    const master = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data, error } = await master.from("teachers").select("email").eq("id", teacherId).maybeSingle();
+    if (error) {
+      console.error("fetch teacher email failed", error);
+      return null;
+    }
+    return (data as { email?: string | null } | null)?.email ?? null;
+  } catch (e) {
+    console.error("fetch teacher email failed", e);
+    return null;
+  }
+}
 
 /**
  * Inbound webhook from the master Supabase project's `students` table.
@@ -103,10 +124,11 @@ export const Route = createFileRoute("/api/public/webhooks/students-sync")({
         const classTime = str(rec.class_time);
         const enrollmentStatus = str(rec.enrollment_status);
         const branch = str(rec.education_center) ?? str(rec.branch);
-        // 기수: 외부 DB의 cohort_override(예: "15기", "15")에서 추출
-        const cohortRaw = str(rec.cohort_override);
-        const cohortMatch = cohortRaw ? /(\d+)/.exec(cohortRaw) : null;
-        const cohort = cohortMatch ? `${cohortMatch[1]}기` : null;
+        // 기수: cohort_override(예: "15기") 우선, 없으면 담당 강사 이메일 규칙(src/lib/cohort.ts)
+        const cohort = resolveStudentCohort({
+          cohortOverride: rec.cohort_override,
+          teacherEmail: await fetchMasterTeacherEmail(str(rec.teacher_id)),
+        });
         const isDeletedFromMaster = rec.is_deleted === true;
 
         // Check if we already have this student mirrored.

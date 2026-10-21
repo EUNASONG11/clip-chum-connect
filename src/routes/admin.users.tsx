@@ -33,6 +33,7 @@ import {
 
 import { COHORT_OPTIONS } from "@/lib/cohort";
 import { backfillBranchesFromMaster } from "@/lib/branch-backfill.functions";
+import { backfillCohortsFromMaster } from "@/lib/cohort-backfill.functions";
 import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch";
 import { BranchBadge } from "@/components/BranchBadge";
 import { AdminOnly, useAdminRole } from "@/components/AdminRole";
@@ -144,6 +145,27 @@ function UsersPage() {
       toast.error(e?.message ?? "백필 실패");
     } finally {
       setBackfillBusy(false);
+    }
+  }
+  const [cohortBusy, setCohortBusy] = useState(false);
+  async function runCohortBackfill() {
+    if (cohortBusy) return;
+    if (!confirm("마스터 DB의 담당 강사 이메일로 학생 기수를 계산해 일괄 업데이트합니다. 진행할까요?")) return;
+    setCohortBusy(true);
+    try {
+      const res = await backfillCohortsFromMaster();
+      const extra = res.unknownEmails.length ? ` · 규칙 밖 강사 이메일 ${res.unknownEmails.length}개` : "";
+      if (res.ok) {
+        toast.success(`기수 채우기 완료: 조회 ${res.totalFetched}명, 업데이트 ${res.totalUpdated}명 (${res.cohorts.join(", ")})${extra}`);
+      } else {
+        toast.error(`일부 오류 (업데이트 ${res.totalUpdated}명): ${res.errors.slice(0, 2).join(" / ")}`);
+      }
+      if (res.unknownEmails.length) console.warn("기수 규칙에 안 맞는 강사 이메일", res.unknownEmails);
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "기수 채우기 실패");
+    } finally {
+      setCohortBusy(false);
     }
   }
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -476,6 +498,21 @@ function UsersPage() {
                 }}
                 placeholder="기수 전체"
               />
+            )}
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={runCohortBackfill}
+                disabled={cohortBusy}
+              >
+                {cohortBusy ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 기수 채우는 중…</>
+                ) : (
+                  "기수 채우기"
+                )}
+              </Button>
             )}
             {/* <Button
               variant="outline"
