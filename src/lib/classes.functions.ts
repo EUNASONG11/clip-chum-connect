@@ -559,6 +559,7 @@ export const searchStudentsByNameOrPhone = createServerFn({ method: "POST" })
           school: (r.school as string) ?? "",
           grade: (r.grade as string) ?? "",
           branch: (r.branch as string) ?? "",
+          cohort: (r.cohort as string | null) ?? null,
         };
       });
   });
