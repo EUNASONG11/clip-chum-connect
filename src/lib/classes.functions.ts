@@ -8,6 +8,7 @@ import {
   PER_TOKEN_FETCH_LIMIT,
   parseStudentSearchTokens,
 } from "@/lib/student-search";
+import { compareOrderKeys, orderKeyOf, type OrderKey } from "@/lib/video-order";
 
 
 async function isAdmin(context: { supabase: any; userId: string }) {
