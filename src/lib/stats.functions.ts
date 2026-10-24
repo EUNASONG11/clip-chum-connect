@@ -334,7 +334,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         .order("sort_order", { ascending: true }),
       supabaseAdmin
         .from("class_students")
-        .select("progress_start_at")
+        .select("progress_start_at, progress_start_video_id")
         .eq("class_id", data.classId)
         .eq("user_id", data.userId)
         .is("deleted_at", null)
@@ -354,11 +354,28 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
       return parts.length > 0 ? parts.join(" / ") : null;
     };
 
-    const start = ((enrollRow as any)?.progress_start_at as string | null) ?? ((history ?? []) as any[]).reduce(
-      (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
-      null as string | null,
-    );
-    const list = ((videos ?? []) as any[]).filter((v: any) => (start ? v.created_at >= start : true));
+    // 시작 영상이 id로 설정돼 있으면 화면 표시 순서(폴더 순서 → 폴더 안 영상 순서) 기준으로
+    // 그 영상부터 포함. 아니면 기존처럼 배정/시작 시각 기준.
+    const startVideoId = (enrollRow as any)?.progress_start_video_id as string | null;
+    const startVideo = startVideoId
+      ? ((videos ?? []) as any[]).find((v: any) => v.id === startVideoId)
+      : null;
+    let list: any[];
+    if (startVideo) {
+      const folderSortMap = new Map<string, number>(
+        ((folders ?? []) as any[]).map((f: any) => [f.id as string, Number(f.sort_order ?? 9999)]),
+      );
+      const startKey = orderKeyOf(startVideo, folderSortMap);
+      list = ((videos ?? []) as any[]).filter(
+        (v: any) => compareOrderKeys(orderKeyOf(v, folderSortMap), startKey) >= 0,
+      );
+    } else {
+      const start = ((enrollRow as any)?.progress_start_at as string | null) ?? ((history ?? []) as any[]).reduce(
+        (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
+        null as string | null,
+      );
+      list = ((videos ?? []) as any[]).filter((v: any) => (start ? v.created_at >= start : true));
+    }
     if (list.length === 0) return [];
 
     const [{ data: progress }, { data: exclusions }] = await Promise.all([
