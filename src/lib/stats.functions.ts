@@ -318,7 +318,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
     const [{ data: videos }, { data: history }, { data: folders }, { data: enrollRow }] = await Promise.all([
       supabaseAdmin
         .from("videos")
-        .select("id, title, duration, created_at, sort_order, folder_id")
+        .select("id, title, duration, created_at, sort_order, folder_id, week_label")
         .eq("class_id", data.classId)
         .is("deleted_at", null)
         .order("created_at", { ascending: true }),
