@@ -8,6 +8,7 @@ import {
   PER_TOKEN_FETCH_LIMIT,
   parseStudentSearchTokens,
 } from "@/lib/student-search";
+import { compareOrderKeys, orderKeyOf, type OrderKey } from "@/lib/video-order";
 
 
 async function isAdmin(context: { supabase: any; userId: string }) {
@@ -428,7 +429,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_students")
-      .select("user_id, created_at, progress_start_at")
+      .select("user_id, created_at, progress_start_at, progress_start_video_id")
       .eq("class_id", data.classId)
       .is("deleted_at", null);
 
@@ -453,6 +454,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
         branch: e?.branch ?? "",
         created_at: r.created_at as string,
         progress_start_at: (r.progress_start_at ?? null) as string | null,
+        progress_start_video_id: (r.progress_start_video_id ?? null) as string | null,
       };
     });
   });
@@ -875,9 +877,13 @@ export const listClassVideos = createServerFn({ method: "GET" })
         progressMap.set(p.video_id as string, p);
       }
     }
-    // 학생 전용: 수강반 배정(또는 학습 현황 시작 시점) 이전에 올라온 영상은 잠금
+    // 학생 전용: 수강반 배정(또는 학습 현황 시작 영상) 이전 순서의 영상은 잠금
     // 단, 이미 시청 기록이 있는 영상은 예외로 계속 시청 가능
+    // 시작 영상이 id로 설정돼 있으면 화면 표시 순서(폴더 순서 → 폴더 안 영상 순서) 기준,
+    // 아니면 기존처럼 배정/시작 시각 기준
     let startAt: number | null = null;
+    let startKey: OrderKey | null = null;
+    let folderSortMap = new Map<string, number>();
     const { data: roleRows } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -886,16 +892,46 @@ export const listClassVideos = createServerFn({ method: "GET" })
     const roles = new Set((roleRows ?? []).map((r: any) => r.role as string));
     const isStaff = roles.has("admin") || roles.has("instructor") || roles.has("branch_admin");
     if (roles.has("student") && !isStaff) {
-      const { data: s } = await supabaseAdmin.rpc("student_video_start_at", {
-        _user_id: context.userId,
-        _class_id: data.classId,
-      });
-      if (s) startAt = new Date(s as string).getTime();
+      const [{ data: csRow }, { data: folderRows }] = await Promise.all([
+        supabaseAdmin
+          .from("class_students")
+          .select("progress_start_video_id")
+          .eq("class_id", data.classId)
+          .eq("user_id", context.userId)
+          .is("deleted_at", null)
+          .maybeSingle(),
+        supabaseAdmin
+          .from("class_folders")
+          .select("id, sort_order")
+          .eq("class_id", data.classId)
+          .is("deleted_at", null),
+      ]);
+      folderSortMap = new Map(
+        (folderRows ?? []).map((f: any) => [f.id as string, Number(f.sort_order ?? 9999)]),
+      );
+      const startVideoId = (csRow as any)?.progress_start_video_id as string | null | undefined;
+      if (startVideoId) {
+        const sv = videos.find((r: any) => r.id === startVideoId);
+        if (sv) startKey = orderKeyOf(sv, folderSortMap);
+      }
+      if (!startKey) {
+        const { data: s } = await supabaseAdmin.rpc("student_video_start_at", {
+          _user_id: context.userId,
+          _class_id: data.classId,
+        });
+        if (s) startAt = new Date(s as string).getTime();
+      }
     }
     return visibleVideos.map((r: any) => {
       const progress = progressMap.get(r.id as string) ?? null;
-      const is_locked =
-        startAt !== null && !progress && new Date(r.created_at as string).getTime() < startAt;
+      let is_locked = false;
+      if (!progress) {
+        if (startKey) {
+          is_locked = compareOrderKeys(orderKeyOf(r, folderSortMap), startKey) < 0;
+        } else if (startAt !== null) {
+          is_locked = new Date(r.created_at as string).getTime() < startAt;
+        }
+      }
       return { ...r, progress, is_locked };
     });
   });
