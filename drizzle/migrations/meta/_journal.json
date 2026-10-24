@@ -71,6 +71,13 @@
       "when": 1792028428749,
       "tag": "0009_external_links_sync_state",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792833079044,
+      "tag": "0010_progress_start_video_order_lock",
+      "breakpoints": true
     }
   ]
 }

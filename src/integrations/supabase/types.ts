@@ -228,6 +228,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           progress_start_at: string | null
+          progress_start_video_id: string | null
           user_id: string
         }
         Insert: {
@@ -236,6 +237,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           progress_start_at?: string | null
+          progress_start_video_id?: string | null
           user_id: string
         }
         Update: {
@@ -244,6 +246,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           progress_start_at?: string | null
+          progress_start_video_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1227,6 +1230,10 @@ export type Database = {
           total_views: number
           video_count: number
         }[]
+      }
+      student_video_locked: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
       }
       student_video_start_at: {
         Args: { _class_id: string; _user_id: string }
