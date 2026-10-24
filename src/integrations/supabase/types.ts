@@ -229,6 +229,7 @@ export type Database = {
           deleted_by: string | null
           progress_start_at: string | null
           progress_start_video_id: string | null
+          progress_start_week: string | null
           user_id: string
         }
         Insert: {
@@ -238,6 +239,7 @@ export type Database = {
           deleted_by?: string | null
           progress_start_at?: string | null
           progress_start_video_id?: string | null
+          progress_start_week?: string | null
           user_id: string
         }
         Update: {
@@ -247,6 +249,7 @@ export type Database = {
           deleted_by?: string | null
           progress_start_at?: string | null
           progress_start_video_id?: string | null
+          progress_start_week?: string | null
           user_id?: string
         }
         Relationships: [
