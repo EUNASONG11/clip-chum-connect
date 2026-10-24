@@ -20,11 +20,12 @@ export function orderKeyOf(
   };
 }
 
-// a가 b보다 화면에서 앞에 오면 음수, 같으면 0, 뒤면 양수
+// a가 b보다 화면에서 앞에 오면 음수, 같으면 0, 뒤면 양수.
+// 학생 화면 정렬(listClassVideos: sort_order 오름차순, created_at 내림차순)과 같은 기준.
 export function compareOrderKeys(a: OrderKey, b: OrderKey): number {
   if (a.folderSort !== b.folderSort) return a.folderSort - b.folderSort;
   if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-  if (a.createdAt !== b.createdAt) return a.createdAt < b.createdAt ? -1 : 1;
+  if (a.createdAt !== b.createdAt) return a.createdAt > b.createdAt ? -1 : 1;
   if (a.id === b.id) return 0;
   return a.id < b.id ? -1 : 1;
 }
