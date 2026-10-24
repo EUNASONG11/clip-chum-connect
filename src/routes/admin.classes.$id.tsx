@@ -1484,7 +1484,9 @@ function ClassDetailPage() {
                       <p className="break-all text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
                     {s.progress_start_at && (() => {
-                      const sv = (videos as any[]).find((v) => v.created_at === s.progress_start_at);
+                      const sv =
+                        (videos as any[]).find((v) => v.id === s.progress_start_video_id) ??
+                        (videos as any[]).find((v) => v.created_at === s.progress_start_at);
                       return (
                         <p className="break-words text-[11px] leading-snug text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")}</p>
                       );
