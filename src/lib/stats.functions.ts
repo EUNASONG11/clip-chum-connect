@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { compareOrderKeys, orderKeyOf } from "@/lib/video-order";
 import { z } from "zod";
 
 async function isAdmin(context: any) {
@@ -605,7 +606,7 @@ export const setStudentProgressStart = createServerFn({ method: "POST" })
     }
     const { error } = await supabaseAdmin
       .from("class_students")
-      .update({ progress_start_at: startAt })
+      .update({ progress_start_at: startAt, progress_start_video_id: data.videoId } as any)
       .eq("class_id", data.classId)
       .in("user_id", data.userIds)
       .is("deleted_at", null);
