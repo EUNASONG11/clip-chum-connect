@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { isVideoLockedByStart } from "@/lib/video-lock-rule";
+import { parseWeekLabel, weekRange } from "@/lib/week";
 import { z } from "zod";
 
 async function isAdmin(context: any) {
@@ -334,7 +336,7 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
         .order("sort_order", { ascending: true }),
       supabaseAdmin
         .from("class_students")
-        .select("progress_start_at, progress_start_video_id")
+        .select("progress_start_at, progress_start_week")
         .eq("class_id", data.classId)
         .eq("user_id", data.userId)
         .is("deleted_at", null)
@@ -354,11 +356,16 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
       return parts.length > 0 ? parts.join(" / ") : null;
     };
 
-    const start = ((enrollRow as any)?.progress_start_at as string | null) ?? ((history ?? []) as any[]).reduce(
+    // 시작 주차가 있으면 주차 기준, 없으면 배정/시작 시각 기준 (DB student_video_locked와 같은 규칙)
+    const startWeek = ((enrollRow as any)?.progress_start_week ?? null) as string | null;
+    const startAtRaw = ((enrollRow as any)?.progress_start_at as string | null) ?? ((history ?? []) as any[]).reduce(
       (max: string | null, h: any) => (!max || h.created_at > max ? h.created_at : max),
       null as string | null,
     );
-    const list = ((videos ?? []) as any[]).filter((v: any) => (start ? v.created_at >= start : true));
+    const startAtMs = startAtRaw ? new Date(startAtRaw).getTime() : null;
+    const list = ((videos ?? []) as any[]).filter(
+      (v: any) => !isVideoLockedByStart(v, startWeek, startAtMs),
+    );
     if (list.length === 0) return [];
 
     const [{ data: progress }, { data: exclusions }] = await Promise.all([
