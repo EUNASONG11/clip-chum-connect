@@ -60,6 +60,7 @@ import {
   listClassCategories,
 } from "@/lib/classes.functions";
 import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+import { formatWeekLabel, isWeekLabel } from "@/lib/week";
 
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
@@ -796,14 +797,14 @@ function ClassDetailPage() {
   >([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [startSel, setStartSel] = useState<Set<string>>(new Set());
-  const [startVideoId, setStartVideoId] = useState<string>("");
+  const [startWeek, setStartWeek] = useState<string>("");
   const [startSaving, setStartSaving] = useState(false);
-  const applyProgressStart = async (videoId: string | null) => {
+  const applyProgressStart = async (week: string | null) => {
     if (startSel.size === 0) return;
     setStartSaving(true);
     try {
-      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], videoId } });
-      toast.success(videoId ? `${startSel.size}명의 학습 현황 시작 영상을 설정했습니다.` : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`);
+      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], week } });
+      toast.success(week ? `${startSel.size}명의 학습 현황 시작 주차를 ${formatWeekLabel(week)}로 설정했습니다.` : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`);
       setStartSel(new Set());
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
       qc.invalidateQueries();
