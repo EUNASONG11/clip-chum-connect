@@ -60,6 +60,7 @@ import {
   listClassCategories,
 } from "@/lib/classes.functions";
 import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
+import { compareOrderKeys, orderKeyOf } from "@/lib/video-order";
 
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
