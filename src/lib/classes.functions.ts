@@ -8,6 +8,7 @@ import {
   PER_TOKEN_FETCH_LIMIT,
   parseStudentSearchTokens,
 } from "@/lib/student-search";
+import { isVideoLockedByStart } from "@/lib/video-lock-rule";
 
 
 async function isAdmin(context: { supabase: any; userId: string }) {
@@ -876,9 +877,10 @@ export const listClassVideos = createServerFn({ method: "GET" })
         progressMap.set(p.video_id as string, p);
       }
     }
-    // 학생 전용: 수강반 배정(또는 학습 현황 시작 시점) 이전에 올라온 영상은 잠금
+    // 학생 전용: 시작 주차(또는 배정/시작 시점) 이전 영상은 잠금
     // 단, 이미 시청 기록이 있는 영상은 예외로 계속 시청 가능
     let startAt: number | null = null;
+    let startWeek: string | null = null;
     const { data: roleRows } = await supabaseAdmin
       .from("user_roles")
       .select("role")
@@ -887,16 +889,28 @@ export const listClassVideos = createServerFn({ method: "GET" })
     const roles = new Set((roleRows ?? []).map((r: any) => r.role as string));
     const isStaff = roles.has("admin") || roles.has("instructor") || roles.has("branch_admin");
     if (roles.has("student") && !isStaff) {
-      const { data: s } = await supabaseAdmin.rpc("student_video_start_at", {
-        _user_id: context.userId,
-        _class_id: data.classId,
-      });
-      if (s) startAt = new Date(s as string).getTime();
+      const { data: csRow } = await supabaseAdmin
+        .from("class_students")
+        .select("progress_start_week, progress_start_at")
+        .eq("class_id", data.classId)
+        .eq("user_id", context.userId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      startWeek = ((csRow as any)?.progress_start_week ?? null) as string | null;
+      if (startWeek) {
+        const at = (csRow as any)?.progress_start_at as string | null;
+        if (at) startAt = new Date(at).getTime();
+      } else {
+        const { data: s } = await supabaseAdmin.rpc("student_video_start_at", {
+          _user_id: context.userId,
+          _class_id: data.classId,
+        });
+        if (s) startAt = new Date(s as string).getTime();
+      }
     }
     return visibleVideos.map((r: any) => {
       const progress = progressMap.get(r.id as string) ?? null;
-      const is_locked =
-        startAt !== null && !progress && new Date(r.created_at as string).getTime() < startAt;
+      const is_locked = !progress && isVideoLockedByStart(r, startWeek, startAt);
       return { ...r, progress, is_locked };
     });
   });
