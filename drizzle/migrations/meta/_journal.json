@@ -92,6 +92,13 @@
       "when": 1792834288449,
       "tag": "0012_student_video_locked_back_to_time",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792834600744,
+      "tag": "0013_progress_start_week_lock",
+      "breakpoints": true
     }
   ]
 }
