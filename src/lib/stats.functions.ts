@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { compareOrderKeys, orderKeyOf } from "@/lib/video-order";
 import { z } from "zod";
 
 async function isAdmin(context: any) {

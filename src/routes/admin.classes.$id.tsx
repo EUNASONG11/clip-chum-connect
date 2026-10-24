@@ -60,7 +60,6 @@ import {
   listClassCategories,
 } from "@/lib/classes.functions";
 import { isSearchableStudentQuery, STUDENT_SEARCH_HINT } from "@/lib/student-search";
-import { compareOrderKeys, orderKeyOf } from "@/lib/video-order";
 
 
 const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
@@ -1399,16 +1398,18 @@ function ClassDetailPage() {
               showIcon={false}
             />
           {canWrite && listed.length > 0 && (() => {
-            // 화면 표시 순서(폴더 순서 → 폴더 안 영상 순서)로 정렬하고 폴더 이름을 함께 표시
-            const folderSortMap = new Map<string, number>(
-              (folders as any[]).map((f: any) => [f.id as string, Number(f.sort_order ?? 9999)]),
-            );
+            // 업로드 시각 순으로 정렬하고 폴더 이름·업로드 날짜를 함께 표시
             const folderNameMap = new Map<string, string>(
               (folders as any[]).map((f: any) => [f.id as string, (f.name ?? "") as string]),
             );
             const sortedVideos = [...(videos as any[])].sort((a, b) =>
-              compareOrderKeys(orderKeyOf(a, folderSortMap), orderKeyOf(b, folderSortMap)),
+              String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")),
             );
+            const fmtUploadDate = (iso: string | null | undefined) => {
+              if (!iso) return "";
+              const d = new Date(iso);
+              return `${d.getMonth() + 1}/${d.getDate()}`;
+            };
             const allSel = listed.every((s: any) => startSel.has(s.user_id));
             return (
               <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
@@ -1435,6 +1436,7 @@ function ClassDetailPage() {
                           ? `[${folderNameMap.get(v.folder_id)}] `
                           : ""}
                         {v.title}{v.week_label ? ` · ${v.week_label}` : ""}
+                        {v.created_at ? ` · ${fmtUploadDate(v.created_at)}` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
