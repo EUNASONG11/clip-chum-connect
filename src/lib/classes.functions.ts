@@ -429,7 +429,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("class_students")
-      .select("user_id, created_at, progress_start_at, progress_start_video_id")
+      .select("user_id, created_at, progress_start_at, progress_start_video_id, progress_start_week")
       .eq("class_id", data.classId)
       .is("deleted_at", null);
 
@@ -455,6 +455,7 @@ export const listClassStudents = createServerFn({ method: "GET" })
         created_at: r.created_at as string,
         progress_start_at: (r.progress_start_at ?? null) as string | null,
         progress_start_video_id: (r.progress_start_video_id ?? null) as string | null,
+        progress_start_week: (r.progress_start_week ?? null) as string | null,
       };
     });
   });

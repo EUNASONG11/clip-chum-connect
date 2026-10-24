@@ -566,7 +566,8 @@ export const listStudentSeekEvents = createServerFn({ method: "GET" })
 
 
 
-// 학생별 "학습 현황 시작 영상" 설정 (videoId=null이면 배정 시점 기준으로 되돌림)
+// 학생별 "학습 현황 시작 주차" 설정 (week=null이면 배정 시점 기준으로 되돌림)
+// 저장 시 progress_start_at은 그 주 월요일 00:00(KST), progress_start_video_id는 비움
 export const setStudentProgressStart = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -574,28 +575,32 @@ export const setStudentProgressStart = createServerFn({ method: "POST" })
       .object({
         classId: z.string().uuid(),
         userIds: z.array(z.string().uuid()).min(1).max(1000),
-        videoId: z.string().uuid().nullable(),
+        week: z.string().nullable(),
       })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let startAt: string | null = null;
-    if (data.videoId) {
-      const { data: v, error } = await supabaseAdmin
-        .from("videos")
-        .select("created_at, class_id")
-        .eq("id", data.videoId)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (error) throw new Error(error.message);
-      if (!v || v.class_id !== data.classId) throw new Error("이 수강반의 영상이 아닙니다.");
-      startAt = v.created_at;
+    let patch: Record<string, unknown>;
+    if (data.week) {
+      if (!parseWeekLabel(data.week)) throw new Error("올바른 주차가 아닙니다.");
+      const { start } = weekRange(data.week);
+      patch = {
+        progress_start_week: data.week,
+        progress_start_at: new Date(`${start}T00:00:00+09:00`).toISOString(),
+        progress_start_video_id: null,
+      };
+    } else {
+      patch = {
+        progress_start_week: null,
+        progress_start_at: null,
+        progress_start_video_id: null,
+      };
     }
     const { error } = await supabaseAdmin
       .from("class_students")
-      .update({ progress_start_at: startAt, progress_start_video_id: data.videoId } as any)
+      .update(patch as any)
       .eq("class_id", data.classId)
       .in("user_id", data.userIds)
       .is("deleted_at", null);
