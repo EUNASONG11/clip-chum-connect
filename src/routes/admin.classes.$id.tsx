@@ -1399,22 +1399,14 @@ function ClassDetailPage() {
               showIcon={false}
             />
           {canWrite && listed.length > 0 && (() => {
-            // 업로드 시각 순으로 정렬하고 폴더 이름·업로드 날짜를 함께 표시
-            const folderNameMap = new Map<string, string>(
-              (folders as any[]).map((f: any) => [f.id as string, (f.name ?? "") as string]),
-            );
-            const sortedVideos = [...(videos as any[])].sort((a, b) =>
-              String(a.created_at ?? "").localeCompare(String(b.created_at ?? "")),
-            );
-            const fmtUploadDate = (iso: string | null | undefined) => {
-              if (!iso) return "";
-              const d = new Date(iso);
-              return `${d.getMonth() + 1}/${d.getDate()}`;
-            };
+            // 이 수강반 영상들에 있는 주차 목록 (오래된 순)
+            const weekOptions = [...new Set(
+              (videos as any[]).map((v: any) => v.week_label as string | null).filter((w): w is string => !!w && isWeekLabel(w)),
+            )].sort();
             const allSel = listed.every((s: any) => startSel.has(s.user_id));
             return (
               <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-                <span className="text-xs font-semibold">학습 현황 시작 영상</span>
+                <span className="text-xs font-semibold">학습 현황 시작 주차</span>
                 <label className="flex items-center gap-1 text-xs">
                   <Checkbox
                     checked={allSel}
@@ -1426,30 +1418,26 @@ function ClassDetailPage() {
                   />
                   전체 선택 ({startSel.size}명 선택)
                 </label>
-                <Select value={startVideoId} onValueChange={setStartVideoId}>
+                <Select value={startWeek} onValueChange={setStartWeek}>
                   <SelectTrigger className="h-8 w-full sm:w-72">
-                    <SelectValue placeholder="시작할 영상 선택 (이 영상부터 포함)" />
+                    <SelectValue placeholder="시작 주차 선택 (이 주차부터 포함)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sortedVideos.map((v: any) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {v.folder_id && folderNameMap.get(v.folder_id)
-                          ? `[${folderNameMap.get(v.folder_id)}] `
-                          : ""}
-                        {v.title}{v.week_label ? ` · ${v.week_label}` : ""}
-                        {v.created_at ? ` · ${fmtUploadDate(v.created_at)}` : ""}
+                    {weekOptions.map((w) => (
+                      <SelectItem key={w} value={w}>
+                        {formatWeekLabel(w)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="sm" disabled={startSaving || startSel.size === 0 || !startVideoId} onClick={() => applyProgressStart(startVideoId)}>
+                <Button size="sm" disabled={startSaving || startSel.size === 0 || !startWeek} onClick={() => applyProgressStart(startWeek)}>
                   적용
                 </Button>
                 <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart(null)}>
                   배정 시점으로 되돌리기
                 </Button>
                 <p className="w-full text-xs text-muted-foreground">
-                  이 설정은 학생의 시청 가능 범위에도 적용됩니다. 시작 시점 이전 영상은 학생이 시청할 수 없습니다(이미 시청 기록이 있는 영상은 제외).
+                  선택한 주차부터 시청할 수 있어요. 주차가 없는 영상(어휘 등)은 그 주 월요일 이후 올라온 영상부터 열립니다.
                 </p>
               </div>
             );
@@ -1487,12 +1475,14 @@ function ClassDetailPage() {
                     {s.parent_phone && (
                       <p className="break-all text-xs text-muted-foreground">학부모 {s.parent_phone}</p>
                     )}
-                    {s.progress_start_at && (() => {
+                    {s.progress_start_week ? (
+                      <p className="break-words text-[11px] leading-snug text-primary">시작: {formatWeekLabel(s.progress_start_week)}</p>
+                    ) : s.progress_start_at && (() => {
                       const sv =
                         (videos as any[]).find((v) => v.id === s.progress_start_video_id) ??
                         (videos as any[]).find((v) => v.created_at === s.progress_start_at);
                       return (
-                        <p className="break-words text-[11px] leading-snug text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")}</p>
+                        <p className="break-words text-[11px] leading-snug text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")} (이전 방식)</p>
                       );
                     })()}
                   </div>
