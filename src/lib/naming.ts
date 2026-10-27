@@ -1,7 +1,7 @@
 /**
  * 수강반 이름(내신) · 영상 제목(정규) 형식 규칙 — 생성/파싱을 한 곳에서 관리한다.
  * 내신 반 이름: "[교육원] 기수 - 학교(또는 출판사) - 내신"
- * 정규 영상 제목: "[n월 n주차] 과목 - 내용" / "어휘 n강"
+ * 정규 영상 제목: "[n월 n주차] 과목 - 내용" / "어휘 n강" / "어휘 - 내용"
  */
 import { CANONICAL_BRANCHES } from "@/lib/branch";
 
@@ -29,16 +29,24 @@ export function isValidNaesinClassName(name: string | null | undefined): boolean
 }
 
 export type RegularTitleParts =
-  | { kind: "vocab"; lecture: number }
+  | { kind: "vocab"; mode: "lecture"; lecture: number }
+  | { kind: "vocab"; mode: "custom"; content: string }
   | { kind: "general"; month: number; week: number; subject: string; content: string };
 
 export const VOCAB_SUBJECT = "어휘";
 const VOCAB_RE = /^어휘 (\d{1,3})강$/;
+const VOCAB_CUSTOM_RE = /^어휘 - (.+)$/;
 const GENERAL_RE = /^\[(\d{1,2})월 ([1-5])주차\] (.+?) - (.+)$/;
 
 export function buildRegularVideoTitle(p: RegularTitleParts | null): string | null {
   if (!p) return null;
   if (p.kind === "vocab") {
+    if (p.mode === "custom") {
+      const content = p.content.trim();
+      if (!content) return null;
+      const title = `어휘 - ${content}`;
+      return title.length > 200 ? null : title;
+    }
     if (!Number.isInteger(p.lecture) || p.lecture < 1) return null;
     return `어휘 ${p.lecture}강`;
   }
@@ -53,7 +61,13 @@ export function buildRegularVideoTitle(p: RegularTitleParts | null): string | nu
 export function parseRegularVideoTitle(title: string | null | undefined): RegularTitleParts | null {
   const s = (title ?? "").trim();
   const v = s.match(VOCAB_RE);
-  if (v) return { kind: "vocab", lecture: Number(v[1]) };
+  if (v) return { kind: "vocab", mode: "lecture", lecture: Number(v[1]) };
+  const custom = s.match(VOCAB_CUSTOM_RE);
+  const customContent = custom?.[1]?.trim();
+  if (customContent) {
+    if (s.length > 200) return null;
+    return { kind: "vocab", mode: "custom", content: customContent };
+  }
   const g = s.match(GENERAL_RE);
   if (g) {
     const month = Number(g[1]);
