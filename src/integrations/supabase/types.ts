@@ -1222,6 +1222,18 @@ export type Database = {
           video_count: number
         }[]
       }
+      class_student_messaging_counts: {
+        Args: { _class_id: string; _video_ids: string[] }
+        Returns: {
+          branch: string
+          completed_count: number
+          eligible_total: number
+          name: string
+          parent_phone: string
+          phone: string
+          user_id: string
+        }[]
+      }
       class_student_stats_agg: {
         Args: { _class_id: string }
         Returns: {
