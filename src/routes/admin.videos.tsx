@@ -29,8 +29,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoUploadForm } from "@/components/admin/VideoUploadForm";
 import { Upload as UploadIcon, Film } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { VideoUnlockPanel } from "@/components/admin/VideoUnlockManager";
 
 export const Route = createFileRoute("/admin/videos")({
+  head: () => ({ meta: [{ title: "영상 관리 | 이재식 이러닝" }, { name: "description", content: "영상 설정과 학생별 숨김 및 개별 열기를 관리합니다." }, { property: "og:title", content: "영상 관리 | 이재식 이러닝" }, { property: "og:description", content: "영상별 학습 설정과 학생 접근을 관리합니다." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: VideosPage,
 });
 
@@ -94,7 +96,7 @@ const statusLabel = (s: string) => statusMap[s] ?? s;
 
 
 // 영상을 숨길 학생 관리 (수강반 배정 학생 중 선택)
-function VideoExclusionManager({ videoId }: { videoId: string }) {
+function VideoExclusionManager({ videoId, query }: { videoId: string; query: string }) {
   const qc = useQueryClient();
   const { data: students = [], isLoading: loadingStudents } = useQuery({
     queryKey: ["admin", "video", videoId, "class-students"],
@@ -110,13 +112,13 @@ function VideoExclusionManager({ videoId }: { videoId: string }) {
       setVideoExclusion({ data: { videoId, userId: p.userId, hidden: p.hidden } }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "video", videoId, "exclusions"] });
+      qc.invalidateQueries({ queryKey: ["video-unlocks"] });
     },
     onError: (e: any) => toast.error(e?.message ?? "처리에 실패했습니다."),
   });
 
   const hiddenSet = new Set(hiddenIds as string[]);
 
-  const [query, setQuery] = useState("");
   const isSearching = query.trim().length > 0;
 
   // 띄어쓰기로 구분된 여러 검색어를 OR로 매칭 (이름·학교·학년·교육원·연락처)
@@ -166,14 +168,6 @@ function VideoExclusionManager({ videoId }: { videoId: string }) {
         <p className="text-xs text-muted-foreground">수강반에 배정된 학생이 없습니다.</p>
       ) : (
         <div className="min-w-0 space-y-2">
-          <ClearableSearchInput
-            value={query}
-            onChange={setQuery}
-            placeholder="이름·학교·학년·교육원·전화번호 검색 (띄어쓰기로 여러 명)"
-            className="w-full"
-            size="sm"
-            showIcon={false}
-          />
           {isSearching && (
             <p className="text-[11px] text-muted-foreground">
               {`일치하는 학생 ${listed.length}명 / 전체 ${(students as any[]).length}명`}
@@ -221,6 +215,7 @@ function VideosPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [edits, setEdits] = useState<Record<string, Partial<Row>>>({});
   const [openId, setOpenId] = useState<string | null>(null);
+  const [studentAccessQuery, setStudentAccessQuery] = useState("");
 
   const dirty = (id: string) => !!edits[id] && Object.keys(edits[id]!).length > 0;
 
@@ -981,7 +976,10 @@ function VideosPage() {
                             </div>
                           </div>
                           </div>
-                          {r.class_id && <VideoExclusionManager videoId={r.id} />}
+                          {r.class_id && <div className="space-y-2">
+                            <ClearableSearchInput value={studentAccessQuery} onChange={setStudentAccessQuery} placeholder="이름·학교·학년·교육원·전화번호 검색 (띄어쓰기로 여러 명)" size="sm" />
+                            <div className="grid gap-3 md:grid-cols-2"><VideoExclusionManager videoId={r.id} query={studentAccessQuery} /><VideoUnlockPanel classId={r.class_id} videoId={r.id} query={studentAccessQuery} /></div>
+                          </div>}
                           <DialogFooter>
                             <Button variant="outline" onClick={() => setOpenId(null)}>취소</Button>
                             <Button disabled={!dirty(r.id)} onClick={() => save(r)}>
