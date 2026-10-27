@@ -516,13 +516,12 @@ function ClassDetailPage() {
   // 쓰기 권한: 관리자 / 생성자 / 이 수강반에 배정된 강사만 true
   const canWrite = !cls || (cls as any).can_write !== false;
   const [unlockOpen, setUnlockOpen] = useState(false);
-  const { data: unlockSummary } = useQuery({
+  const { data: unlockSummary, isFetching: unlockSummaryLoading, isError: unlockSummaryFailed } = useQuery({
     queryKey: ["video-unlocks", id, "summary"],
     queryFn: () => getVideoUnlockStates({ data: { classId: id, videoIds: [] } }),
     enabled: !!cls && canWrite,
   });
-  const unlockCounts = new Map((unlockSummary?.students ?? []).map((s) => [s.user_id, s.unlock_count]));
-  const unlockAllowedIds = new Set((unlockSummary?.students ?? []).map((s) => s.user_id));
+  const unlockCounts = new Map((unlockSummaryLoading || unlockSummaryFailed ? [] : unlockSummary?.students ?? []).map((s) => [s.user_id, s.unlock_count]));
   const { data: students = [] } = useQuery({
     queryKey: ["admin", "class", id, "students"],
     queryFn: () => listClassStudents({ data: { classId: id } }),
@@ -1371,7 +1370,6 @@ function ClassDetailPage() {
             // 띄어쓰기로 구분된 여러 검색어를 OR로 매칭 (이름·학교·기수·연락처)
             const tokens = assignedQuery.split(/\s+/).filter(Boolean);
             const listed = (students as any[]).filter((s) => {
-              if (isBranchAdmin && !isAdmin && !unlockAllowedIds.has(s.user_id)) return false;
               const branchOk = listBranch === "__all__" || matchesBranch(listBranch, s.branch);
               if (tokens.length === 0) return branchOk;
               const name = (s.name || "").replace(/\s+/g, "").toLowerCase();
