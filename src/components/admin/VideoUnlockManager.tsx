@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Unlock, Loader2 } from "lucide-react";
+import { Unlock, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +16,7 @@ import { formatWeekLabel } from "@/lib/week";
 export function VideoUnlockDialog({ classId, userIds, names, open, onClose }: { classId: string; userIds: string[]; names: string[]; open: boolean; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const [selection, setSelection] = useState<Set<string>>(new Set());
+  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const load = useServerFn(getVideoUnlockStates);
   const save = useServerFn(setVideoUnlocks);
@@ -31,6 +32,20 @@ export function VideoUnlockDialog({ classId, userIds, names, open, onClose }: { 
   }
   const lockedCount = [...selection].reduce((sum, id) => sum + (counts.get(id)?.locked ?? 0), 0);
   const unlockedCount = [...selection].reduce((sum, id) => sum + (counts.get(id)?.unlocked ?? 0), 0);
+  const lockedStudentsByVideo = useMemo(() => {
+    const students = new Map((data?.students ?? []).map((student) => [student.user_id, student]));
+    const byVideo = new Map<string, NonNullable<typeof data>["students"]>();
+    for (const state of data?.states ?? []) {
+      if (state.state !== "locked") continue;
+      const student = students.get(state.user_id);
+      if (!student) continue;
+      const list = byVideo.get(state.video_id) ?? [];
+      list.push(student);
+      byVideo.set(state.video_id, list);
+    }
+    for (const list of byVideo.values()) list.sort((a, b) => a.name.localeCompare(b.name, "ko"));
+    return byVideo;
+  }, [data]);
   const apply = async (unlock: boolean) => {
     setSaving(true);
     try {
@@ -60,13 +75,29 @@ export function VideoUnlockDialog({ classId, userIds, names, open, onClose }: { 
           const date = new Date(video.created_at).toLocaleDateString("en-US", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" }).replace("/", ".");
           return <div key={video.id}>
             {(index === 0 || rows[index - 1]?.path !== path) && <p className="mb-2 mt-3 text-xs font-semibold">{path}</p>}
-            <label className={`flex flex-wrap items-center gap-3 rounded-md border p-3 ${disabled ? "bg-access-neutral/60 text-muted-foreground opacity-60" : selection.has(video.id) ? "cursor-pointer border-primary bg-accent/40" : "cursor-pointer bg-background"}`}>
+            <div className={`flex flex-wrap items-center gap-3 rounded-md border p-3 ${disabled ? "bg-access-neutral/60 text-muted-foreground opacity-60" : selection.has(video.id) ? "border-primary bg-accent/40" : "bg-background"}`}>
+              <label className={`flex min-w-0 flex-1 items-center gap-3 ${disabled ? "" : "cursor-pointer"}`}>
               <Checkbox aria-label={`영상 선택 ${video.title}`} checked={selection.has(video.id)} disabled={disabled || saving} onCheckedChange={(checked) => setSelection((old) => { const next = new Set(old); if (checked) next.add(video.id); else next.delete(video.id); return next; })} />
               <div className="aspect-video w-20 shrink-0 overflow-hidden rounded bg-muted"><VideoThumb src={video.thumbnail_url} alt={video.title} className="h-full w-full object-cover" /></div>
               <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{video.title}</p><p className="mt-1 text-xs text-muted-foreground">{video.week_label ? formatWeekLabel(video.week_label) : "주차 없음"} · 업로드 {date}</p>
               </div>
-              <div className="ml-auto flex max-w-full justify-end"><VideoAccessBadge state={count.locked ? "locked" : count.unlocked ? "unlocked" : "not_locked"} detail={count.locked ? `${data?.students.length ?? 0}명 중 ${count.locked}명` : count.unlocked ? `${count.unlocked}명` : undefined} /></div>
-            </label>
+              </label>
+              <div className="ml-auto flex max-w-full justify-end">
+                {count.locked ? <Button type="button" variant="ghost" className="h-auto gap-1 p-0" aria-label={`잠긴 학생 보기 ${video.title}`} aria-expanded={expandedVideos.has(video.id)} aria-controls={`locked-students-${video.id}`} onClick={() => setExpandedVideos((old) => { const next = new Set(old); if (next.has(video.id)) next.delete(video.id); else next.add(video.id); return next; })}>
+                  <VideoAccessBadge state="locked" detail={`${data?.students.length ?? 0}명 중 ${count.locked}명`} />
+                  {expandedVideos.has(video.id) ? <ChevronUp aria-hidden="true" className="h-3.5 w-3.5" /> : <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />}
+                </Button> : <VideoAccessBadge state={count.unlocked ? "unlocked" : "not_locked"} detail={count.unlocked ? `${count.unlocked}명` : undefined} />}
+              </div>
+              {count.locked > 0 && expandedVideos.has(video.id) && <div id={`locked-students-${video.id}`} role="region" aria-label={`잠긴 학생 ${video.title}`} className="w-full border-t pt-3">
+                <p className="mb-2 text-xs font-medium">잠긴 학생 {count.locked}명</p>
+                <ul className="max-h-48 space-y-2 overflow-y-auto">
+                  {(lockedStudentsByVideo.get(video.id) ?? []).map((student) => <li key={student.user_id} className="flex flex-wrap items-baseline gap-x-2 text-sm">
+                    <span className="break-words font-medium">{student.name}</span>
+                    <span className="break-words text-xs text-muted-foreground">{[student.school, student.grade, student.branch].filter(Boolean).join(" · ")}</span>
+                  </li>)}
+                </ul>
+              </div>}
+            </div>
           </div>;
         })}
       </div>
