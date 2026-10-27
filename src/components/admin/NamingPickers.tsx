@@ -214,7 +214,9 @@ export function RegularVideoTitlePicker({
   const [month, setMonth] = useState<number | null>(wk?.month ?? (extWeekLabel === undefined && init?.kind === "general" ? init.month : null));
   const [week, setWeek] = useState<number | null>(wk?.week ?? (extWeekLabel === undefined && init?.kind === "general" ? init.week : null));
   const [content, setContent] = useState(init?.kind === "general" ? init.content : "");
-  const [lecture, setLecture] = useState<number | null>(init?.kind === "vocab" ? init.lecture : null);
+  const [vocabMode, setVocabMode] = useState<"lecture" | "custom">(init?.kind === "vocab" ? init.mode : "lecture");
+  const [vocabContent, setVocabContent] = useState(init?.kind === "vocab" && init.mode === "custom" ? init.content : "");
+  const [lecture, setLecture] = useState<number | null>(init?.kind === "vocab" && init.mode === "lecture" ? init.lecture : null);
 
   useEffect(() => {
     if (externalSubject?.value) setSubject(externalSubject.value);
@@ -233,9 +235,11 @@ export function RegularVideoTitlePicker({
   const parts: RegularTitleParts | null = !subject
     ? null
     : isVocab
-      ? lecture
-        ? { kind: "vocab", lecture }
-        : null
+      ? vocabMode === "custom"
+        ? { kind: "vocab", mode: "custom", content: vocabContent }
+        : lecture
+          ? { kind: "vocab", mode: "lecture", lecture }
+          : null
       : month && week
         ? { kind: "general", month, week, subject, content }
         : null;
@@ -293,13 +297,25 @@ export function RegularVideoTitlePicker({
         </>
       )}
       {isVocab && (
-        <div className="space-y-1">
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="어휘 제목 방식">
+            <Button type="button" size="sm" variant={vocabMode === "lecture" ? "default" : "outline"} className="h-auto rounded-full px-3 py-1 text-xs" aria-pressed={vocabMode === "lecture"} onClick={() => setVocabMode("lecture")}>강 번호</Button>
+            <Button type="button" size="sm" variant={vocabMode === "custom" ? "default" : "outline"} className="h-auto rounded-full px-3 py-1 text-xs" aria-pressed={vocabMode === "custom"} onClick={() => setVocabMode("custom")}>직접 입력</Button>
+          </div>
+          {vocabMode === "custom" ? (
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-muted-foreground">내용 (필수)</p>
+              <Input aria-label="어휘 내용" required value={vocabContent} maxLength={150} onChange={(e) => setVocabContent(e.target.value)} placeholder="예) 고전 한자어 정리" />
+            </div>
+          ) : (
+          <div className="space-y-1">
           <p className="text-xs font-medium text-muted-foreground">강 번호</p>
           <div className="flex items-center gap-2">
             <Button type="button" size="icon" variant="outline" className="h-8 w-8" onClick={() => setLecture((n) => Math.max(1, (n ?? 2) - 1))}>
               <Minus className="h-4 w-4" />
             </Button>
             <Input
+              aria-label="어휘 강 번호"
               type="number"
               min={1}
               className="h-8 w-20 text-center"
@@ -314,6 +330,8 @@ export function RegularVideoTitlePicker({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
+          </div>
+          )}
         </div>
       )}
       <div className="rounded bg-muted px-3 py-2 text-sm">
