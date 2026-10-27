@@ -68,6 +68,9 @@ const BRANCH_OPTIONS = ["상동", "청라", "송도"] as const;
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { getClassStudentStats, getStudentVideoDetail, getVideoStudentStats, listStudentSeekEvents, setStudentVideoProgress, setStudentProgressStart } from "@/lib/stats.functions";
 import { setVideoExclusion } from "@/lib/video-exclusions.functions";
+import { VideoUnlockDialog } from "@/components/admin/VideoUnlockManager";
+import { getVideoUnlockStates } from "@/lib/video-unlocks.functions";
+import { Unlock } from "lucide-react";
 
 function fmtDur(sec: number) {
   const s = Math.max(0, Math.floor(sec || 0));
@@ -498,6 +501,7 @@ import { CANONICAL_BRANCHES, canonicalBranch, matchesBranch } from "@/lib/branch
 import { BranchBadge } from "@/components/BranchBadge";
 
 export const Route = createFileRoute("/admin/classes/$id")({
+  head: () => ({ meta: [{ title: "수강반 학생 관리 | 이재식 이러닝" }, { name: "description", content: "수강반 학생 배정, 학습 시작 주차와 영상 개별 열기를 관리합니다." }, { property: "og:title", content: "수강반 학생 관리 | 이재식 이러닝" }, { property: "og:description", content: "학생별 학습 기준과 영상 접근을 관리합니다." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: ClassDetailPage,
 });
 
@@ -511,6 +515,14 @@ function ClassDetailPage() {
   });
   // 쓰기 권한: 관리자 / 생성자 / 이 수강반에 배정된 강사만 true
   const canWrite = !cls || (cls as any).can_write !== false;
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const { data: unlockSummary } = useQuery({
+    queryKey: ["video-unlocks", id, "summary"],
+    queryFn: () => getVideoUnlockStates({ data: { classId: id, videoIds: [] } }),
+    enabled: !!cls && canWrite,
+  });
+  const unlockCounts = new Map((unlockSummary?.students ?? []).map((s) => [s.user_id, s.unlock_count]));
+  const unlockAllowedIds = new Set((unlockSummary?.students ?? []).map((s) => s.user_id));
   const { data: students = [] } = useQuery({
     queryKey: ["admin", "class", id, "students"],
     queryFn: () => listClassStudents({ data: { classId: id } }),
@@ -1359,6 +1371,7 @@ function ClassDetailPage() {
             // 띄어쓰기로 구분된 여러 검색어를 OR로 매칭 (이름·학교·기수·연락처)
             const tokens = assignedQuery.split(/\s+/).filter(Boolean);
             const listed = (students as any[]).filter((s) => {
+              if (isBranchAdmin && !isAdmin && !unlockAllowedIds.has(s.user_id)) return false;
               const branchOk = listBranch === "__all__" || matchesBranch(listBranch, s.branch);
               if (tokens.length === 0) return branchOk;
               const name = (s.name || "").replace(/\s+/g, "").toLowerCase();
@@ -1436,6 +1449,8 @@ function ClassDetailPage() {
                 <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart(null)}>
                   배정 시점으로 되돌리기
                 </Button>
+                <Button size="sm" variant="outline" disabled={startSel.size === 0} onClick={() => setUnlockOpen(true)}><Unlock className="mr-1 h-4 w-4" />영상 개별 열기</Button>
+                {unlockOpen && <VideoUnlockDialog classId={id} userIds={[...startSel]} names={(students as any[]).filter((s) => startSel.has(s.user_id)).map((s) => s.name || s.email)} open onClose={() => setUnlockOpen(false)} />}
                 <p className="w-full text-xs text-muted-foreground">
                   선택한 주차부터 시청할 수 있어요. 주차가 없는 영상(어휘 등)은 그 주 월요일 이후 올라온 영상부터 열립니다.
                 </p>
@@ -1485,6 +1500,7 @@ function ClassDetailPage() {
                         <p className="break-words text-[11px] leading-snug text-primary">시작: {sv?.title ?? new Date(s.progress_start_at).toLocaleDateString("ko-KR")} (이전 방식)</p>
                       );
                     })()}
+                    {(unlockCounts.get(s.user_id) ?? 0) > 0 && <p className="text-[11px] text-accent-foreground">개별 열기 {unlockCounts.get(s.user_id)}개</p>}
                   </div>
                   {canWrite && (
                     <Button

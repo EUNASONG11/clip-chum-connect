@@ -3,6 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { isVideoLockedByStart } from "@/lib/video-lock-rule";
 import { parseWeekLabel, weekRange } from "@/lib/week";
 import { z } from "zod";
+import { fetchAllIn } from "@/lib/fetch-all";
 
 async function isAdmin(context: any) {
   const { data, error } = await context.supabase.rpc("has_role", {
@@ -363,8 +364,12 @@ export const getStudentVideoDetail = createServerFn({ method: "GET" })
       null as string | null,
     );
     const startAtMs = startAtRaw ? new Date(startAtRaw).getTime() : null;
+    const allVideoIds = (videos ?? []).map((v) => v.id);
+    const unlocks = await fetchAllIn<{ video_id: string }>(allVideoIds, (ids, from, to) => supabaseAdmin.from("video_student_unlocks").select("video_id").eq("user_id", data.userId).in("video_id", ids).is("deleted_at", null).order("id").range(from, to));
+    const watched = await fetchAllIn<{ video_id: string }>(allVideoIds, (ids, from, to) => supabaseAdmin.from("video_progress").select("video_id").eq("user_id", data.userId).in("video_id", ids).order("video_id").range(from, to));
+    const exceptions = new Set([...unlocks, ...watched].map((v) => v.video_id));
     const list = ((videos ?? []) as any[]).filter(
-      (v: any) => !isVideoLockedByStart(v, startWeek, startAtMs),
+      (v: any) => exceptions.has(v.id) || !isVideoLockedByStart(v, startWeek, startAtMs),
     );
     if (list.length === 0) return [];
 

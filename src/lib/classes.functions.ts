@@ -9,6 +9,8 @@ import {
   parseStudentSearchTokens,
 } from "@/lib/student-search";
 import { isVideoLockedByStart } from "@/lib/video-lock-rule";
+import { fetchAllIn } from "@/lib/fetch-all";
+import { accessState } from "@/lib/video-unlock-model";
 
 
 async function isAdmin(context: { supabase: any; userId: string }) {
@@ -865,6 +867,10 @@ export const listClassVideos = createServerFn({ method: "GET" })
       for (const x of excl ?? []) hiddenIds.add((x as any).video_id as string);
     }
     const visibleVideos = videos.filter((r: any) => !hiddenIds.has(r.id as string));
+    const unlockRows = await fetchAllIn<{ video_id: string }>(videoIds, (ids, from, to) => supabaseAdmin
+      .from("video_student_unlocks").select("video_id").eq("user_id", context.userId)
+      .in("video_id", ids).is("deleted_at", null).order("id").range(from, to));
+    const unlockedIds = new Set(unlockRows.map((u) => u.video_id));
 
     const progressMap = new Map<string, any>();
     if (videoIds.length > 0) {
@@ -911,7 +917,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
     }
     return visibleVideos.map((r: any) => {
       const progress = progressMap.get(r.id as string) ?? null;
-      const is_locked = !progress && isVideoLockedByStart(r, startWeek, startAt);
+      const is_locked = accessState(isVideoLockedByStart(r, startWeek, startAt), !!progress, unlockedIds.has(r.id), false) === "locked";
       return { ...r, progress, is_locked };
     });
   });
