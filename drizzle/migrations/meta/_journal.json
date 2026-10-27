@@ -99,6 +99,13 @@
       "when": 1792834600744,
       "tag": "0013_progress_start_week_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1793065947288,
+      "tag": "0014_video_student_individual_unlocks",
+      "breakpoints": true
     }
   ]
 }

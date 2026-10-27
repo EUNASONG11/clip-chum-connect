@@ -1031,6 +1031,41 @@ export type Database = {
           },
         ]
       }
+      video_student_unlocks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          user_id: string
+          video_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          user_id: string
+          video_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          user_id?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_student_unlocks_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "videos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       videos: {
         Row: {
           allow_seek: boolean
@@ -1161,6 +1196,14 @@ export type Database = {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
       }
+      can_manage_video_unlock: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
+      }
+      can_manage_video_unlock_class: {
+        Args: { _class_id: string }
+        Returns: boolean
+      }
       class_sms_recent_batches: {
         Args: { _class_id: string; _limit?: number }
         Returns: {
@@ -1212,6 +1255,10 @@ export type Database = {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
       }
+      has_video_unlock: {
+        Args: { _user_id: string; _video_id: string }
+        Returns: boolean
+      }
       instructor_can_access_class: {
         Args: { _class_id: string; _uid: string }
         Returns: boolean
@@ -1234,6 +1281,15 @@ export type Database = {
           video_count: number
         }[]
       }
+      set_video_student_unlocks: {
+        Args: {
+          _class_id: string
+          _unlock: boolean
+          _user_ids: string[]
+          _video_ids: string[]
+        }
+        Returns: Json
+      }
       student_video_locked: {
         Args: { _user_id: string; _video_id: string }
         Returns: boolean
@@ -1241,6 +1297,10 @@ export type Database = {
       student_video_start_at: {
         Args: { _class_id: string; _user_id: string }
         Returns: string
+      }
+      video_student_access_states: {
+        Args: { _class_id: string; _user_ids?: string[]; _video_ids?: string[] }
+        Returns: Json
       }
     }
     Enums: {
