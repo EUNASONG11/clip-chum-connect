@@ -113,6 +113,13 @@
       "when": 1793066298239,
       "tag": "0015_scope_unlock_release_to_class",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793069641480,
+      "tag": "0016_shared_class_student_video_targets",
+      "breakpoints": true
     }
   ]
 }

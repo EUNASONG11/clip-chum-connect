@@ -11,3 +11,4 @@
 - External week-assignment saves only create/update the assignment and set needs_resync; completion resync runs via the "연동 점검" flow one [class, week] per request in 50-student batches — why: long resyncs after a response get cut off and exceed Worker subrequest limits.
 - Individual video unlock management uses authenticated, branch-scoped database RPCs for bulk state calculation and atomic soft-delete writes; this avoids per-student Worker requests and enforces permissions outside the UI.
 - Individual unlock surfaces share one semantic status badge component so state icons and presentation remain consistent across video and student rows.
+- Messaging and class student statistics share service-role-only class_student_video_targets after server authorization; messaging paginates bulk target/progress/exclusion reads and aggregates returned pairs locally to keep eligibility identical without per-student requests.

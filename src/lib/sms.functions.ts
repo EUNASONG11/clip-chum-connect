@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
+import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
+import { messagingProgressByStudent, type MessagingTarget, type MessagingProgress } from "@/lib/messaging-progress";
 
 // 교육원명 → 시크릿 접두어 매핑
 const BRANCH_KEY: Record<string, string> = {
@@ -101,38 +103,27 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     await assertAdminOrInstructorOnClass(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: videos }, { data: students }, { data: history }, { data: folders }] =
+    const [videos, students, folders] =
       await Promise.all([
-        supabaseAdmin
+        fetchAll((from, to) => supabaseAdmin
           .from("videos")
           .select("id, title, created_at, folder_id")
           .eq("class_id", data.classId)
-          .is("deleted_at", null),
-        supabaseAdmin
+          .is("deleted_at", null).order("id").range(from, to)),
+        fetchAll<{ user_id: string }>((from, to) => supabaseAdmin
           .from("class_students")
           .select("user_id")
           .eq("class_id", data.classId)
-          .is("deleted_at", null),
-        supabaseAdmin
-          .from("class_enrollment_history")
-          .select("user_id, action, created_at")
-          .eq("class_id", data.classId)
-          .eq("action", "added"),
-        supabaseAdmin
+          .is("deleted_at", null).order("user_id").range(from, to)),
+        fetchAll<{ id: string; is_required: boolean }>((from, to) => supabaseAdmin
           .from("class_folders")
           .select("id, is_required")
           .eq("class_id", data.classId)
-          .is("deleted_at", null),
+          .is("deleted_at", null).order("id").range(from, to)),
       ]);
 
-    const studentIds = ((students ?? []) as any[]).map((s) => s.user_id);
+    const studentIds = students.map((s) => s.user_id);
     if (studentIds.length === 0) return [] as any[];
-
-    const enrollStart = new Map<string, string>();
-    ((history ?? []) as any[]).forEach((h) => {
-      const prev = enrollStart.get(h.user_id);
-      if (!prev || h.created_at > prev) enrollStart.set(h.user_id, h.created_at);
-    });
 
     const requiredFolders = new Set(
       ((folders ?? []) as any[]).filter((f) => f.is_required).map((f) => f.id as string),
@@ -164,50 +155,33 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     }
     const targetIds = targetVideos.map((v) => v.id);
 
-    const [{ data: progress }, { data: exclusions }] =
-      targetIds.length > 0
-        ? await Promise.all([
-            supabaseAdmin
-              .from("video_progress")
-              .select("video_id, user_id, is_completed")
-              .in("video_id", targetIds),
-            supabaseAdmin
-              .from("video_student_exclusions")
-              .select("video_id, user_id")
-              .in("video_id", targetIds)
-              .is("deleted_at", null),
-          ])
-        : [{ data: [] as any[] }, { data: [] as any[] }];
-    // 학생에게 숨겨진 영상은 그 학생의 진도 계산에서 제외
-    const hiddenSet = new Set(
-      ((exclusions ?? []) as any[]).map((x: any) => `${x.user_id}::${x.video_id}`),
-    );
-    const completedSet = new Set(
-      ((progress ?? []) as any[])
-        .filter((p: any) => p.is_completed)
-        .map((p: any) => `${p.user_id}::${p.video_id}`),
-    );
+    if (targetIds.length === 0) return [];
+    const [targets, progress, exclusions] = await Promise.all([
+      fetchAllIn<MessagingTarget>(targetIds, (ids, from, to) => supabaseAdmin
+        .rpc("class_student_video_targets", { _class_id: data.classId, _video_ids: ids })
+        .order("user_id").order("video_id").range(from, to)),
+      fetchAllIn<MessagingProgress>(targetIds, (ids, from, to) => supabaseAdmin
+        .from("video_progress").select("video_id, user_id, is_completed")
+        .in("video_id", ids).order("user_id").order("video_id").range(from, to)),
+      fetchAllIn<MessagingTarget>(targetIds, (ids, from, to) => supabaseAdmin
+        .from("video_student_exclusions").select("video_id, user_id")
+        .in("video_id", ids).is("deleted_at", null).order("id").range(from, to)),
+    ]);
+    const counts = messagingProgressByStudent(targets, progress, exclusions);
 
-    const { data: ext } = await supabaseAdmin
+    const ext = await fetchAllIn<any>(studentIds, (ids, from, to) => supabaseAdmin
       .from("external_students")
       .select("auth_user_id, name, phone, parent_phone, branch")
-      .in("auth_user_id", studentIds);
+      .in("auth_user_id", ids).order("id").range(from, to));
     const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
 
     const result = studentIds
       .map((uid) => {
         const e: any = extMap.get(uid) ?? {};
-        const start = enrollStart.get(uid);
-        const eligible = (selectedIds.size > 0
-          ? targetVideos
-          : targetVideos.filter((v) => !start || v.created_at >= start)
-        ).filter((v) => !hiddenSet.has(`${uid}::${v.id}`));
-        if (eligible.length === 0) return null;
-        const completedCount = eligible.reduce(
-          (n, v) => (completedSet.has(`${uid}::${v.id}`) ? n + 1 : n),
-          0,
-        );
-        const incompleteCount = eligible.length - completedCount;
+        const count = counts.get(uid);
+        if (!count) return null;
+        const completedCount = count.completed_count;
+        const incompleteCount = count.incomplete_count;
         const studentPhone = normalizePhone(e.phone);
         const parentPhone = normalizePhone(e.parent_phone);
         const phone = studentPhone ?? parentPhone;
@@ -227,7 +201,7 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
           status: incompleteCount === 0 ? ("completed" as const) : ("incomplete" as const),
           completed_count: completedCount,
           incomplete_count: incompleteCount,
-          eligible_total: eligible.length,
+          eligible_total: count.eligible_total,
         };
       })
       .filter(Boolean) as Array<{
