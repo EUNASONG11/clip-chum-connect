@@ -8,6 +8,12 @@ export const getVideoLockStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ videoId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    const { data: roles, error: roleError } = await context.supabase.from("user_roles").select("role").eq("user_id", context.userId).is("deleted_at", null);
+    if (roleError) throw new Error(roleError.message);
+    if (roles?.some((r) => r.role === "admin" || r.role === "instructor" || r.role === "branch_admin")) return { locked: false };
+    const { data: unlocked, error: unlockError } = await context.supabase.rpc("has_video_unlock", { _user_id: context.userId, _video_id: data.videoId });
+    if (unlockError) throw new Error(unlockError.message);
+    if (unlocked) return { locked: false };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: v } = await supabaseAdmin
       .from("videos")
