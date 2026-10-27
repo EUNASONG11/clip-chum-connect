@@ -1426,9 +1426,9 @@ function ClassDetailPage() {
             )].sort();
             const allSel = listed.every((s: any) => startSel.has(s.user_id));
             return (
-              <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-                <span className="text-xs font-semibold">학습 현황 시작 설정</span>
-                <label className="flex items-center gap-1 text-xs">
+              <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/30 p-2">
+                <span className="whitespace-nowrap text-xs font-semibold">학습 현황 시작 설정</span>
+                <label className="flex items-center gap-1 whitespace-nowrap text-xs">
                   <Checkbox
                     checked={allSel}
                     onCheckedChange={(c) => {
@@ -1442,21 +1442,21 @@ function ClassDetailPage() {
                 <RadioGroup
                   value={startMode}
                   onValueChange={(v) => setStartMode(v as "week" | "video")}
-                  className="flex items-center gap-3"
+                  className="flex shrink-0 items-center gap-3"
                 >
-                  <label className="flex items-center gap-1 text-xs">
+                  <label className="flex items-center gap-1 whitespace-nowrap text-xs">
                     <RadioGroupItem value="week" id="start-mode-week" />
                     주차별
                   </label>
-                  <label className="flex items-center gap-1 text-xs">
+                  <label className="flex items-center gap-1 whitespace-nowrap text-xs">
                     <RadioGroupItem value="video" id="start-mode-video" />
                     영상별
                   </label>
                 </RadioGroup>
                 {startMode === "week" ? (
                   <Select value={startWeek} onValueChange={setStartWeek}>
-                    <SelectTrigger className="h-8 w-full sm:w-72">
-                      <SelectValue placeholder="시작 주차 선택 (이 주차부터 포함)" />
+                    <SelectTrigger className="h-8 min-w-[170px] grow basis-0">
+                      <SelectValue placeholder="시작 주차 선택 (이 주차부터)" />
                     </SelectTrigger>
                     <SelectContent>
                       {weekOptions.map((w) => (
@@ -1468,8 +1468,8 @@ function ClassDetailPage() {
                   </Select>
                 ) : (
                   <Select value={startVideoId} onValueChange={setStartVideoId}>
-                    <SelectTrigger className="h-8 w-full sm:w-72">
-                      <SelectValue placeholder="시작 영상 선택 (이 영상부터 포함)" />
+                    <SelectTrigger className="h-8 min-w-[170px] grow basis-0">
+                      <SelectValue placeholder="시작 영상 선택 (이 영상부터)" />
                     </SelectTrigger>
                     <SelectContent>
                       {[...(videos as any[])]
@@ -1483,16 +1483,16 @@ function ClassDetailPage() {
                   </Select>
                 )}
                 <Button
-                  size="sm"
+                  size="sm" className="shrink-0 whitespace-nowrap"
                   disabled={startSaving || startSel.size === 0 || (startMode === "week" ? !startWeek : !startVideoId)}
                   onClick={() => applyProgressStart(startMode === "week" ? { week: startWeek } : { week: null, videoId: startVideoId })}
                 >
                   적용
                 </Button>
-                <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart({ week: null })}>
+                <Button size="sm" variant="outline" className="shrink-0 whitespace-nowrap" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart({ week: null })}>
                   배정 시점으로 되돌리기
                 </Button>
-                <Button size="sm" variant="outline" disabled={startSel.size === 0} onClick={() => setUnlockOpen(true)}><Unlock className="mr-1 h-4 w-4" />영상 개별 열기</Button>
+                <Button size="sm" variant="outline" className="shrink-0 whitespace-nowrap" disabled={startSel.size === 0} onClick={() => setUnlockOpen(true)}><Unlock className="mr-1 h-4 w-4" />영상 개별 열기</Button>
                 {unlockOpen && <VideoUnlockDialog classId={id} userIds={[...startSel]} names={(students as any[]).filter((s) => startSel.has(s.user_id)).map((s) => s.name || s.email)} open onClose={() => setUnlockOpen(false)} />}
                 <p className="w-full text-xs text-muted-foreground">
                   {startMode === "week"
