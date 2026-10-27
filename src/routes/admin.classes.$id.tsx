@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -808,14 +809,23 @@ function ClassDetailPage() {
   >([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [startSel, setStartSel] = useState<Set<string>>(new Set());
+  const [startMode, setStartMode] = useState<"week" | "video">("week");
   const [startWeek, setStartWeek] = useState<string>("");
+  const [startVideoId, setStartVideoId] = useState<string>("");
   const [startSaving, setStartSaving] = useState(false);
-  const applyProgressStart = async (week: string | null) => {
+  const applyProgressStart = async (arg: { week: string | null; videoId?: string | null }) => {
     if (startSel.size === 0) return;
     setStartSaving(true);
     try {
-      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], week } });
-      toast.success(week ? `${startSel.size}명의 학습 현황 시작 주차를 ${formatWeekLabel(week)}로 설정했습니다.` : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`);
+      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], week: arg.week, videoId: arg.videoId ?? null } });
+      const videoTitle = arg.videoId ? (videos as any[]).find((v) => v.id === arg.videoId)?.title : null;
+      toast.success(
+        arg.videoId
+          ? `${startSel.size}명의 학습 현황 시작 영상을 "${videoTitle ?? "선택한 영상"}"(으)로 설정했습니다.`
+          : arg.week
+            ? `${startSel.size}명의 학습 현황 시작 주차를 ${formatWeekLabel(arg.week)}로 설정했습니다.`
+            : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`,
+      );
       setStartSel(new Set());
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
       qc.invalidateQueries();
