@@ -13,7 +13,8 @@ export function accessState(baseLocked: boolean, progress: boolean, unlock: bool
 
 export function matchesUnlockStudent(student: UnlockStudent, query: string) {
   const fields = [student.name, student.school, student.grade, student.branch, student.phone, student.parent_phone];
-  return query.split(/\s+/).filter(Boolean).every((token) => !token) || query.split(/\s+/).filter(Boolean).some((token) => fields.some((field) => field.replace(/\s|-/g, "").toLowerCase().includes(token.replace(/\s|-/g, "").toLowerCase())));
+  const tokens = query.split(/\s+/).filter(Boolean);
+  return tokens.length === 0 || tokens.some((token) => fields.some((field) => field.replace(/\s|-/g, "").toLowerCase().includes(token.replace(/\s|-/g, "").toLowerCase())));
 }
 
 // 학생 화면: 폴더 자체 영상 다음에 하위 폴더, 마지막은 폴더 미지정 영상.

@@ -10,6 +10,7 @@ import {
 } from "@/lib/student-search";
 import { isVideoLockedByStart } from "@/lib/video-lock-rule";
 import { fetchAllIn } from "@/lib/fetch-all";
+import { accessState } from "@/lib/video-unlock-model";
 
 
 async function isAdmin(context: { supabase: any; userId: string }) {
@@ -916,7 +917,7 @@ export const listClassVideos = createServerFn({ method: "GET" })
     }
     return visibleVideos.map((r: any) => {
       const progress = progressMap.get(r.id as string) ?? null;
-      const is_locked = !progress && !unlockedIds.has(r.id) && isVideoLockedByStart(r, startWeek, startAt);
+      const is_locked = accessState(isVideoLockedByStart(r, startWeek, startAt), !!progress, unlockedIds.has(r.id), false) === "locked";
       return { ...r, progress, is_locked };
     });
   });
