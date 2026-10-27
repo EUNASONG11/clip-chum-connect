@@ -44,6 +44,12 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-access-locked: var(--access-locked);
+  --color-access-locked-foreground: var(--access-locked-foreground);
+  --color-access-unlocked: var(--access-unlocked);
+  --color-access-unlocked-foreground: var(--access-unlocked-foreground);
+  --color-access-neutral: var(--access-neutral);
+  --color-access-neutral-foreground: var(--access-neutral-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -89,6 +95,12 @@
   --destructive-foreground: oklch(1 0 0);
   --warning: oklch(0.85 0.16 85);
   --warning-foreground: oklch(0.3 0.08 70);
+  --access-locked: oklch(0.95 0.1 95);
+  --access-locked-foreground: oklch(0.4 0.08 80);
+  --access-unlocked: oklch(0.94 0.1 125);
+  --access-unlocked-foreground: oklch(0.38 0.09 140);
+  --access-neutral: oklch(0.94 0 0);
+  --access-neutral-foreground: oklch(0.46 0 0);
   --border: oklch(0.92 0.01 150);
   --input: oklch(0.92 0.01 150);
   --ring: oklch(0.68 0.17 148);
@@ -126,6 +138,12 @@
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --warning: oklch(0.75 0.15 80);
   --warning-foreground: oklch(0.2 0.05 70);
+  --access-locked: oklch(0.35 0.07 85);
+  --access-locked-foreground: oklch(0.93 0.11 95);
+  --access-unlocked: oklch(0.33 0.07 140);
+  --access-unlocked-foreground: oklch(0.91 0.1 125);
+  --access-neutral: oklch(0.3 0 0);
+  --access-neutral-foreground: oklch(0.78 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.551 0.027 264.364);

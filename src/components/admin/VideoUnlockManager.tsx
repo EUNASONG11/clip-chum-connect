@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ClearableSearchInput } from "@/components/admin/ClearableSearchInput";
 import { VideoThumb } from "@/components/VideoThumb";
 import { getVideoUnlockStates, setVideoUnlocks } from "@/lib/video-unlocks.functions";
-import { accessLabels, matchesUnlockStudent, orderedUnlockVideos, type AccessState } from "@/lib/video-unlock-model";
+import { matchesUnlockStudent, orderedUnlockVideos, type AccessState } from "@/lib/video-unlock-model";
+import { VideoAccessBadge } from "@/components/admin/VideoAccessBadge";
 import { formatWeekLabel } from "@/lib/week";
 
 export function VideoUnlockDialog({ classId, userIds, names, open, onClose }: { classId: string; userIds: string[]; names: string[]; open: boolean; onClose: () => void }) {
@@ -59,12 +60,12 @@ export function VideoUnlockDialog({ classId, userIds, names, open, onClose }: { 
           const date = new Date(video.created_at).toLocaleDateString("en-US", { timeZone: "Asia/Seoul", month: "2-digit", day: "2-digit" }).replace("/", ".");
           return <div key={video.id}>
             {(index === 0 || rows[index - 1]?.path !== path) && <p className="mb-2 mt-3 text-xs font-semibold">{path}</p>}
-            <label className={`flex items-center gap-3 rounded-md border p-3 ${selection.has(video.id) ? "border-primary bg-accent/40" : "bg-background"} ${disabled ? "text-muted-foreground" : "cursor-pointer"}`}>
+            <label className={`flex flex-wrap items-center gap-3 rounded-md border p-3 ${disabled ? "bg-access-neutral/60 text-muted-foreground opacity-60" : selection.has(video.id) ? "cursor-pointer border-primary bg-accent/40" : "cursor-pointer bg-background"}`}>
               <Checkbox aria-label={`영상 선택 ${video.title}`} checked={selection.has(video.id)} disabled={disabled || saving} onCheckedChange={(checked) => setSelection((old) => { const next = new Set(old); if (checked) next.add(video.id); else next.delete(video.id); return next; })} />
               <div className="aspect-video w-20 shrink-0 overflow-hidden rounded bg-muted"><VideoThumb src={video.thumbnail_url} alt={video.title} className="h-full w-full object-cover" /></div>
               <div className="min-w-0 flex-1"><p className="break-words text-sm font-medium">{video.title}</p><p className="mt-1 text-xs text-muted-foreground">{video.week_label ? formatWeekLabel(video.week_label) : "주차 없음"} · 업로드 {date}</p>
-                <span className={`mt-1 inline-block rounded px-2 py-0.5 text-[11px] ${count.locked ? "bg-warning/20 text-warning-foreground" : count.unlocked ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{count.locked ? `잠김 · ${data?.students.length ?? 0}명 중 ${count.locked}명` : count.unlocked ? `개별 열기됨 · ${count.unlocked}명` : "잠금 대상 아님"}</span>
               </div>
+              <div className="ml-auto flex max-w-full justify-end"><VideoAccessBadge state={count.locked ? "locked" : count.unlocked ? "unlocked" : "not_locked"} detail={count.locked ? `${data?.students.length ?? 0}명 중 ${count.locked}명` : count.unlocked ? `${count.unlocked}명` : undefined} /></div>
             </label>
           </div>;
         })}
@@ -106,7 +107,7 @@ export function VideoUnlockPanel({ classId, videoId, query }: { classId: string;
       {students.filter((s) => filter === "all" || states.get(s.user_id) === filter).map((s) => {
         const state = states.get(s.user_id) ?? "not_locked";
         const disabled = state === "hidden" || state === "not_locked";
-        return <label key={s.user_id} className={`flex items-start gap-2 rounded p-1 ${disabled ? "text-muted-foreground" : "cursor-pointer hover:bg-muted"}`}><Checkbox aria-label={`개별 열기 ${s.name}`} checked={state === "unlocked"} disabled={disabled || saving} onCheckedChange={(checked) => toggle(s.user_id, checked === true)} /><div className="min-w-0 flex-1"><p className="break-words text-sm">{s.name}<span className="ml-1 text-xs text-muted-foreground">{[s.school, s.grade, s.branch].filter(Boolean).join(" · ")}</span></p><p className={`text-[11px] ${state === "unlocked" ? "text-accent-foreground" : "text-muted-foreground"}`}>{accessLabels[state]}</p></div></label>;
+        return <label key={s.user_id} className={`flex flex-wrap items-center gap-2 rounded p-2 ${disabled ? "text-muted-foreground opacity-60" : "cursor-pointer hover:bg-muted"}`}><Checkbox aria-label={`개별 열기 ${s.name}`} checked={state === "unlocked"} disabled={disabled || saving} onCheckedChange={(checked) => toggle(s.user_id, checked === true)} /><div className="min-w-0 flex-1"><p className="break-words text-sm">{s.name}<span className="ml-1 text-xs text-muted-foreground">{[s.school, s.grade, s.branch].filter(Boolean).join(" · ")}</span></p></div><div className="ml-auto flex max-w-full justify-end"><VideoAccessBadge state={state} /></div></label>;
       })}
       {students.length === 0 && <p className="text-xs text-muted-foreground">대상 학생이 없습니다.</p>}
     </div>}
