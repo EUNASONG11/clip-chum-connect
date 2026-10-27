@@ -120,6 +120,13 @@
       "when": 1793069641480,
       "tag": "0016_shared_class_student_video_targets",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793071641729,
+      "tag": "0017_class_student_messaging_counts",
+      "breakpoints": true
     }
   ]
 }

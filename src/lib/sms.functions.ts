@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { fetchAll, fetchAllIn } from "@/lib/fetch-all";
-import { messagingProgressByStudent, type MessagingTarget, type MessagingProgress } from "@/lib/messaging-progress";
+import { fetchAll } from "@/lib/fetch-all";
+import { messagingStudent, normalizePhone, type MessagingCount } from "@/lib/messaging-students";
 
 // 교육원명 → 시크릿 접두어 매핑
 const BRANCH_KEY: Record<string, string> = {
@@ -15,13 +15,6 @@ function normalizeBranch(b: string | null | undefined): string | null {
   if (!b) return null;
   const t = b.trim();
   return BRANCH_KEY[t] ? t : null;
-}
-
-function normalizePhone(v: string | null | undefined): string | null {
-  if (!v) return null;
-  const s = v.replace(/[^0-9]/g, "");
-  if (s.length < 9 || s.length > 11) return null;
-  return s;
 }
 
 async function assertAdminOrInstructorOnClass(
@@ -103,27 +96,19 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     await assertAdminOrInstructorOnClass(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [videos, students, folders] =
+    const [videos, folders] =
       await Promise.all([
         fetchAll((from, to) => supabaseAdmin
           .from("videos")
           .select("id, title, created_at, folder_id")
           .eq("class_id", data.classId)
           .is("deleted_at", null).order("id").range(from, to)),
-        fetchAll<{ user_id: string }>((from, to) => supabaseAdmin
-          .from("class_students")
-          .select("user_id")
-          .eq("class_id", data.classId)
-          .is("deleted_at", null).order("user_id").range(from, to)),
         fetchAll<{ id: string; is_required: boolean }>((from, to) => supabaseAdmin
           .from("class_folders")
           .select("id, is_required")
           .eq("class_id", data.classId)
           .is("deleted_at", null).order("id").range(from, to)),
       ]);
-
-    const studentIds = students.map((s) => s.user_id);
-    if (studentIds.length === 0) return [] as any[];
 
     const requiredFolders = new Set(
       ((folders ?? []) as any[]).filter((f) => f.is_required).map((f) => f.id as string),
@@ -156,67 +141,11 @@ export const listClassStudentsForMessaging = createServerFn({ method: "POST" })
     const targetIds = targetVideos.map((v) => v.id);
 
     if (targetIds.length === 0) return [];
-    const [targets, progress, exclusions] = await Promise.all([
-      fetchAllIn<MessagingTarget>(targetIds, (ids, from, to) => supabaseAdmin
-        .rpc("class_student_video_targets", { _class_id: data.classId, _video_ids: ids })
-        .order("user_id").order("video_id").range(from, to)),
-      fetchAllIn<MessagingProgress>(targetIds, (ids, from, to) => supabaseAdmin
-        .from("video_progress").select("video_id, user_id, is_completed")
-        .in("video_id", ids).order("user_id").order("video_id").range(from, to)),
-      fetchAllIn<MessagingTarget>(targetIds, (ids, from, to) => supabaseAdmin
-        .from("video_student_exclusions").select("video_id, user_id")
-        .in("video_id", ids).is("deleted_at", null).order("id").range(from, to)),
-    ]);
-    const counts = messagingProgressByStudent(targets, progress, exclusions);
-
-    const ext = await fetchAllIn<any>(studentIds, (ids, from, to) => supabaseAdmin
-      .from("external_students")
-      .select("auth_user_id, name, phone, parent_phone, branch")
-      .in("auth_user_id", ids).order("id").range(from, to));
-    const extMap = new Map(((ext ?? []) as any[]).map((e: any) => [e.auth_user_id, e]));
-
-    const result = studentIds
-      .map((uid) => {
-        const e: any = extMap.get(uid) ?? {};
-        const count = counts.get(uid);
-        if (!count) return null;
-        const completedCount = count.completed_count;
-        const incompleteCount = count.incomplete_count;
-        const studentPhone = normalizePhone(e.phone);
-        const parentPhone = normalizePhone(e.parent_phone);
-        const phone = studentPhone ?? parentPhone;
-        const phoneSource: "self" | "parent" | null = studentPhone
-          ? "self"
-          : parentPhone
-            ? "parent"
-            : null;
-        return {
-          user_id: uid,
-          name: (e.name as string) ?? "",
-          phone: phone ?? "",
-          phone_source: phoneSource,
-          student_phone: studentPhone ?? "",
-          parent_phone: parentPhone ?? "",
-          branch: (e.branch as string) ?? "",
-          status: incompleteCount === 0 ? ("completed" as const) : ("incomplete" as const),
-          completed_count: completedCount,
-          incomplete_count: incompleteCount,
-          eligible_total: count.eligible_total,
-        };
-      })
-      .filter(Boolean) as Array<{
-      user_id: string;
-      name: string;
-      phone: string;
-      phone_source: "self" | "parent" | null;
-      student_phone: string;
-      parent_phone: string;
-      branch: string;
-      status: "completed" | "incomplete";
-      completed_count: number;
-      incomplete_count: number;
-      eligible_total: number;
-    }>;
+    // POST RPC에 영상 ID 전체를 전달하고, 학생별 결과만 페이지 조회한다.
+    const counts = await fetchAll<MessagingCount>((from, to) => supabaseAdmin
+      .rpc("class_student_messaging_counts", { _class_id: data.classId, _video_ids: targetIds })
+      .order("user_id").range(from, to));
+    const result = counts.map(messagingStudent);
 
     return result.sort((a, b) => a.name.localeCompare(b.name, "ko"));
   });
