@@ -571,8 +571,10 @@ export const listStudentSeekEvents = createServerFn({ method: "GET" })
 
 
 
-// 학생별 "학습 현황 시작 주차" 설정 (week=null이면 배정 시점 기준으로 되돌림)
-// 저장 시 progress_start_at은 그 주 월요일 00:00(KST), progress_start_video_id는 비움
+// 학생별 "학습 현황 시작" 설정
+// - week 지정: 시작 주차 방식. progress_start_at은 그 주 월요일 00:00(KST), progress_start_video_id는 비움
+// - videoId 지정: 시작 영상 방식(이전 방식). progress_start_at은 그 영상 업로드 시각, progress_start_week는 비움
+// - 둘 다 없음: 배정 시점 기준으로 되돌림
 export const setStudentProgressStart = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -581,6 +583,7 @@ export const setStudentProgressStart = createServerFn({ method: "POST" })
         classId: z.string().uuid(),
         userIds: z.array(z.string().uuid()).min(1).max(1000),
         week: z.string().nullable(),
+        videoId: z.string().uuid().nullable().optional(),
       })
       .parse(i),
   )
@@ -588,7 +591,22 @@ export const setStudentProgressStart = createServerFn({ method: "POST" })
     await assertOwnClassOrAdmin(context, data.classId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let patch: Record<string, unknown>;
-    if (data.week) {
+    if (data.videoId) {
+      const { data: video, error: vErr } = await supabaseAdmin
+        .from("videos")
+        .select("id, created_at")
+        .eq("id", data.videoId)
+        .eq("class_id", data.classId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (vErr) throw new Error(vErr.message);
+      if (!video) throw new Error("이 수강반에 없는 영상입니다.");
+      patch = {
+        progress_start_week: null,
+        progress_start_at: (video as any).created_at,
+        progress_start_video_id: data.videoId,
+      };
+    } else if (data.week) {
       if (!parseWeekLabel(data.week)) throw new Error("올바른 주차가 아닙니다.");
       const { start } = weekRange(data.week);
       patch = {

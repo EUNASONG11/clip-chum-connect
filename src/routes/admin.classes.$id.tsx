@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -808,14 +809,23 @@ function ClassDetailPage() {
   >([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [startSel, setStartSel] = useState<Set<string>>(new Set());
+  const [startMode, setStartMode] = useState<"week" | "video">("week");
   const [startWeek, setStartWeek] = useState<string>("");
+  const [startVideoId, setStartVideoId] = useState<string>("");
   const [startSaving, setStartSaving] = useState(false);
-  const applyProgressStart = async (week: string | null) => {
+  const applyProgressStart = async (arg: { week: string | null; videoId?: string | null }) => {
     if (startSel.size === 0) return;
     setStartSaving(true);
     try {
-      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], week } });
-      toast.success(week ? `${startSel.size}명의 학습 현황 시작 주차를 ${formatWeekLabel(week)}로 설정했습니다.` : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`);
+      await setStudentProgressStart({ data: { classId: id, userIds: [...startSel], week: arg.week, videoId: arg.videoId ?? null } });
+      const videoTitle = arg.videoId ? (videos as any[]).find((v) => v.id === arg.videoId)?.title : null;
+      toast.success(
+        arg.videoId
+          ? `${startSel.size}명의 학습 현황 시작 영상을 "${videoTitle ?? "선택한 영상"}"(으)로 설정했습니다.`
+          : arg.week
+            ? `${startSel.size}명의 학습 현황 시작 주차를 ${formatWeekLabel(arg.week)}로 설정했습니다.`
+            : `${startSel.size}명을 배정 시점 기준으로 되돌렸습니다.`,
+      );
       setStartSel(new Set());
       qc.invalidateQueries({ queryKey: ["admin", "class", id] });
       qc.invalidateQueries();
@@ -1417,7 +1427,7 @@ function ClassDetailPage() {
             const allSel = listed.every((s: any) => startSel.has(s.user_id));
             return (
               <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-2">
-                <span className="text-xs font-semibold">학습 현황 시작 주차</span>
+                <span className="text-xs font-semibold">학습 현황 시작 설정</span>
                 <label className="flex items-center gap-1 text-xs">
                   <Checkbox
                     checked={allSel}
@@ -1429,28 +1439,65 @@ function ClassDetailPage() {
                   />
                   전체 선택 ({startSel.size}명 선택)
                 </label>
-                <Select value={startWeek} onValueChange={setStartWeek}>
-                  <SelectTrigger className="h-8 w-full sm:w-72">
-                    <SelectValue placeholder="시작 주차 선택 (이 주차부터 포함)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {weekOptions.map((w) => (
-                      <SelectItem key={w} value={w}>
-                        {formatWeekLabel(w)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button size="sm" disabled={startSaving || startSel.size === 0 || !startWeek} onClick={() => applyProgressStart(startWeek)}>
+                <RadioGroup
+                  value={startMode}
+                  onValueChange={(v) => setStartMode(v as "week" | "video")}
+                  className="flex items-center gap-3"
+                >
+                  <label className="flex items-center gap-1 text-xs">
+                    <RadioGroupItem value="week" id="start-mode-week" />
+                    주차별
+                  </label>
+                  <label className="flex items-center gap-1 text-xs">
+                    <RadioGroupItem value="video" id="start-mode-video" />
+                    영상별
+                  </label>
+                </RadioGroup>
+                {startMode === "week" ? (
+                  <Select value={startWeek} onValueChange={setStartWeek}>
+                    <SelectTrigger className="h-8 w-full sm:w-72">
+                      <SelectValue placeholder="시작 주차 선택 (이 주차부터 포함)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {weekOptions.map((w) => (
+                        <SelectItem key={w} value={w}>
+                          {formatWeekLabel(w)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={startVideoId} onValueChange={setStartVideoId}>
+                    <SelectTrigger className="h-8 w-full sm:w-72">
+                      <SelectValue placeholder="시작 영상 선택 (이 영상부터 포함)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...(videos as any[])]
+                        .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+                        .map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.title}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <Button
+                  size="sm"
+                  disabled={startSaving || startSel.size === 0 || (startMode === "week" ? !startWeek : !startVideoId)}
+                  onClick={() => applyProgressStart(startMode === "week" ? { week: startWeek } : { week: null, videoId: startVideoId })}
+                >
                   적용
                 </Button>
-                <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart(null)}>
+                <Button size="sm" variant="outline" disabled={startSaving || startSel.size === 0} onClick={() => applyProgressStart({ week: null })}>
                   배정 시점으로 되돌리기
                 </Button>
                 <Button size="sm" variant="outline" disabled={startSel.size === 0} onClick={() => setUnlockOpen(true)}><Unlock className="mr-1 h-4 w-4" />영상 개별 열기</Button>
                 {unlockOpen && <VideoUnlockDialog classId={id} userIds={[...startSel]} names={(students as any[]).filter((s) => startSel.has(s.user_id)).map((s) => s.name || s.email)} open onClose={() => setUnlockOpen(false)} />}
                 <p className="w-full text-xs text-muted-foreground">
-                  선택한 주차부터 시청할 수 있어요. 주차가 없는 영상(어휘 등)은 그 주 월요일 이후 올라온 영상부터 열립니다.
+                  {startMode === "week"
+                    ? "선택한 주차부터 시청할 수 있어요. 주차가 없는 영상(어휘 등)은 그 주 월요일 이후 올라온 영상부터 열립니다."
+                    : "선택한 영상부터 시청할 수 있어요. 그 영상보다 먼저 올라온 영상은 잠깁니다."}
                 </p>
               </div>
             );
