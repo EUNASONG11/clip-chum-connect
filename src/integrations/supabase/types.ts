@@ -1244,6 +1244,13 @@ export type Database = {
           video_total: number
         }[]
       }
+      class_student_video_targets: {
+        Args: { _class_id: string; _video_ids?: string[] }
+        Returns: {
+          user_id: string
+          video_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
